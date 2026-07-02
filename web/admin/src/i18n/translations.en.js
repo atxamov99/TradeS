@@ -95,6 +95,14 @@ export const en = {
         label: "Permissions",
         description: "Module access matrix"
       },
+      orders: {
+        label: "Orders",
+        description: "Order status, delivery and returns"
+      },
+      products: {
+        label: "Products",
+        description: "Product catalog and inventory control"
+      },
       content: {
         label: "Content",
         description: "Content and data management"

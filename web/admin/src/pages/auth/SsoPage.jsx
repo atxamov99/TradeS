@@ -40,32 +40,28 @@ function buildProfile(user) {
 export function SsoPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, ssoLogin } = useAuth();
   const ran = useRef(false);
 
   useEffect(() => {
     if (ran.current) return;
     ran.current = true;
 
-    const token    = searchParams.get("token");
-    const refresh  = searchParams.get("refresh");
     const name     = searchParams.get("name");
     const email    = searchParams.get("email");
     const role     = searchParams.get("role");
 
-    // URLdan maxfiy ma'lumotlarni darhol tozalaymiz (history'da qolmasligi uchun)
+    // URLdan ma'lumotlarni darhol tozalaymiz (history'da qolmasligi uchun)
     window.history.replaceState({}, document.title, window.location.pathname);
 
-    // Parametrlar to'g'ri va rol admin bo'lsa — saqlab dashboard ga o'tamiz
-    if (token && email && ["ADMIN", "SUPER_ADMIN"].includes(role)) {
-      const auth = {
-        token,
-        refreshToken: refresh || "",
-        profile: buildProfile({ id: "", name, email, role }),
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(auth));
-      // Sahifa to'liq qayta yuklanadi — AuthProvider yangi holat o'qiydi
-      window.location.replace("/dashboard");
+    // Auth endi httpOnly cookie orqali (token URL'da uzatilmaydi). Cookie localhost
+    // portlar aro (5173↔5174) baham ko'riladi. Profilni React state'ga hydrate qilamiz
+    // (oddiy login bilan bir xil yo'l) va SPA navigatsiya qilamiz — to'liq reload
+    // qilmaymiz, aks holda AuthProvider'ning localStorage-tozalash effekti bilan
+    // race bo'lib, dashboard qayta /login'ga tushib qolardi.
+    if (email && ["ADMIN", "SUPER_ADMIN"].includes(role)) {
+      ssoLogin({ id: "", name, email, role });
+      navigate("/dashboard", { replace: true });
     } else if (isAuthenticated) {
       navigate("/dashboard", { replace: true });
     } else {

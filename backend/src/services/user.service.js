@@ -78,19 +78,23 @@ const updateAddress = async (userId, addressId, addressData) => {
       });
     }
 
-    await tx.address.update({
+    // updateMany with {id, userId}: enforces ownership AND avoids Prisma's
+    // unique-only `where` restriction on update(). count===0 → not the user's address.
+    const result = await tx.address.updateMany({
       where: { id: addressId, userId },
       data: addressData,
     });
+    if (result.count === 0) throw new ApiError(404, 'Address not found');
 
     return await tx.address.findMany({ where: { userId } });
   });
 };
 
 const deleteAddress = async (userId, addressId) => {
-  await prisma.address.delete({
+  const result = await prisma.address.deleteMany({
     where: { id: addressId, userId },
   });
+  if (result.count === 0) throw new ApiError(404, 'Address not found');
   return await prisma.address.findMany({ where: { userId } });
 };
 

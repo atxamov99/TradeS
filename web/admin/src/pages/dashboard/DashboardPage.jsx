@@ -2,12 +2,13 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../../store";
 import { useAdminData } from "../../store/adminData";
 import { useI18n } from "../../i18n";
-import { monthlyOrderStats, weeklyUserStats } from "../../constants/mockData";
 import { OrderRevenueChart, UserActivityChart } from "./components/StatsChart";
 import { http } from "../../services/http";
 
-const fallbackWeekly = weeklyUserStats;
-const fallbackMonthly = monthlyOrderStats;
+// No mock fallback — charts start empty and fill with real /admin/stats data,
+// so fake numbers never flash even for a moment or on a failed request.
+const fallbackWeekly = [];
+const fallbackMonthly = [];
 
 const toneRing = {
   info: "ring-blue-100 bg-blue-50",
@@ -38,7 +39,7 @@ const priorityStyle = {
 
 export function DashboardPage() {
   const { profile } = useAuth();
-  const { notificationFeed, recentActivity, products, orders } = useAdminData();
+  const { notificationFeed, recentActivity, products, orders, users } = useAdminData();
   const { t } = useI18n();
 
   const realOrdersCount = orders.length;

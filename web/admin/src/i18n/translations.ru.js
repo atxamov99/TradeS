@@ -92,6 +92,14 @@ export const ru = {
         label: "Права",
         description: "Матрица доступа по модулям"
       },
+      orders: {
+        label: "Заказы",
+        description: "Статус заказа, доставка и возвраты"
+      },
+      products: {
+        label: "Товары",
+        description: "Каталог товаров и контроль запасов"
+      },
       content: {
         label: "Контент",
         description: "Управление контентом и данными"

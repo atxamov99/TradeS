@@ -149,7 +149,17 @@ const getUserById = async (userId) => {
   return stripPassword(user);
 };
 
-const createUserByAdmin = async ({ name, email, password, phone, role }) => {
+// Only a SUPER_ADMIN may grant elevated (ADMIN/SUPER_ADMIN) roles — prevents a
+// plain ADMIN from escalating a user (or themselves via a second account) to admin.
+const resolveAssignableRole = (requestedRole, actorRole) => {
+  const role = (requestedRole || 'USER').toUpperCase();
+  if (role !== 'USER' && actorRole !== 'SUPER_ADMIN') {
+    throw new ApiError(403, 'Only a super admin can assign admin roles');
+  }
+  return role;
+};
+
+const createUserByAdmin = async ({ name, email, password, phone, role }, actorRole) => {
   // Email mavjud bo'lsa, takrorlanishni tekshir
   if (email) {
     const existing = await prisma.user.findUnique({ where: { email } });
@@ -170,6 +180,8 @@ const createUserByAdmin = async ({ name, email, password, phone, role }) => {
     throw new ApiError(400, 'Parol talab qilinadi');
   }
 
+  const assignedRole = resolveAssignableRole(role, actorRole);
+
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -179,21 +191,24 @@ const createUserByAdmin = async ({ name, email, password, phone, role }) => {
       email: email || null,
       password: hashedPassword,
       phone: phone || null,
-      role: role?.toUpperCase() || 'USER',
+      role: assignedRole,
     },
   });
 
   return stripPassword(user);
 };
 
-const updateUserByAdmin = async (userId, data) => {
-  console.log('updateUserByAdmin called with:', { userId, data });
+const updateUserByAdmin = async (userId, data, actorRole) => {
   const { name, email, phone, role, password } = data;
+
+  // A plain ADMIN may not edit a SUPER_ADMIN, nor assign elevated roles (privilege escalation guard)
+  await assertCanActOn(userId, actorRole);
+
   const updateData = {};
   if (name !== undefined) updateData.name = name;
   if (email !== undefined) updateData.email = email;
   if (phone !== undefined) updateData.phone = phone;
-  if (role !== undefined) updateData.role = role;
+  if (role !== undefined) updateData.role = resolveAssignableRole(role, actorRole);
   if (password) {
     const salt = await bcrypt.genSalt(10);
     updateData.password = await bcrypt.hash(password, salt);
@@ -210,10 +225,20 @@ const updateUserByAdmin = async (userId, data) => {
   }
 };
 
-const blockUser = async (userId, adminId) => {
+// A plain ADMIN may not act on a SUPER_ADMIN account — only another SUPER_ADMIN can.
+const assertCanActOn = async (targetId, actorRole) => {
+  const target = await prisma.user.findUnique({ where: { id: targetId }, select: { role: true } });
+  if (!target) throw new ApiError(404, 'User not found');
+  if (target.role === 'SUPER_ADMIN' && actorRole !== 'SUPER_ADMIN') {
+    throw new ApiError(403, 'Only a super admin can perform this action on a super admin');
+  }
+};
+
+const blockUser = async (userId, adminId, actorRole) => {
   if (userId === adminId) {
     throw new ApiError(400, 'You cannot block yourself');
   }
+  await assertCanActOn(userId, actorRole);
   try {
     const user = await prisma.user.update({
       where: { id: userId },
@@ -239,10 +264,11 @@ const unblockUser = async (userId) => {
   }
 };
 
-const deleteUser = async (userId, adminId) => {
+const deleteUser = async (userId, adminId, actorRole) => {
   if (userId === adminId) {
     throw new ApiError(400, 'You cannot delete yourself');
   }
+  await assertCanActOn(userId, actorRole);
   try {
     await prisma.user.delete({ where: { id: userId } });
     return { message: 'User deleted successfully' };

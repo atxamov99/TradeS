@@ -11,11 +11,21 @@ const createOrder = async (userId, { items, shippingAddress, paymentMethod, note
     let itemsPrice = 0;
 
     for (const item of items) {
-      const product = await tx.product.findUnique({ where: { id: item.product } });
+      const product = await tx.product.findUnique({
+        where: { id: item.product },
+        include: { images: true },
+      });
       if (!product || !product.isActive) {
         throw new ApiError(404, `Product ${item.product} not found`);
       }
-      if (product.stock < item.quantity) {
+
+      // Atomic check-and-decrement: guards against overselling under concurrent orders.
+      // updateMany only touches the row if stock is still >= quantity at write time.
+      const decremented = await tx.product.updateMany({
+        where: { id: product.id, stock: { gte: item.quantity } },
+        data: { stock: { decrement: item.quantity } },
+      });
+      if (decremented.count === 0) {
         throw new ApiError(400, `Insufficient stock for "${product.name}"`);
       }
 
@@ -28,12 +38,6 @@ const createOrder = async (userId, { items, shippingAddress, paymentMethod, note
       });
 
       itemsPrice += product.finalPrice * item.quantity;
-
-      // Deduct stock
-      await tx.product.update({
-        where: { id: product.id },
-        data: { stock: { decrement: item.quantity } },
-      });
     }
 
     const shippingPrice = itemsPrice >= SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
@@ -107,7 +111,8 @@ const getOrderById = async (orderId, userId, role) => {
     where.userId = userId;
   }
 
-  const order = await prisma.order.findUnique({
+  // findFirst (not findUnique): non-admin filter adds userId, which isn't a unique key
+  const order = await prisma.order.findFirst({
     where,
     include: {
       user: { select: { name: true, email: true } },

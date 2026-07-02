@@ -27,10 +27,12 @@ export function UsersPage() {
   });
 
   useEffect(() => {
+    // Always mirror the URL: /users → users tab, /users?tab=admins → admins tab.
+    // (Previously, navigating to /users with no param left the tab stuck on "admins",
+    // so switching between the "Foydalanuvchilar" and "Adminlar" sidebar links looked
+    // like nothing changed.)
     const tab = searchParams.get("tab");
-    if (tab === "admins" || tab === "users") {
-      setActiveTab(tab);
-    }
+    setActiveTab(tab === "admins" ? "admins" : "users");
   }, [searchParams]);
 
   function changeTab(tab) {
@@ -128,26 +130,10 @@ export function UsersPage() {
           </button>
         </div>
 
-        {/* Tabs */}
-        <div className="flex border-b border-gray-100 bg-gray-50/50 px-5">
-          {[
-            { id: "users",  label: `Foydalanuvchilar (${regularUsers.length})` },
-            ...(isPrimary ? [{ id: "admins", label: `Adminlar (${allAdmins.length})` }] : [])
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => { changeTab(tab.id); setSearch(""); setRoleFilter("all"); setStatusFilter("all"); }}
-              className={`px-4 py-3 text-sm border-b-2 -mb-px transition-colors ${
-                activeTab === tab.id
-                  ? "border-primary text-primary font-medium"
-                  : "border-transparent text-gray-500 hover:text-gray-800"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        {/* In-page tabs olib tashlandi — Foydalanuvchilar/Adminlar ko'rinishi endi faqat
+            yon menyu (sidebar) orqali boshqariladi. activeTab URL (?tab=admins) bilan
+            aniqlanadi, shuning uchun ikkala ko'rinish ham ishlaydi, lekin chalkash
+            takroriy tab paneli ko'rsatilmaydi. */}
 
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-2 px-5 py-3 bg-gray-50 border-b border-gray-100">

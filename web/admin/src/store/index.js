@@ -96,6 +96,16 @@ export function AuthProvider({ children }) {
         return nextAuth;
       },
 
+      // SSO handoff from the web app: the auth cookie is already set (shared across
+      // localhost ports), so we just hydrate the profile into React state — same path
+      // as a normal login, avoiding the full-reload race that cleared localStorage.
+      ssoLogin: (userLike) => {
+        const profile = buildProfile(userLike);
+        const nextAuth = { token: "cookie-managed", profile };
+        setAuth(nextAuth);
+        return nextAuth;
+      },
+
       updateProfile: (changes) =>
         setAuth((curr) =>
           curr ? { ...curr, profile: { ...curr.profile, ...changes } } : curr

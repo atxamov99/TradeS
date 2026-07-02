@@ -95,6 +95,14 @@ export const uz = {
         label: "Ruxsatlar",
         description: "Modullar bo'yicha access matrix"
       },
+      orders: {
+        label: "Buyurtmalar",
+        description: "Buyurtma holati, yetkazib berish va qaytish"
+      },
+      products: {
+        label: "Mahsulotlar",
+        description: "Mahsulot katalogi va inventar nazorati"
+      },
       content: {
         label: "Kontent",
         description: "Kontent va ma'lumot boshqaruvi"

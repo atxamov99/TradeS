@@ -51,7 +51,8 @@ const processSyncBatch = async (userId, operations) => {
 
         else if (operation === 'update') {
           const pId = payload.serverId || entityId;
-          const product = await prisma.product.findUnique({ where: { id: pId } });
+          // Scope by createdById — a device may only sync-update its own products (prevents IDOR)
+          const product = await prisma.product.findFirst({ where: { id: pId, createdById: userId } });
           if (product) {
             const clientTime = clientUpdatedAt ? new Date(clientUpdatedAt) : new Date(0);
             const serverTime = product.updatedAt;
@@ -79,8 +80,9 @@ const processSyncBatch = async (userId, operations) => {
 
         else if (operation === 'delete') {
           const pId = payload.serverId || entityId;
-          await prisma.product.update({
-            where: { id: pId },
+          // Scope by createdById — only soft-delete products this device owns (prevents IDOR)
+          await prisma.product.updateMany({
+            where: { id: pId, createdById: userId },
             data: { isActive: false },
           });
         }
@@ -165,10 +167,12 @@ const pullData = async (userId, lastSyncAt) => {
 
   const [products, sales] = await Promise.all([
     prisma.product.findMany({
+      // Scope to this device's own products — never leak other users' catalog (prevents cross-tenant data leak).
+      // reviews relation is simply not included (Prisma `omit` only works on scalar fields, not relations).
       where: {
+        createdById: userId,
         updatedAt: { gt: since },
       },
-      omit: { reviews: true },
     }),
     prisma.sale.findMany({
       where: {

@@ -21,9 +21,12 @@ exports.askAI = async (req, res) => {
             return res.status(500).json({ success: false, message: "AI API key is missing" });
         }
 
-        // Fetch context data using Prisma
-        const products = await prisma.product.findMany({ take: 20 });
+        // Fetch context data using Prisma — scoped to the requesting user so one
+        // user's catalog/sales are never exposed to another user's AI query (and never
+        // sent to Gemini as someone else's data).
+        const products = await prisma.product.findMany({ where: { ownerId: req.user.id }, take: 20 });
         const recentSales = await prisma.sale.findMany({
+            where: { userId: req.user.id },
             orderBy: { createdAt: 'desc' },
             take: 10
         });

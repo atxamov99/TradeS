@@ -14,6 +14,16 @@ const createSale = async (userId, saleData) => {
   const sp = Number(sellPrice) || 0;
   const bp = Number(buyPrice) || 0;
 
+  // If a productId is given, it must belong to this user — prevents decrementing
+  // another owner's stock via a forged productId (IDOR).
+  if (productId) {
+    const owned = await prisma.product.findFirst({
+      where: { id: productId, ownerId: userId },
+      select: { id: true },
+    });
+    if (!owned) throw new ApiError(404, `Product ${productId} not found`);
+  }
+
   // Use transaction to ensure both sale creation and stock deduction succeed
   return await prisma.$transaction(async (tx) => {
     // Allow stock to go negative to support offline sales and avoid sync failures

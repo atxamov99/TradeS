@@ -21,17 +21,17 @@ const getUserById = asyncHandler(async (req, res) => {
 });
 
 const createUserByAdmin = asyncHandler(async (req, res) => {
-  const user = await adminService.createUserByAdmin(req.body);
+  const user = await adminService.createUserByAdmin(req.body, req.user.role);
   res.status(201).json(new ApiResponse(201, user, 'User created'));
 });
 
 const updateUserByAdmin = asyncHandler(async (req, res) => {
-  const user = await adminService.updateUserByAdmin(req.params.id, req.body);
+  const user = await adminService.updateUserByAdmin(req.params.id, req.body, req.user.role);
   res.status(200).json(new ApiResponse(200, user, 'User updated'));
 });
 
 const blockUser = asyncHandler(async (req, res) => {
-  const user = await adminService.blockUser(req.params.id, req.user.id);
+  const user = await adminService.blockUser(req.params.id, req.user.id, req.user.role);
   res.status(200).json(new ApiResponse(200, { user }, 'User blocked'));
 });
 
@@ -41,7 +41,7 @@ const unblockUser = asyncHandler(async (req, res) => {
 });
 
 const deleteUser = asyncHandler(async (req, res) => {
-  const result = await adminService.deleteUser(req.params.id, req.user.id);
+  const result = await adminService.deleteUser(req.params.id, req.user.id, req.user.role);
   res.status(200).json(new ApiResponse(200, result, result.message));
 });
 

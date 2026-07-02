@@ -6,6 +6,9 @@ import { monthlyOrderStats, weeklyUserStats } from "../../constants/mockData";
 import { OrderRevenueChart, UserActivityChart } from "./components/StatsChart";
 import { http } from "../../services/http";
 
+const fallbackWeekly = weeklyUserStats;
+const fallbackMonthly = monthlyOrderStats;
+
 const toneRing = {
   info: "ring-blue-100 bg-blue-50",
   success: "ring-green-100 bg-green-50",
@@ -35,7 +38,7 @@ const priorityStyle = {
 
 export function DashboardPage() {
   const { profile } = useAuth();
-  const { users, admins, auditLogs, notificationFeed, recentActivity, products, orders } = useAdminData();
+  const { notificationFeed, recentActivity, products, orders } = useAdminData();
   const { t } = useI18n();
 
   const realOrdersCount = orders.length;
@@ -43,30 +46,35 @@ export function DashboardPage() {
     .filter(o => o.paymentStatus === "paid")
     .reduce((sum, o) => sum + (Number(o.totalPrice) || 0), 0);
 
-  const [weeklyData, setWeeklyData] = useState(weeklyUserStats);
-  const [monthlyData, setMonthlyData] = useState(monthlyOrderStats);
+  const [weeklyData, setWeeklyData] = useState(fallbackWeekly);
+  const [monthlyData, setMonthlyData] = useState(fallbackMonthly);
   const [dashboardStats, setDashboardStats] = useState({
     totalUsers: users.length,
     totalProducts: products.length,
     totalOrders: realOrdersCount,
     totalRevenue: realRevenue
   });
+  const [statsSource, setStatsSource] = useState("local");
 
   useEffect(() => {
+    let cancelled = false;
     function fetchStats() {
       http.get("/admin/stats")
         .then((res) => {
+          if (cancelled) return;
           const data = res?.data?.data || res?.data;
           if (data?.weeklyUsers?.length) setWeeklyData(data.weeklyUsers);
           if (data?.monthlyOrders?.length) setMonthlyData(data.monthlyOrders);
           setDashboardStats({
-            totalUsers: data?.totalUsers || users.length,
-            totalProducts: data?.totalProducts || products.length,
+            totalUsers: data?.totalUsers ?? users.length,
+            totalProducts: data?.totalProducts ?? products.length,
             totalOrders: data?.totalOrders !== undefined ? data.totalOrders : realOrdersCount,
             totalRevenue: data?.totalRevenue !== undefined ? data.totalRevenue : realRevenue
           });
+          setStatsSource("live");
         })
         .catch((err) => {
+          if (cancelled) return;
           console.error("Dashboard stats fetch failed:", err);
           setDashboardStats({
             totalUsers: users.length,
@@ -74,13 +82,17 @@ export function DashboardPage() {
             totalOrders: realOrdersCount,
             totalRevenue: realRevenue
           });
+          setStatsSource("local");
         });
     }
-    
+
     fetchStats();
     const interval = setInterval(fetchStats, 30000);
-    return () => clearInterval(interval);
-  }, []);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [users.length, products.length, realOrdersCount, realRevenue]);
 
   const stats = [
     {

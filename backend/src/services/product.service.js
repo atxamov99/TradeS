@@ -2,12 +2,17 @@ const prisma = require('../config/prisma');
 const ApiError = require('../utils/ApiError');
 const slugify = require('slugify');
 
-const getProducts = async (userId, queryParams = {}) => {
+const getProducts = async (userId, queryParams = {}, options = {}) => {
   const { search, page = 1, limit = 50, sortBy = 'createdAt', order = 'desc' } = queryParams;
+  const { isAdmin = false } = options;
 
   const where = {};
   if (search) {
     where.name = { contains: search, mode: 'insensitive' };
+  }
+  // Faqat oddiy userlar uchun ownerId filter
+  if (!isAdmin && userId) {
+    where.ownerId = userId;
   }
 
   const skip = (Number(page) - 1) * Number(limit);
@@ -20,13 +25,9 @@ const getProducts = async (userId, queryParams = {}) => {
       orderBy: { [sortField]: order },
       skip,
       take,
-      omit: { reviews: true }, // Prisma 5.10+ or just use select
     }),
     prisma.product.count({ where }),
   ]);
-
-  // Note: 'omit' might not be available in all versions, using select instead if needed
-  // But for now, let's just use findMany and handle the return
 
   return {
     products,
@@ -37,8 +38,12 @@ const getProducts = async (userId, queryParams = {}) => {
   };
 };
 
-const getProductById = async (id, userId) => {
+const getProductById = async (id, userId, options = {}) => {
+  const { isAdmin = false } = options;
   const where = { id };
+  if (!isAdmin && userId) {
+    where.ownerId = userId;
+  }
 
   const product = await prisma.product.findFirst({
     where,
@@ -67,8 +72,14 @@ const createProduct = async (productData, userId) => {
   return product;
 };
 
-const updateProduct = async (id, userId, updateData) => {
-  const product = await prisma.product.findFirst({ where: { id, ownerId: userId } });
+const updateProduct = async (id, userId, updateData, options = {}) => {
+  const { isAdmin = false } = options;
+  const where = { id };
+  if (!isAdmin && userId) {
+    where.ownerId = userId;
+  }
+
+  const product = await prisma.product.findFirst({ where });
   if (!product) throw new ApiError(404, 'Product not found');
 
   let { name, price, discount } = updateData;
@@ -92,8 +103,14 @@ const updateProduct = async (id, userId, updateData) => {
   return updatedProduct;
 };
 
-const deleteProduct = async (id, userId) => {
-  const product = await prisma.product.findFirst({ where: { id, ownerId: userId } });
+const deleteProduct = async (id, userId, options = {}) => {
+  const { isAdmin = false } = options;
+  const where = { id };
+  if (!isAdmin && userId) {
+    where.ownerId = userId;
+  }
+
+  const product = await prisma.product.findFirst({ where });
   if (!product) throw new ApiError(404, 'Product not found');
 
   try {
@@ -137,9 +154,14 @@ const addReview = async (productId, userId, userName, { rating, comment }) => {
   return review;
 };
 
-const getCategories = async (userId) => {
+const getCategories = async (userId, options = {}) => {
+  const { isAdmin = false } = options;
+  const where = {};
+  if (!isAdmin && userId) {
+    where.ownerId = userId;
+  }
   const products = await prisma.product.findMany({
-    where: { ownerId: userId },
+    where,
     select: { category: true },
     distinct: ['category'],
   });

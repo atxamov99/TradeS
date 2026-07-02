@@ -368,7 +368,9 @@ export const ru = {
       "Рабочий скелет для диапазона дат, метрик и действий экспорта.",
     overview: "Обзор",
     adminActivity: "Активность админов",
-    security: "Безопасность"
+    security: "Безопасность",
+    chartPlaceholder: "График скоро появится",
+    chartPlaceholderDescription: "Подключите данные по выбранному диапазону"
   },
   audit: {
     pageTitle: "Аудит-логи",

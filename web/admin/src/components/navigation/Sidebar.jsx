@@ -1,5 +1,4 @@
 import { NavLink } from "react-router-dom";
-import { appConfig } from "../../config/appConfig";
 import { getMenuForProfile } from "../../constants/menu";
 import { useAuth } from "../../store";
 import { useI18n } from "../../i18n";
@@ -11,9 +10,9 @@ const icons = {
   key:      "🔑",
   document: "📄",
   chart:    "📊",
-  shield:   "🛡",
-  cog:      "⚙",
-  user:     "👤"
+  orders:   "🛒",
+  products: "📦",
+  cog:      "⚙"
 };
 
 export function Sidebar({ open, onClose }) {

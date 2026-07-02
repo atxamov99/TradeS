@@ -2,11 +2,11 @@
 const sidebarMenu = [
   { key: "dashboard", path: "/dashboard", icon: "home",     label: "Dashboard",      desc: "Umumiy ko'rinish" },
   { key: "users",     path: "/users",     icon: "users",    label: "Foydalanuvchilar", desc: "Boshqarish va filtr" },
+  { key: "orders",    path: "/orders",    icon: "orders",   label: "Buyurtmalar",     desc: "Barcha xaridlar" },
+  { key: "products",  path: "/products",  icon: "products", label: "Mahsulotlar",     desc: "Katalog va ombor" },
   { key: "content",   path: "/content",   icon: "document", label: "Kontent",         desc: "Sahifalar va media" },
   { key: "reports",   path: "/reports",   icon: "chart",    label: "Hisobotlar",      desc: "Statistika" },
-  { key: "auditLogs", path: "/audit-logs",icon: "shield",   label: "Audit logi",      desc: "Barcha harakatlar" },
-  { key: "settings",  path: "/settings",  icon: "cog",      label: "Sozlamalar",      desc: "Profil va xavfsizlik" },
-  { key: "profile",   path: "/profile",   icon: "user",     label: "Profil",          desc: "Mening akkauntim" }
+  { key: "settings",  path: "/settings",  icon: "cog",      label: "Sozlamalar",      desc: "Profil va xavfsizlik" }
 ];
 
 // Admins page — only shown to isPrimary admin

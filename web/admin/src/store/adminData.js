@@ -8,9 +8,6 @@ import {
   useState
 } from "react";
 import {
-  admins as initialAdmins,
-  auditLogs as initialAuditLogs,
-  contentRows as initialContentRows,
   permissionMatrix as initialPermissionMatrix,
   roles as initialRoles
 } from "../constants/mockData";
@@ -93,7 +90,7 @@ export function AdminDataProvider({ children }) {
     async function load() {
       try {
         const [usersRes, productsRes, adminsRes, auditRes, contentRes, ordersRes] = await Promise.allSettled([
-          usersApi.getAll({ limit: 100, role: "USER" }),
+          usersApi.getAll({ limit: 100 }),
           productsApi.getAll({ limit: 100 }),
           adminsApi.getAll(),
           auditLogsApi.getAll({ limit: 10 }),
@@ -129,7 +126,7 @@ export function AdminDataProvider({ children }) {
           })));
         }
         if (contentRes.status === "fulfilled") {
-          const rawContent = contentRes.value?.data?.contents || contentRes.value?.data || [];
+          const rawContent = contentRes.value?.data?.content || contentRes.value?.data?.contents || contentRes.value?.data || [];
           setContentRows(Array.isArray(rawContent) ? rawContent.map(c => ({
             id: c.id,
             name: c.name || "",
@@ -153,7 +150,8 @@ export function AdminDataProvider({ children }) {
           if (newUsersCount > 0) {
             notifications.push({
               id: "n1",
-              title: "Yangi foydalanuvchilar",
+              titleKey: "dashboard.notificationFeed.newUsers",
+              detailKey: "dashboard.notificationFeed.newUsersDetail",
               detail: `Bu hafta ${newUsersCount} ta yangi registratsiya`,
               priority: "medium"
             });
@@ -162,7 +160,8 @@ export function AdminDataProvider({ children }) {
           if (blockedUsersCount > 0) {
             notifications.push({
               id: "n2",
-              title: "Bloklangan akkauntlar",
+              titleKey: "dashboard.notificationFeed.blockedAccounts",
+              detailKey: "dashboard.notificationFeed.blockedAccountsDetail",
               detail: `${blockedUsersCount} ta akkaunt faol emas`,
               priority: "high"
             });
@@ -271,8 +270,17 @@ export function AdminDataProvider({ children }) {
     const user = users.find((u) => u.id === userId);
     if (!user) return;
     try {
-      await usersApi.update(userId, { role: "ADMIN" });
-      setUsers((curr) => curr.filter(u => u.id !== userId)); // Remove from users list (as it's only for USERs now)
+      const res = await usersApi.update(userId, { role: "ADMIN" });
+      const updated = normalizeUser(res?.data?.user || res?.data || { ...user, role: "admin" });
+      // Users dan olib tashlash va admins ga qo'shish
+      setUsers((curr) => curr.filter(u => u.id !== userId));
+      setAdmins((curr) => {
+        const exists = curr.find(a => a.id === userId);
+        if (exists) {
+          return curr.map(a => a.id === userId ? { ...a, ...updated, isAdmin: true } : a);
+        }
+        return [{ ...updated, isAdmin: true }, ...curr];
+      });
       logAudit("Admin huquqi berildi", user.name, "admin", "success");
       pushToast(`${user.name} ga admin huquqi berildi`);
     } catch (err) {
@@ -281,11 +289,20 @@ export function AdminDataProvider({ children }) {
   }
 
   async function revokeAdminFromUser(userId) {
-    const adminUser = admins.find((u) => u.id === userId);
+    const adminUser = admins.find((u) => u.id === userId) || users.find((u) => u.id === userId);
     if (!adminUser) return;
     try {
-      await usersApi.update(userId, { role: "USER" });
+      const res = await usersApi.update(userId, { role: "USER" });
+      const updated = normalizeUser(res?.data?.user || res?.data || { ...adminUser, role: "user" });
+      // Admins dan olib tashlash va users ga qo'shish
       setAdmins((curr) => curr.filter((a) => a.id !== userId));
+      setUsers((curr) => {
+        const exists = curr.find(u => u.id === userId);
+        if (exists) {
+          return curr.map(u => u.id === userId ? { ...u, ...updated, isAdmin: false } : u);
+        }
+        return [{ ...updated, isAdmin: false }, ...curr];
+      });
       logAudit("Admin huquqi olindi", adminUser.name, "admin", "warning");
       pushToast(`${adminUser.name} dan admin huquqi olindi`, "warning");
     } catch (err) {

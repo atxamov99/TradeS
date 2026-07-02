@@ -81,12 +81,12 @@ export function UserDetailPage() {
         <div className="timeline">
           {userActivity.length ? (
             userActivity.map((item) => (
-              <div className="timeline-item" key={`${item.actionKey}-${item.timestamp}`}>
+              <div className="timeline-item" key={`${item.id || item.action}-${item.timestamp || item.createdAt}`}>
                 <span className="timeline-dot info" />
                 <div>
-                  <strong>{t(item.actionKey)}</strong>
+                  <strong>{item.action || t("audit.title")}</strong>
                   <p className="muted-text">
-                    {item.actor} | {item.timestamp}
+                    {item.actor || "—"} | {item.timestamp || (item.createdAt ? new Date(item.createdAt).toLocaleString("uz-UZ") : "—")}
                   </p>
                 </div>
               </div>

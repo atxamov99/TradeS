@@ -2,13 +2,15 @@ const productService = require('../services/product.service');
 const asyncHandler = require('../utils/asyncHandler');
 const ApiResponse = require('../utils/ApiResponse');
 
+const isAdmin = (req) => ['ADMIN', 'SUPER_ADMIN'].includes(req.user.role);
+
 const getProducts = asyncHandler(async (req, res) => {
-  const result = await productService.getProducts(req.user.id, req.query);
+  const result = await productService.getProducts(req.user.id, req.query, { isAdmin: isAdmin(req) });
   res.status(200).json(new ApiResponse(200, result, 'Products retrieved'));
 });
 
 const getProductById = asyncHandler(async (req, res) => {
-  const product = await productService.getProductById(req.params.id, req.user.id);
+  const product = await productService.getProductById(req.params.id, req.user.id, { isAdmin: isAdmin(req) });
   res.status(200).json(new ApiResponse(200, { product }, 'Product retrieved'));
 });
 
@@ -18,12 +20,12 @@ const createProduct = asyncHandler(async (req, res) => {
 });
 
 const updateProduct = asyncHandler(async (req, res) => {
-  const product = await productService.updateProduct(req.params.id, req.user.id, req.body);
+  const product = await productService.updateProduct(req.params.id, req.user.id, req.body, { isAdmin: isAdmin(req) });
   res.status(200).json(new ApiResponse(200, { product }, 'Product updated'));
 });
 
 const deleteProduct = asyncHandler(async (req, res) => {
-  const result = await productService.deleteProduct(req.params.id, req.user.id);
+  const result = await productService.deleteProduct(req.params.id, req.user.id, { isAdmin: isAdmin(req) });
   res.status(200).json(new ApiResponse(200, result, result.message));
 });
 
@@ -38,7 +40,7 @@ const addReview = asyncHandler(async (req, res) => {
 });
 
 const getCategories = asyncHandler(async (req, res) => {
-  const categories = await productService.getCategories(req.user.id);
+  const categories = await productService.getCategories(req.user.id, { isAdmin: isAdmin(req) });
   res.status(200).json(new ApiResponse(200, { categories }, 'Categories retrieved'));
 });
 

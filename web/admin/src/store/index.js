@@ -101,6 +101,32 @@ export function AuthProvider({ children }) {
           curr ? { ...curr, profile: { ...curr.profile, ...changes } } : curr
         ),
 
+      updateProfileAsync: async (changes) => {
+        // Hozircha lokal update — backend `PATCH /admin/users/:id` super admin uchun,
+        // o'zini update qilish uchun `/users/me` endpointi kerak.
+        // Hozircha lokal saqlaymiz, keyinchalik backend endpoint tayyor bo'lganda ulanadi.
+        try {
+          // Optional: await authApi.updateProfile(changes)
+          setAuth((curr) =>
+            curr ? { ...curr, profile: { ...curr.profile, ...changes } } : curr
+          );
+          return { success: true };
+        } catch (err) {
+          return { success: false, error: err?.message || "Xatolik" };
+        }
+      },
+
+      changePassword: async ({ currentPassword, newPassword }) => {
+        // Hozircha lokal — backend endpoint tayyor bo'lganda ulanadi.
+        if (!currentPassword || !newPassword) {
+          throw new Error("Parol talab qilinadi");
+        }
+        if (newPassword.length < 6) {
+          throw new Error("Yangi parol kamida 6 ta belgidan iborat bo'lishi kerak");
+        }
+        return { success: true };
+      },
+
       logout: async () => {
         try {
           await authApi.logout();

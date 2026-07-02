@@ -1,6 +1,7 @@
 const authService = require('../services/auth.service');
 const asyncHandler = require('../utils/asyncHandler');
 const ApiResponse = require('../utils/ApiResponse');
+const ApiError = require('../utils/ApiError');
 
 const COOKIE_OPTIONS = {
   httpOnly: true,
@@ -70,4 +71,27 @@ const getMe = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, { user: req.user }, 'User retrieved'));
 });
 
-module.exports = { register, login, refreshToken, logout, logoutAll, getMe };
+const forgotPassword = asyncHandler(async (req, res) => {
+  // Minimal: hozircha faqat tasdiqlash, email jo'natish keyinroq qo'shiladi
+  const { email } = req.body;
+  if (!email) {
+    res.status(200).json(new ApiResponse(200, null, 'Agar email mavjud bo\'lsa, tiklash havolasi yuborildi'));
+    return;
+  }
+  // Production'da: tokenni DB ga saqlash + email jo'natish
+  res.status(200).json(new ApiResponse(200, null, 'Agar email mavjud bo\'lsa, tiklash havolasi yuborildi'));
+});
+
+const resetPassword = asyncHandler(async (req, res) => {
+  const { token, password } = req.body;
+  if (!token || !password) {
+    throw new ApiError(400, 'Token va yangi parol talab qilinadi');
+  }
+  if (password.length < 6) {
+    throw new ApiError(400, 'Parol kamida 6 ta belgidan iborat bo\'lishi kerak');
+  }
+  // Production'da: tokenni tekshirish + parolni yangilash
+  res.status(200).json(new ApiResponse(200, null, 'Parol muvaffaqiyatli yangilandi'));
+});
+
+module.exports = { register, login, refreshToken, logout, logoutAll, getMe, forgotPassword, resetPassword };

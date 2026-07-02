@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Modal } from "../../components/shared/Modal";
 import { useAdminData } from "../../store/adminData";
+import { useAuth } from "../../store";
 import { useI18n } from "../../i18n";
 
 const statusStyle = {
@@ -13,20 +14,40 @@ const empty = { name: "", type: "landing_page", status: "draft", owner: "" };
 
 export function ContentPage() {
   const { contentRows, createContent, updateContentStatus, deleteContent } = useAdminData();
+  const { profile } = useAuth();
   const { t } = useI18n();
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState(empty);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [submitting, setSubmitting] = useState(false);
+
+  const filtered = useMemo(() => {
+    return contentRows.filter((row) => {
+      const q = search.toLowerCase();
+      const matchSearch = !q || [row.name, row.owner].join(" ").toLowerCase().includes(q);
+      const matchStatus = statusFilter === "all" || row.status === statusFilter;
+      const matchType = typeFilter === "all" || row.type === typeFilter;
+      return matchSearch && matchStatus && matchType;
+    });
+  }, [contentRows, search, statusFilter, typeFilter]);
 
   function closeModal() {
     setModalOpen(false);
     setForm(empty);
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    createContent(form);
-    closeModal();
+    setSubmitting(true);
+    try {
+      await createContent({ ...form, owner: form.owner || profile?.name || "Admin" });
+      closeModal();
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -46,6 +67,36 @@ export function ContentPage() {
           </button>
         </div>
 
+        <div className="flex flex-wrap items-center gap-2 px-5 py-3 bg-gray-50 border-b border-gray-100">
+          <input
+            type="search"
+            placeholder="Kontent qidirish..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="flex-1 min-w-[160px] px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white"
+          />
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            className="px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-primary/20 bg-white"
+          >
+            <option value="all">Barcha turlar</option>
+            <option value="landing_page">{t("labels.contentTypes.landing_page")}</option>
+            <option value="knowledge_base">{t("labels.contentTypes.knowledge_base")}</option>
+            <option value="media_asset">{t("labels.contentTypes.media_asset")}</option>
+          </select>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-primary/20 bg-white"
+          >
+            <option value="all">Barcha statuslar</option>
+            <option value="draft">{t("labels.statuses.draft")}</option>
+            <option value="published">{t("labels.statuses.published")}</option>
+            <option value="archived">{t("labels.statuses.archived")}</option>
+          </select>
+        </div>
+
         <div className="table-scroll">
           <table className="w-full text-sm">
             <thead>
@@ -58,7 +109,7 @@ export function ContentPage() {
               </tr>
             </thead>
             <tbody>
-              {contentRows.map((row) => (
+              {filtered.map((row) => (
                 <tr key={row.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
                   <td className="px-4 py-3 font-medium text-gray-800">{row.name}</td>
                   <td className="px-4 py-3">
@@ -107,7 +158,7 @@ export function ContentPage() {
             </tbody>
           </table>
 
-          {!contentRows.length && (
+          {!filtered.length && (
             <div className="py-16 text-center">
               <p className="text-gray-400 text-sm">{t("content.noContent")}</p>
             </div>
@@ -115,7 +166,7 @@ export function ContentPage() {
         </div>
 
         <div className="px-5 py-3 border-t border-gray-100 text-xs text-gray-400">
-          {contentRows.length} {t("content.pageTitle").toLowerCase()}
+          {filtered.length} / {contentRows.length} {t("content.pageTitle").toLowerCase()}
         </div>
       </div>
 
@@ -128,8 +179,8 @@ export function ContentPage() {
             <button type="button" onClick={closeModal} className="px-4 py-2 text-sm border border-gray-200 rounded-xl hover:bg-gray-50">
               {t("common.cancel")}
             </button>
-            <button type="submit" form="content-form" className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-xl hover:bg-primary-dark">
-              {t("common.create")}
+            <button type="submit" form="content-form" disabled={submitting} className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-xl hover:bg-primary-dark disabled:opacity-60">
+              {submitting ? "Saqlanmoqda..." : t("common.create")}
             </button>
           </>
         }

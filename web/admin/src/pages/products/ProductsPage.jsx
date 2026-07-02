@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Modal } from "../../components/shared/Modal";
 import { usePageTitle } from "../../hooks/usePageTitle";
 import { useAdminData } from "../../store/adminData";
+import { useI18n } from "../../i18n";
 
 const emptyProduct = { name: "", category: "", price: "", stock: "", sku: "" };
 
@@ -15,7 +16,8 @@ function formatPrice(p) {
 }
 
 export function ProductsPage() {
-  usePageTitle("Mahsulotlar");
+  const { t } = useI18n();
+  usePageTitle(t("products.title", {}, "Mahsulotlar"));
   const { products, createProduct, updateProduct, deleteProduct, toggleProductStatus } = useAdminData();
 
   const [search, setSearch] = useState("");
@@ -24,6 +26,7 @@ export function ProductsPage() {
   const [editTarget, setEditTarget] = useState(null);
   const [form, setForm] = useState(emptyProduct);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const filtered = products.filter((p) => {
     const matchSearch = !search ||
@@ -52,15 +55,20 @@ export function ProductsPage() {
     setForm(emptyProduct);
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    const payload = { ...form, price: Number(form.price), stock: Number(form.stock) };
-    if (editTarget) {
-      updateProduct(editTarget.id, payload);
-    } else {
-      createProduct(payload);
+    setSubmitting(true);
+    try {
+      const payload = { ...form, price: Number(form.price), stock: Number(form.stock) };
+      if (editTarget) {
+        await updateProduct(editTarget.id, payload);
+      } else {
+        await createProduct(payload);
+      }
+      closeModal();
+    } finally {
+      setSubmitting(false);
     }
-    closeModal();
   }
 
   function handleChange(e) {
@@ -74,15 +82,15 @@ export function ProductsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-4 border-b border-white/10">
           <div>
-            <h2 className="font-semibold text-white">Mahsulotlar ({filtered.length})</h2>
-            <p className="text-xs text-white/60 mt-0.5">Mahsulotlar katalogi va ombor boshqaruvi</p>
+            <h2 className="font-semibold text-white">{t("products.title", {}, "Mahsulotlar")} ({filtered.length})</h2>
+            <p className="text-xs text-white/60 mt-0.5">{t("products.description", {}, "Mahsulotlar katalogi va ombor boshqaruvi")}</p>
           </div>
           <button
             type="button"
             onClick={openCreate}
             className="px-4 py-2 bg-primary hover:bg-primary-dark text-white text-sm font-medium rounded-xl transition-colors shrink-0"
           >
-            + Mahsulot qo'shish
+            + {t("products.createProduct", {}, "Mahsulot qo'shish")}
           </button>
         </div>
 
@@ -90,7 +98,7 @@ export function ProductsPage() {
         <div className="flex flex-wrap gap-2 px-5 py-3 border-b border-white/10">
           <input
             type="text"
-            placeholder="Nom, SKU yoki kategoriya..."
+            placeholder={t("products.searchPlaceholder", {}, "Nom, SKU yoki kategoriya...")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="flex-1 min-w-[180px] px-3 py-1.5 text-sm border border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-primary/20 bg-white/10 text-white placeholder-white/30"
@@ -100,9 +108,9 @@ export function ProductsPage() {
             onChange={(e) => setStatusFilter(e.target.value)}
             className="px-3 py-1.5 text-sm border border-white/10 rounded-lg bg-white/10 text-white outline-none"
           >
-            <option value="all">Barcha holat</option>
-            <option value="active">Aktiv</option>
-            <option value="inactive">Nofaol</option>
+            <option value="all">{t("products.allStatuses", {}, "Barcha holat")}</option>
+            <option value="active">{t("labels.statuses.active", {}, "Aktiv")}</option>
+            <option value="inactive">{t("labels.statuses.inactive", {}, "Nofaol")}</option>
           </select>
         </div>
 
@@ -111,7 +119,8 @@ export function ProductsPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-white/10">
-                {["Mahsulot", "SKU", "Kategoriya", "Narx", "Qoldiq", "Holat", "Amallar"].map((h) => (
+                {[t("products.product", {}, "Mahsulot"), t("products.sku", {}, "SKU"), t("products.category", {}, "Kategoriya"),
+                 t("products.price", {}, "Narx"), t("products.stock", {}, "Qoldiq"), t("common.status"), t("common.actions")].map((h) => (
                   <th key={h} className="text-left px-5 py-3 text-xs font-medium text-white/50 uppercase tracking-wide whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -120,7 +129,7 @@ export function ProductsPage() {
               {filtered.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-5 py-10 text-center text-white/40 text-sm">
-                    Mahsulot topilmadi
+                    {t("products.noProducts", {}, "Mahsulot topilmadi")}
                   </td>
                 </tr>
               ) : (
@@ -140,7 +149,7 @@ export function ProductsPage() {
                     </td>
                     <td className="px-5 py-3">
                       <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_STYLES[p.status] || "bg-gray-100 text-gray-600"}`}>
-                        {p.status === "active" ? "Aktiv" : "Nofaol"}
+                        {p.status === "active" ? t("labels.statuses.active", {}, "Aktiv") : t("labels.statuses.inactive", {}, "Nofaol")}
                       </span>
                     </td>
                     <td className="px-5 py-3">
@@ -150,21 +159,21 @@ export function ProductsPage() {
                           onClick={() => openEdit(p)}
                           className="text-xs text-primary hover:underline"
                         >
-                          Tahrirlash
+                          {t("common.edit")}
                         </button>
                         <button
                           type="button"
                           onClick={() => toggleProductStatus(p.id)}
                           className="text-xs text-white/50 hover:text-white/80"
                         >
-                          {p.status === "active" ? "Nofaol qilish" : "Yoqish"}
+                          {p.status === "active" ? t("products.deactivate", {}, "Nofaol qilish") : t("products.activate", {}, "Yoqish")}
                         </button>
                         <button
                           type="button"
                           onClick={() => setDeleteTarget(p)}
                           className="text-xs text-red-400 hover:text-red-300"
                         >
-                          O'chirish
+                          {t("common.delete")}
                         </button>
                       </div>
                     </td>
@@ -179,26 +188,30 @@ export function ProductsPage() {
       {/* Create / Edit modal */}
       <Modal
         open={modalOpen}
-        title={editTarget ? "Mahsulotni tahrirlash" : "Yangi mahsulot"}
-        description="Mahsulot ma'lumotlarini kiriting"
+        title={editTarget ? t("products.editProduct", {}, "Mahsulotni tahrirlash") : t("products.newProduct", {}, "Yangi mahsulot")}
+        description={t("products.formDescription", {}, "Mahsulot ma'lumotlarini kiriting")}
         onClose={closeModal}
         footer={
           <>
-            <button type="button" className="secondary-button" onClick={closeModal}>Bekor qilish</button>
-            <button type="submit" form="product-form">{editTarget ? "Saqlash" : "Qo'shish"}</button>
+            <button type="button" className="px-4 py-2 text-sm border border-gray-200 rounded-xl hover:bg-gray-50" onClick={closeModal}>
+              {t("common.cancel")}
+            </button>
+            <button type="submit" form="product-form" disabled={submitting} className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-xl hover:bg-primary-dark disabled:opacity-60">
+              {submitting ? t("common.saving", {}, "Saqlanmoqda...") : (editTarget ? t("common.save") : t("common.add", {}, "Qo'shish"))}
+            </button>
           </>
         }
       >
-        <form id="product-form" className="settings-form" onSubmit={handleSubmit}>
+        <form id="product-form" className="space-y-3" onSubmit={handleSubmit}>
           {[
-            { l: "Mahsulot nomi", n: "name", t: "text", r: true },
-            { l: "Kategoriya", n: "category", t: "text", r: true },
-            { l: "SKU", n: "sku", t: "text", r: false },
-            { l: "Narx (so'm)", n: "price", t: "number", r: true },
-            { l: "Ombor qoldig'i", n: "stock", t: "number", r: true }
+            { l: t("products.name", {}, "Mahsulot nomi"), n: "name", t: "text", r: true },
+            { l: t("products.category", {}, "Kategoriya"), n: "category", t: "text", r: true },
+            { l: t("products.sku", {}, "SKU"), n: "sku", t: "text", r: false },
+            { l: t("products.priceUzs", {}, "Narx (so'm)"), n: "price", t: "number", r: true },
+            { l: t("products.stockCount", {}, "Ombor qoldig'i"), n: "stock", t: "number", r: true }
           ].map((f) => (
-            <label key={f.n}>
-              {f.l}
+            <div key={f.n}>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{f.l}</label>
               <input
                 name={f.n}
                 type={f.t}
@@ -206,8 +219,9 @@ export function ProductsPage() {
                 onChange={handleChange}
                 required={f.r}
                 min={f.t === "number" ? 0 : undefined}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
               />
-            </label>
+            </div>
           ))}
         </form>
       </Modal>
@@ -215,23 +229,25 @@ export function ProductsPage() {
       {/* Delete confirm modal */}
       <Modal
         open={!!deleteTarget}
-        title="Mahsulotni o'chirish"
-        description={`"${deleteTarget?.name}" mahsulotini o'chirishni tasdiqlaysizmi?`}
+        title={t("products.deleteTitle", {}, "Mahsulotni o'chirish")}
+        description={deleteTarget ? `"${deleteTarget.name}" ${t("products.deleteDescription", {}, "mahsulotini o'chirishni tasdiqlaysizmi?")}` : ""}
         onClose={() => setDeleteTarget(null)}
         footer={
           <>
-            <button type="button" className="secondary-button" onClick={() => setDeleteTarget(null)}>Bekor qilish</button>
+            <button type="button" className="px-4 py-2 text-sm border border-gray-200 rounded-xl hover:bg-gray-50" onClick={() => setDeleteTarget(null)}>
+              {t("common.cancel")}
+            </button>
             <button
               type="button"
-              className="danger-button"
+              className="px-4 py-2 bg-danger text-white text-sm font-medium rounded-xl hover:bg-red-700"
               onClick={() => { deleteProduct(deleteTarget.id); setDeleteTarget(null); }}
             >
-              O'chirish
+              {t("common.delete")}
             </button>
           </>
         }
       >
-        <p className="text-sm text-gray-500">Bu amalni qaytarib bo'lmaydi.</p>
+        <p className="text-sm text-gray-500">{t("products.deleteWarning", {}, "Bu amalni qaytarib bo'lmaydi.")}</p>
       </Modal>
     </div>
   );

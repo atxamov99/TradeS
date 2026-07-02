@@ -9,10 +9,8 @@ const pathKeyMap = {
   "/admins": "admins",
   "/content": "content",
   "/reports": "reports",
-  "/audit-logs": "auditLogs",
   "/settings": "settings",
-  "/profile": "profile",
-  "/customers": "customers",
+  "/customers": "users",
   "/orders": "orders",
   "/products": "products"
 };

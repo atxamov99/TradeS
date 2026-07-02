@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { usePageTitle } from "../../hooks/usePageTitle";
 import { useI18n } from "../../i18n";
+import { useAdminData } from "../../store/adminData";
 import { ordersApi } from "../../services/api/orders.api";
 
 const STATUS_COLORS = {
@@ -18,18 +19,28 @@ const PAYMENT_COLORS = {
   refunded: "text-blue-400"
 };
 
+const STATUS_LABELS = {
+  pending: "Kutilmoqda",
+  processing: "Tayyorlanmoqda",
+  shipped: "Yo'lda",
+  delivered: "Yetkazildi",
+  cancelled: "Bekor qilindi"
+};
+
+const PAYMENT_LABELS = {
+  pending: "Kutilmoqda",
+  paid: "To'langan",
+  failed: "Muvaffaqiyatsiz",
+  refunded: "Qaytarilgan"
+};
+
 export function OrdersPage() {
   const { t } = useI18n();
+  usePageTitle(t("orders.title", {}, "Buyurtmalar"));
   const { orders, loading, updateOrderStatus } = useAdminData();
-  usePageTitle(t("navigation.pageMeta.orders.eyebrow"));
 
   const [error, setError] = useState("");
   const [statusUpdating, setStatusUpdating] = useState(null);
-
-  useEffect(() => {
-    // Use the data from AdminDataProvider instead of local state
-    // We can still handle errors if the provider doesn't a standard error state for orders
-  }, []);
 
   async function handleStatusChange(id, newStatus) {
     setStatusUpdating(id);
@@ -40,7 +51,7 @@ export function OrdersPage() {
         paymentStatus: order ? order.paymentStatus : undefined
       });
     } catch (err) {
-      alert("Statusni yangilashda xatolik: " + err.message);
+      setError("Statusni yangilashda xatolik: " + err.message);
     } finally {
       setStatusUpdating(null);
     }
@@ -55,7 +66,7 @@ export function OrdersPage() {
         paymentStatus: newPaymentStatus
       });
     } catch (err) {
-      alert("To'lov holatini yangilashda xatolik: " + err.message);
+      setError("To'lov holatini yangilashda xatolik: " + err.message);
     } finally {
       setStatusUpdating(null);
     }
@@ -64,32 +75,33 @@ export function OrdersPage() {
   return (
     <div className="space-y-5">
       <div className="bg-[#0e2037] rounded-2xl shadow-card border border-white/10 overflow-hidden">
-        <div className="px-5 py-4 border-b border-white/10">
-          <h2 className="font-semibold text-white">{t("navigation.pageMeta.orders.eyebrow")}</h2>
-          <p className="text-xs text-white/60 mt-0.5">{t("navigation.pageMeta.orders.description")}</p>
+        <div className="px-5 py-4 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 className="font-semibold text-white">{t("orders.title", {}, "Buyurtmalar")} ({orders.length})</h2>
+            <p className="text-xs text-white/60 mt-0.5">{t("orders.description", {}, "Barcha mijozlar buyurtmalari boshqaruvi")}</p>
+          </div>
+          {error && <p className="text-xs text-red-400">{error}</p>}
         </div>
-        
+
         {loading ? (
-          <div className="p-10 text-center text-white/50">Yuklanmoqda...</div>
-        ) : error ? (
-          <div className="p-10 text-center text-red-400">{error}</div>
+          <div className="p-10 text-center text-white/50">{t("common.loading", {}, "Yuklanmoqda...")}</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-white/10 bg-white/5">
-                  <th className="text-left px-5 py-3 text-xs font-medium text-white/50 uppercase">Buyurtma No</th>
-                  <th className="text-left px-5 py-3 text-xs font-medium text-white/50 uppercase">Mijoz</th>
-                  <th className="text-left px-5 py-3 text-xs font-medium text-white/50 uppercase">Sana</th>
-                  <th className="text-left px-5 py-3 text-xs font-medium text-white/50 uppercase">To'lov holati</th>
-                  <th className="text-left px-5 py-3 text-xs font-medium text-white/50 uppercase">Summa</th>
-                  <th className="text-left px-5 py-3 text-xs font-medium text-white/50 uppercase">Buyurtma holati</th>
+                  <th className="text-left px-5 py-3 text-xs font-medium text-white/50 uppercase">{t("orders.orderNumber", {}, "Buyurtma №")}</th>
+                  <th className="text-left px-5 py-3 text-xs font-medium text-white/50 uppercase">{t("orders.customer", {}, "Mijoz")}</th>
+                  <th className="text-left px-5 py-3 text-xs font-medium text-white/50 uppercase">{t("orders.date", {}, "Sana")}</th>
+                  <th className="text-left px-5 py-3 text-xs font-medium text-white/50 uppercase">{t("orders.paymentStatus", {}, "To'lov holati")}</th>
+                  <th className="text-left px-5 py-3 text-xs font-medium text-white/50 uppercase">{t("orders.amount", {}, "Summa")}</th>
+                  <th className="text-left px-5 py-3 text-xs font-medium text-white/50 uppercase">{t("orders.orderStatus", {}, "Buyurtma holati")}</th>
                 </tr>
               </thead>
               <tbody>
                 {orders.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-5 py-10 text-center text-white/40">Buyurtmalar topilmadi</td>
+                    <td colSpan={6} className="px-5 py-10 text-center text-white/40">{t("orders.noOrders", {}, "Buyurtmalar topilmadi")}</td>
                   </tr>
                 ) : (
                   orders.map((o) => (
@@ -109,10 +121,9 @@ export function OrdersPage() {
                           onChange={(e) => handlePaymentStatusChange(o.id, e.target.value)}
                           className={`text-xs font-semibold px-2 py-1 rounded-md outline-none bg-slate-800/80 border border-white/10 cursor-pointer transition-colors ${PAYMENT_COLORS[o.paymentStatus] || "text-white/60"}`}
                         >
-                          <option value="pending" className="bg-[#0e2037] text-yellow-500">Pending</option>
-                          <option value="paid" className="bg-[#0e2037] text-green-500">Paid</option>
-                          <option value="failed" className="bg-[#0e2037] text-red-500">Failed</option>
-                          <option value="refunded" className="bg-[#0e2037] text-blue-400">Refunded</option>
+                          {Object.entries(PAYMENT_LABELS).map(([val, label]) => (
+                            <option key={val} value={val} className="bg-[#0e2037]">{label}</option>
+                          ))}
                         </select>
                       </td>
                       <td className="px-5 py-3 font-bold text-white">
@@ -125,11 +136,9 @@ export function OrdersPage() {
                           onChange={(e) => handleStatusChange(o.id, e.target.value)}
                           className={`text-xs font-medium px-2.5 py-1 rounded-full outline-none appearance-none cursor-pointer border border-transparent hover:border-white/20 transition-colors ${STATUS_COLORS[o.orderStatus] || "bg-gray-100 text-gray-600"}`}
                         >
-                          <option value="pending" className="bg-[#0e2037] text-white">Pending</option>
-                          <option value="processing" className="bg-[#0e2037] text-white">Processing</option>
-                          <option value="shipped" className="bg-[#0e2037] text-white">Shipped</option>
-                          <option value="delivered" className="bg-[#0e2037] text-white">Delivered</option>
-                          <option value="cancelled" className="bg-[#0e2037] text-white">Cancelled</option>
+                          {Object.entries(STATUS_LABELS).map(([val, label]) => (
+                            <option key={val} value={val} className="bg-[#0e2037] text-white">{label}</option>
+                          ))}
                         </select>
                       </td>
                     </tr>

@@ -1,0 +1,46 @@
+# Render Blueprint — TradeS backend (Express + Prisma → Neon Postgres)
+# Deploy: Render dashboard → New → Blueprint → pick the atxamov99/TradeS repo.
+# Secrets (sync:false) are entered in the dashboard during deploy — never committed here.
+services:
+  - type: web
+    name: trades-backend
+    runtime: node
+    rootDir: backend
+    plan: free
+    region: virginia            # closest to the us-east Neon database
+    branch: main
+    buildCommand: npm install && npx prisma generate
+    startCommand: node src/server.js
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # ── Database (Neon) — paste the real connection string in the dashboard ──
+      - key: DATABASE_URL
+        sync: false
+      # ── JWT — Render generates fresh secure random values ──
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 24h
+      - key: JWT_ACCESS_EXPIRES_IN
+        value: 24h
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 7d
+      - key: BCRYPT_SALT_ROUNDS
+        value: "10"
+      # ── Admin bootstrap key — Render generates a fresh secure value ──
+      - key: ADMIN_SETUP_KEY
+        generateValue: true
+      # ── Google OAuth + CORS + client URL — enter in the dashboard ──
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
+      - key: CLIENT_URL
+        sync: false

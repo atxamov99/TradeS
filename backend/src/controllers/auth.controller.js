@@ -22,20 +22,24 @@ const login = asyncHandler(async (req, res) => {
   };
   const { user, accessToken, refreshToken } = await authService.login(req.body, meta);
 
+  // Web/admin use the httpOnly cookies; native mobile (no cookie jar) reads the
+  // tokens from the body and sends them as a Bearer header. Returning both keeps
+  // one login endpoint working for every client.
   res.cookie('accessToken', accessToken, COOKIE_OPTIONS);
   res.cookie('refreshToken', refreshToken, COOKIE_OPTIONS);
 
   res.status(200).json(
-    new ApiResponse(200, { user }, 'Login successful')
+    new ApiResponse(200, { user, accessToken, refreshToken }, 'Login successful')
   );
 });
 
 const refreshToken = asyncHandler(async (req, res) => {
+  // Cookie (web/admin) OR body (native mobile) — support both clients.
   const incomingRefreshToken =
-    req.cookies?.refreshToken;
+    req.cookies?.refreshToken || req.body?.refreshToken;
 
   if (!incomingRefreshToken) {
-    throw new ApiError(401, 'No refresh token provided in cookies');
+    throw new ApiError(401, 'No refresh token provided');
   }
 
   const { accessToken, refreshToken: newRefreshToken } =
@@ -45,7 +49,7 @@ const refreshToken = asyncHandler(async (req, res) => {
   res.cookie('refreshToken', newRefreshToken, COOKIE_OPTIONS);
 
   res.status(200).json(
-    new ApiResponse(200, null, 'Tokens refreshed')
+    new ApiResponse(200, { accessToken, refreshToken: newRefreshToken }, 'Tokens refreshed')
   );
 });
 

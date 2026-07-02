@@ -57,17 +57,21 @@ const getProductById = async (id, userId, options = {}) => {
 };
 
 const createProduct = async (productData, userId) => {
-  const slug = slugify(productData.name, { lower: true, strict: true }) + '-' + Date.now();
-  const finalPrice = productData.price - (productData.price * (productData.discount || 0)) / 100;
+  // images is a relation (ProductImage[]) — Prisma needs { create: [...] }, not a raw array
+  const { images = [], ...rest } = productData;
+  const slug = slugify(rest.name, { lower: true, strict: true }) + '-' + Date.now();
+  const finalPrice = rest.price - (rest.price * (rest.discount || 0)) / 100;
 
   const product = await prisma.product.create({
     data: {
-      ...productData,
+      ...rest,
       slug,
       finalPrice,
       ownerId: userId,
       createdById: userId,
+      images: { create: images.map((img) => ({ url: img.url, alt: img.alt || '' })) },
     },
+    include: { images: true },
   });
   return product;
 };
@@ -82,8 +86,12 @@ const updateProduct = async (id, userId, updateData, options = {}) => {
   const product = await prisma.product.findFirst({ where });
   if (!product) throw new ApiError(404, 'Product not found');
 
-  let { name, price, discount } = updateData;
-  const newData = { ...updateData };
+  // images is a relation — pull it out of the scalar update and, if provided,
+  // replace the whole image set (delete existing + create new)
+  const { name, price, discount, images, ...newData } = updateData;
+  if (name !== undefined) newData.name = name;
+  if (price !== undefined) newData.price = price;
+  if (discount !== undefined) newData.discount = discount;
 
   if (name && name !== product.name) {
     newData.slug = slugify(name, { lower: true, strict: true }) + '-' + Date.now();
@@ -95,9 +103,17 @@ const updateProduct = async (id, userId, updateData, options = {}) => {
     newData.finalPrice = p - (p * d) / 100;
   }
 
+  if (images !== undefined) {
+    newData.images = {
+      deleteMany: {},
+      create: images.map((img) => ({ url: img.url, alt: img.alt || '' })),
+    };
+  }
+
   const updatedProduct = await prisma.product.update({
     where: { id },
     data: newData,
+    include: { images: true },
   });
 
   return updatedProduct;

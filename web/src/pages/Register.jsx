@@ -131,7 +131,7 @@ export default function Register() {
             <ShoppingBag className="w-5 h-5 text-slate-950" />
           </div>
           <span className="text-xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-slate-400">
-            Savdo-E
+            TradeS
           </span>
         </Link>
 
@@ -279,10 +279,10 @@ export default function Register() {
             <div className="w-6 h-6 rounded-md bg-[#2ECC71] flex items-center justify-center">
               <ShoppingBag className="w-3.5 h-3.5 text-slate-950" />
             </div>
-            <span className="font-bold text-slate-400">Savdo-E</span>
+            <span className="font-bold text-slate-400">TradeS</span>
           </div>
           <div>
-            &copy; {new Date().getFullYear()} Savdo-E. {t('copyright')}
+            &copy; {new Date().getFullYear()} TradeS. {t('copyright')}
           </div>
         </div>
       </footer>

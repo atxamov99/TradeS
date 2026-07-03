@@ -1,7 +1,7 @@
 export const en = {
   app: {
-    name: "Savdo Control",
-    description: "Role-based admin and super admin panel for Savdo-E"
+    name: "TradeS",
+    description: "Role-based admin and super admin panel for TradeS"
   },
   common: {
     close: "Close",
@@ -199,7 +199,7 @@ export const en = {
     }
   },
   auth: {
-    heroEyebrow: "Savdo-E control room",
+    heroEyebrow: "TradeS control room",
     heroTitle: "Admin and Super Admin panel starter is ready.",
     heroDescription:
       "Demo auth is active for now. Later this flow will connect to `POST /auth/login`, `POST /auth/refresh` and `GET /me`.",

@@ -15,6 +15,7 @@ router.use(protect);
 
 router.get('/', productController.getProducts);
 router.get('/categories', productController.getCategories);
+router.get('/slug/:slug', productController.getProductBySlug);
 router.get('/:id', productController.getProductById);
 
 router.post('/', validate(createProductSchema), productController.createProduct);

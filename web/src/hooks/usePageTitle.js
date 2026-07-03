@@ -3,10 +3,10 @@ import { useEffect } from 'react';
 export function usePageTitle(title) {
   useEffect(() => {
     if (title) {
-      document.title = `${title} | Savdo-E`;
+      document.title = `${title} | TradeS`;
     }
     return () => {
-      document.title = 'Savdo-E';
+      document.title = 'TradeS';
     };
   }, [title]);
 }

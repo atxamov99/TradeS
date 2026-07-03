@@ -1,7 +1,7 @@
 export const ru = {
   app: {
-    name: "Savdo Control",
-    description: "Ролевая админ-панель и панель супер-админа для Savdo-E"
+    name: "TradeS",
+    description: "Ролевая админ-панель и панель супер-админа для TradeS"
   },
   common: {
     close: "Закрыть",
@@ -196,7 +196,7 @@ export const ru = {
     }
   },
   auth: {
-    heroEyebrow: "Центр управления Savdo-E",
+    heroEyebrow: "Центр управления TradeS",
     heroTitle: "Старт админ-панели и панели супер-админа готов.",
     heroDescription:
       "Сейчас работает demo auth. Позже этот flow подключится к `POST /auth/login`, `POST /auth/refresh` и `GET /me`.",

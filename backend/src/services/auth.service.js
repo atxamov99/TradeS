@@ -1,3 +1,5 @@
+const crypto = require('crypto');
+const { OAuth2Client } = require('google-auth-library');
 const prisma = require('../config/prisma');
 const ApiError = require('../utils/ApiError');
 const { generateAccessToken, generateRefreshToken } = require('../utils/generateTokens');
@@ -6,6 +8,30 @@ const bcrypt = require('bcryptjs');
 const { createAuditLog } = require('./audit.service');
 
 const REFRESH_TOKEN_EXPIRES_DAYS = 7;
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+// Issue an access+refresh token pair for a user and persist the refresh token.
+const issueTokens = async (user, meta = {}) => {
+  const tokenPayload = { id: user.id, role: user.role };
+  const accessToken = generateAccessToken(tokenPayload);
+  const refreshTokenValue = generateRefreshToken(tokenPayload);
+
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + REFRESH_TOKEN_EXPIRES_DAYS);
+
+  await prisma.refreshToken.create({
+    data: {
+      userId: user.id,
+      token: refreshTokenValue,
+      expiresAt,
+      userAgent: meta.userAgent || '',
+      ip: meta.ip || '',
+    },
+  });
+
+  return { accessToken, refreshToken: refreshTokenValue };
+};
 
 /**
  * Register a new user
@@ -186,4 +212,58 @@ const logoutAll = async (userId) => {
   });
 };
 
-module.exports = { register, login, refreshTokens, logout, logoutAll };
+/**
+ * Google OAuth — verify the ID token (credential), find-or-create the user, issue tokens
+ */
+const googleAuth = async (credential, meta = {}) => {
+  if (!credential) throw new ApiError(400, 'Google credential is required');
+
+  let payload;
+  try {
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    payload = ticket.getPayload();
+  } catch {
+    throw new ApiError(401, 'Google token yaroqsiz');
+  }
+
+  const { email, name, picture } = payload;
+  if (!email) throw new ApiError(400, 'Google akkauntida email yo\'q');
+
+  let user = await prisma.user.findUnique({ where: { email } });
+
+  if (!user) {
+    // Google-only account — password column is required, so store an unusable
+    // random hash (they sign in with Google; can set a password via reset later).
+    const randomHash = await bcrypt.hash(crypto.randomBytes(24).toString('hex'), 10);
+    user = await prisma.user.create({
+      data: {
+        name: name || email.split('@')[0],
+        email,
+        password: randomHash,
+        avatar: picture || null,
+        isEmailVerified: true,
+      },
+    });
+  } else {
+    const updates = {};
+    if (!user.isEmailVerified) updates.isEmailVerified = true;
+    if (!user.avatar && picture) updates.avatar = picture;
+    if (Object.keys(updates).length) {
+      user = await prisma.user.update({ where: { id: user.id }, data: updates });
+    }
+  }
+
+  if (user.isBlocked) throw new ApiError(403, 'Hisobingiz bloklangan');
+
+  const { accessToken, refreshToken } = await issueTokens(user, meta);
+  await prisma.user.update({ where: { id: user.id }, data: { lastLogin: new Date() } });
+
+  const userResponse = { ...user };
+  delete userResponse.password;
+  return { user: userResponse, accessToken, refreshToken };
+};
+
+module.exports = { register, login, refreshTokens, logout, logoutAll, googleAuth };

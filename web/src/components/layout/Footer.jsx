@@ -7,7 +7,7 @@ export default function Footer() {
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
           <div className="col-span-2 md:col-span-1">
             <Link to="/dashboard" className="text-xl font-bold text-primary-600">
-              Savdo<span className="text-gray-900 dark:text-white">-E</span>
+              TradeS
             </Link>
             <p className="mt-2 text-sm text-gray-500">
               Your modern e-commerce platform for quality products.
@@ -38,7 +38,7 @@ export default function Footer() {
           </div>
         </div>
         <div className="mt-8 border-t pt-6 text-center text-xs text-gray-400">
-          © {new Date().getFullYear()} Savdo-E. All rights reserved.
+          © {new Date().getFullYear()} TradeS. All rights reserved.
         </div>
       </div>
     </footer>

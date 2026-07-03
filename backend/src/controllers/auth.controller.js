@@ -75,6 +75,18 @@ const getMe = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, { user: req.user }, 'User retrieved'));
 });
 
+const googleAuth = asyncHandler(async (req, res) => {
+  const meta = { userAgent: req.headers['user-agent'] || '', ip: req.ip };
+  const { user, accessToken, refreshToken } = await authService.googleAuth(req.body.credential, meta);
+
+  res.cookie('accessToken', accessToken, COOKIE_OPTIONS);
+  res.cookie('refreshToken', refreshToken, COOKIE_OPTIONS);
+
+  res.status(200).json(
+    new ApiResponse(200, { user, accessToken, refreshToken }, 'Google orqali kirish muvaffaqiyatli')
+  );
+});
+
 const forgotPassword = asyncHandler(async (req, res) => {
   // Minimal: hozircha faqat tasdiqlash, email jo'natish keyinroq qo'shiladi
   const { email } = req.body;
@@ -98,4 +110,4 @@ const resetPassword = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, null, 'Parol muvaffaqiyatli yangilandi'));
 });
 
-module.exports = { register, login, refreshToken, logout, logoutAll, getMe, forgotPassword, resetPassword };
+module.exports = { register, login, refreshToken, logout, logoutAll, getMe, forgotPassword, resetPassword, googleAuth };

@@ -56,6 +56,15 @@ const getProductById = async (id, userId, options = {}) => {
   return product;
 };
 
+const getProductBySlug = async (slug) => {
+  const product = await prisma.product.findUnique({
+    where: { slug },
+    include: { images: true, reviews: true },
+  });
+  if (!product) throw new ApiError(404, 'Product not found');
+  return product;
+};
+
 const createProduct = async (productData, userId) => {
   // images is a relation (ProductImage[]) — Prisma needs { create: [...] }, not a raw array
   const { images = [], ...rest } = productData;
@@ -187,6 +196,7 @@ const getCategories = async (userId, options = {}) => {
 module.exports = {
   getProducts,
   getProductById,
+  getProductBySlug,
   createProduct,
   updateProduct,
   deleteProduct,

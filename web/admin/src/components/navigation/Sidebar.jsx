@@ -38,7 +38,7 @@ export function Sidebar({ open, onClose }) {
         {/* Brand */}
         <div className="flex items-center gap-3 px-5 py-5 border-b border-white/10">
           <img
-            src="/logo-dark.png"
+            src="/logo.svg"
             alt="TradeS"
             className="w-9 h-9 rounded-xl object-contain shrink-0 bg-white/5"
           />

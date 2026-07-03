@@ -61,6 +61,32 @@ const useAuthStore = create(
         }
       },
 
+      // Ask backend to send a 6-digit OTP to the user's Telegram.
+      // Throws with err.response.status === 428 when the phone isn't linked yet.
+      requestOtp: async (phone) => {
+        set({ isLoading: true });
+        try {
+          const res = await authApi.requestOtp(phone);
+          return res.data;
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
+      // Verify OTP → registers-or-logs-in by phone, sets the user (cookie-based).
+      verifyOtp: async (data) => {
+        set({ isLoading: true });
+        try {
+          const res = await authApi.verifyOtp(data);
+          const { user } = res.data.data;
+          set({ user, isLoading: false });
+          return user;
+        } catch (err) {
+          set({ isLoading: false });
+          throw err;
+        }
+      },
+
       login: async (credentials) => {
         set({ isLoading: true });
         try {

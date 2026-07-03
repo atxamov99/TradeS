@@ -3,6 +3,8 @@ import api from './axios';
 export const register = (data) => api.post('/auth/register', data);
 export const login = (data) => api.post('/auth/login', data);
 export const googleAuth = (credential) => api.post('/auth/google', { credential });
+export const requestOtp = (phone) => api.post('/auth/request-otp', { phone });
+export const verifyOtp = (data) => api.post('/auth/verify-otp', data);
 export const logout = (data) => api.post('/auth/logout', data);
 export const refreshToken = (data) => api.post('/auth/refresh-token', data);
 export const getMe = () => api.get('/auth/me');

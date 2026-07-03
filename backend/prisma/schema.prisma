@@ -295,3 +295,18 @@ model Wishlist {
   updatedAt DateTime  @updatedAt
   products  Product[]
 }
+
+// Phone auth via Telegram bot OTP.
+// The bot writes telegramChatId when a user shares their contact; OTP codes are
+// generated on request-otp and cleared on verify. Persists independently of User
+// (contact can be linked before an account exists).
+model PhoneAuth {
+  id             String    @id @default(cuid())
+  phone          String    @unique
+  telegramChatId String?
+  otpCode        String?
+  otpExpiresAt   DateTime?
+  attempts       Int       @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}

@@ -6,6 +6,10 @@ const { generateAccessToken, generateRefreshToken } = require('../utils/generate
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { createAuditLog } = require('./audit.service');
+const telegramService = require('./telegram.service');
+
+const OTP_EXPIRES_MIN = 5;
+const OTP_MAX_ATTEMPTS = 5;
 
 const REFRESH_TOKEN_EXPIRES_DAYS = 7;
 
@@ -266,4 +270,90 @@ const googleAuth = async (credential, meta = {}) => {
   return { user: userResponse, accessToken, refreshToken };
 };
 
-module.exports = { register, login, refreshTokens, logout, logoutAll, googleAuth };
+/**
+ * Request an OTP code — delivered to the user's Telegram (linked when they shared
+ * their contact with the bot). Free SMS-code alternative.
+ */
+const requestOtp = async (rawPhone) => {
+  const phone = telegramService.normalizePhone(rawPhone);
+  if (!phone) throw new ApiError(400, 'Telefon raqam noto\'g\'ri');
+
+  const record = await prisma.phoneAuth.findUnique({ where: { phone } });
+  if (!record || !record.telegramChatId) {
+    // The bot has no chat for this phone yet — user must connect Telegram first.
+    throw new ApiError(428, 'Avval Telegram bot orqali raqamingizni ulang');
+  }
+
+  const code = String(crypto.randomInt(100000, 1000000)); // 6 digits
+  const otpExpiresAt = new Date(Date.now() + OTP_EXPIRES_MIN * 60 * 1000);
+
+  await prisma.phoneAuth.update({
+    where: { phone },
+    data: { otpCode: code, otpExpiresAt, attempts: 0 },
+  });
+
+  await telegramService.sendMessage(
+    record.telegramChatId,
+    `🔐 <b>TradeS</b> tasdiqlash kodi:\n\n<code>${code}</code>\n\nKod ${OTP_EXPIRES_MIN} daqiqa amal qiladi. Hech kimga bermang.`
+  );
+
+  return { message: 'Kod Telegram orqali yuborildi' };
+};
+
+/**
+ * Verify the OTP and register-or-login the user by phone.
+ * New users provide name + password; returning users just get logged in.
+ */
+const verifyOtp = async ({ phone: rawPhone, code, name, password }, meta = {}) => {
+  const phone = telegramService.normalizePhone(rawPhone);
+  if (!phone || !code) throw new ApiError(400, 'Telefon va kod talab qilinadi');
+
+  const record = await prisma.phoneAuth.findUnique({ where: { phone } });
+  if (!record || !record.otpCode || !record.otpExpiresAt) {
+    throw new ApiError(400, 'Avval kod so\'rang');
+  }
+  if (record.attempts >= OTP_MAX_ATTEMPTS) {
+    throw new ApiError(429, 'Juda ko\'p urinish. Yangi kod so\'rang');
+  }
+  if (record.otpExpiresAt < new Date()) {
+    throw new ApiError(400, 'Kod muddati tugagan. Yangi kod so\'rang');
+  }
+  if (record.otpCode !== String(code).trim()) {
+    await prisma.phoneAuth.update({ where: { phone }, data: { attempts: { increment: 1 } } });
+    throw new ApiError(400, 'Kod noto\'g\'ri');
+  }
+
+  // OTP correct — clear it (single use)
+  await prisma.phoneAuth.update({
+    where: { phone },
+    data: { otpCode: null, otpExpiresAt: null, attempts: 0 },
+  });
+
+  // Find or create the user by phone. Store the phone in +<digits> canonical form.
+  const canonicalPhone = `+${phone}`;
+  let user = await prisma.user.findFirst({ where: { phone: canonicalPhone } });
+
+  if (!user) {
+    if (!password) throw new ApiError(400, 'Ro\'yxatdan o\'tish uchun parol talab qilinadi');
+    const hashed = await bcrypt.hash(password, 10);
+    user = await prisma.user.create({
+      data: {
+        name: name || 'Foydalanuvchi',
+        phone: canonicalPhone,
+        password: hashed,
+        isEmailVerified: false,
+      },
+    });
+  }
+
+  if (user.isBlocked) throw new ApiError(403, 'Hisobingiz bloklangan');
+
+  const { accessToken, refreshToken } = await issueTokens(user, meta);
+  await prisma.user.update({ where: { id: user.id }, data: { lastLogin: new Date() } });
+
+  const userResponse = { ...user };
+  delete userResponse.password;
+  return { user: userResponse, accessToken, refreshToken };
+};
+
+module.exports = { register, login, refreshTokens, logout, logoutAll, googleAuth, requestOtp, verifyOtp };

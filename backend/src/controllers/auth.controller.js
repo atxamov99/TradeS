@@ -87,6 +87,25 @@ const googleAuth = asyncHandler(async (req, res) => {
   );
 });
 
+const requestOtp = asyncHandler(async (req, res) => {
+  const { phone } = req.body;
+  if (!phone) throw new ApiError(400, 'Telefon raqam talab qilinadi');
+  const result = await authService.requestOtp(phone);
+  res.status(200).json(new ApiResponse(200, result, result.message));
+});
+
+const verifyOtp = asyncHandler(async (req, res) => {
+  const meta = { userAgent: req.headers['user-agent'] || '', ip: req.ip };
+  const { user, accessToken, refreshToken } = await authService.verifyOtp(req.body, meta);
+
+  res.cookie('accessToken', accessToken, COOKIE_OPTIONS);
+  res.cookie('refreshToken', refreshToken, COOKIE_OPTIONS);
+
+  res.status(200).json(
+    new ApiResponse(200, { user, accessToken, refreshToken }, 'Kirish muvaffaqiyatli')
+  );
+});
+
 const forgotPassword = asyncHandler(async (req, res) => {
   // Minimal: hozircha faqat tasdiqlash, email jo'natish keyinroq qo'shiladi
   const { email } = req.body;
@@ -110,4 +129,4 @@ const resetPassword = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, null, 'Parol muvaffaqiyatli yangilandi'));
 });
 
-module.exports = { register, login, refreshToken, logout, logoutAll, getMe, forgotPassword, resetPassword, googleAuth };
+module.exports = { register, login, refreshToken, logout, logoutAll, getMe, forgotPassword, resetPassword, googleAuth, requestOtp, verifyOtp };

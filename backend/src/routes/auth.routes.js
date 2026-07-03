@@ -15,6 +15,8 @@ const {
 router.post('/register', authLimiter, validate(registerSchema), authController.register);
 router.post('/login', authLimiter, validate(loginSchema), authController.login);
 router.post('/google', authLimiter, authController.googleAuth);
+router.post('/request-otp', authLimiter, authController.requestOtp);
+router.post('/verify-otp', authLimiter, authController.verifyOtp);
 router.post('/refresh-token', validate(refreshTokenSchema), authController.refreshToken);
 router.post('/forgot-password', authLimiter, authController.forgotPassword);
 router.post('/reset-password', authLimiter, authController.resetPassword);

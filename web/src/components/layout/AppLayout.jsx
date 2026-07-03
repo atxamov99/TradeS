@@ -57,11 +57,11 @@ export default function AppLayout() {
 
   const navItems = [
     { to: '/dashboard', label: t('dashboard'), icon: Home },
-    { to: '/products', label: t('products'),  icon: Package },
-    { to: '/sales',    label: t('sales'),     icon: ShoppingCart },
-    { to: '/reports',  label: t('reports'),   icon: BarChart2 },
-    { to: '/settings', label: t('settings'),  icon: Settings },
-    { to: '/profile',  label: t('profile'),   icon: User },
+    { to: '/dashboard/products', label: t('products'),  icon: Package },
+    { to: '/dashboard/sales',    label: t('sales'),     icon: ShoppingCart },
+    { to: '/dashboard/reports',  label: t('reports'),   icon: BarChart2 },
+    { to: '/dashboard/settings', label: t('settings'),  icon: Settings },
+    { to: '/dashboard/profile',  label: t('profile'),   icon: User },
   ];
 
   const handleLogout = async () => {
@@ -104,7 +104,7 @@ export default function AppLayout() {
                 <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Admin</p>
               </div>
               <NavLink
-                to="/admin"
+                to="/dashboard/admin"
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                     isActive
@@ -144,7 +144,7 @@ export default function AppLayout() {
         ))}
         {isAdmin && (
           <NavLink
-            to="/admin"
+            to="/dashboard/admin"
             className={({ isActive }) =>
               `flex flex-col items-center gap-0.5 py-2 px-3 rounded-xl transition-all min-w-[52px] ${
                 isActive ? 'text-indigo-600' : 'text-slate-400 hover:text-indigo-600'

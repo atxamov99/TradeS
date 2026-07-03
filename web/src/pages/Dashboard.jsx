@@ -125,7 +125,7 @@ export default function Dashboard() {
 
         {/* Big action button */}
         <Link
-          to="/sales"
+          to="/dashboard/sales"
           className="flex items-center justify-center gap-3 w-full bg-green-500 hover:bg-green-600 active:bg-green-700 text-white text-xl font-bold rounded-2xl transition-all shadow-md"
           style={{ minHeight: '68px' }}
         >
@@ -160,7 +160,7 @@ export default function Dashboard() {
         <div className="bg-white rounded-2xl border border-[#E2E8F0] overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-[#E2E8F0]">
             <h3 className="font-bold text-[#0F172A]">{t('recent_sales')}</h3>
-            <Link to="/sales" className="text-sm text-green-600 font-semibold hover:underline">
+            <Link to="/dashboard/sales" className="text-sm text-green-600 font-semibold hover:underline">
               {t('view_all')}
             </Link>
           </div>

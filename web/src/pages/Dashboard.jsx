@@ -85,7 +85,7 @@ export default function Dashboard() {
       {/* Header */}
       <header className="bg-white border-b border-[#E2E8F0] px-5 py-4 flex items-center justify-between sticky top-0 z-20">
         <div className="flex items-center gap-3">
-          <span className="text-xl font-extrabold text-green-500">SAVDO</span>
+          <span className="text-xl font-extrabold text-green-500">TradeS</span>
           <span className="hidden sm:block text-sm text-[#64748B]">{todayDate}</span>
         </div>
         <div className="flex items-center gap-3">

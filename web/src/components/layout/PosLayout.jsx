@@ -93,7 +93,7 @@ export default function PosLayout() {
       <aside className="hidden md:flex w-56 flex-col border-r border-pos-border bg-pos-card">
         <div className="px-5 py-5 border-b border-pos-border">
           <div className="flex items-center justify-between">
-            <span className="text-xl font-black text-pos-accent tracking-tight">SAVDO</span>
+            <span className="text-xl font-black text-pos-accent tracking-tight">TradeS</span>
             {/* Online/Offline dot */}
             <span
               className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${

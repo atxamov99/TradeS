@@ -33,8 +33,7 @@ import useAuthStore from './store/authStore';
 
 function AdminRoute({ children }) {
   const user = useAuthStore((s) => s.user);
-  const accessToken = useAuthStore((s) => s.accessToken);
-  if (!accessToken) return <Navigate to="/login" replace />;
+  if (!user) return <Navigate to="/login" replace />;
   if (!['ADMIN', 'SUPER_ADMIN'].includes(user?.role)) return <Navigate to="/dashboard" replace />;
   return children;
 }

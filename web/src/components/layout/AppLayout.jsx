@@ -76,7 +76,7 @@ export default function AppLayout() {
       <aside className="hidden md:flex flex-col w-[220px] min-h-screen bg-white border-r border-[#E2E8F0] fixed left-0 top-0 bottom-0 z-30">
         {/* Logo */}
         <div className="px-5 py-6 border-b border-[#E2E8F0]">
-          <span className="text-2xl font-extrabold text-green-500 tracking-tight">SAVDO</span>
+          <span className="text-2xl font-extrabold text-green-500 tracking-tight">TradeS</span>
           <p className="text-[11px] text-slate-400 font-medium mt-0.5">Business Manager</p>
         </div>
 

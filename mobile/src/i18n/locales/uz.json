@@ -43,8 +43,8 @@
     "connectTitle": "Telegram'ni ulang",
     "connectShort": "Tasdiqlash kodi @trades_uz_bot Telegram botidan keladi. Avval botda ro'yxatdan o'ting:",
     "cStep1": "«Telegram botni ochish» tugmasini bosing",
-    "cStep2": "Botda «Start» bosing, so'ng «📱 Raqamni ulashish» tugmasi bilan raqamingizni yuboring",
-    "cStep3": "Shu ekranga qaytib «Uladim — kod yuborish» bosing",
+    "cStep2": "Botda «📱 Raqamni ulashish» ni bosing",
+    "cStep3": "6 xonali kod shu botga keladi — o'sha yerdan olasiz",
     "openBot": "Telegram botni ochish",
     "connectDone": "Uladim — kod yuborish",
     "otpTitle": "Tasdiqlash kodi",
@@ -52,7 +52,8 @@
     "verify": "Tasdiqlash",
     "resend": "Kodni qayta yuborish",
     "cNote": "📩 6 xonali kod shu botga keladi — o'sha yerdan olasiz",
-    "otpHint": "Kod @trades_uz_bot botiga yuborildi"
+    "otpHint": "Kod @trades_uz_bot botiga yuborildi",
+    "formTgHint": "Tasdiqlash kodi bepul — Telegram bot orqali keladi"
   },
   "dashboard": {
     "title": "Savdo",

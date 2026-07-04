@@ -23,7 +23,7 @@ import { setToken, setUser } from '../store/authStore';
 import { formatPhone } from '../utils/phoneFormatter';
 import Input from '../components/ui/Input';
 
-const BOT_URL = 'https://t.me/trades_uz_bot';
+const BOT_URL = 'https://t.me/trades_uz_bot?start=register';
 const TG_BLUE = '#229ED9';
 const OTP_LEN = 6;
 
@@ -200,6 +200,12 @@ export default function RegisterScreen({ navigation }) {
               isDark={isDark}
               icon={<Ionicons name="call-outline" size={20} color={colors.textMuted} />}
             />
+            <View style={styles.formHint}>
+              <Ionicons name="paper-plane-outline" size={13} color={colors.textMuted} />
+              <Text style={[styles.formHintText, { color: colors.textMuted }]}>
+                {t('auth.formTgHint') || 'Tasdiqlash kodi bepul — Telegram bot orqali keladi'}
+              </Text>
+            </View>
             <Input
               label={t('auth.password')}
               placeholder={t('auth.passwordPlaceholder')}
@@ -245,26 +251,19 @@ export default function RegisterScreen({ navigation }) {
               {t('auth.connectShort') || 'Kod bepul — Telegram orqali keladi'}
             </Text>
 
-            {/* numbered steps */}
+            {/* icon-based steps — each shows at a glance what to do */}
             {[
-              t('auth.cStep1') || 'Botni oching va «Start» bosing',
-              t('auth.cStep2') || '«📱 Raqamni ulashish» tugmasini bosing',
-              t('auth.cStep3') || 'Bu yerga qaytib, «Kod yuborish» bosing',
-            ].map((line, i) => (
+              { icon: 'paper-plane-outline', text: t('auth.cStep1') || "«Telegram botni ochish» tugmasini bosing" },
+              { icon: 'call-outline', text: t('auth.cStep2') || "Botda «📱 Raqamni ulashish» ni bosing" },
+              { icon: 'key-outline', text: t('auth.cStep3') || "6 xonali kod shu botga keladi — o'sha yerdan olasiz" },
+            ].map((s, i) => (
               <View key={i} style={styles.stepLine}>
                 <View style={[styles.stepNum, { backgroundColor: colors.primary + '22' }]}>
-                  <Text style={[styles.stepNumText, { color: colors.primary }]}>{i + 1}</Text>
+                  <Ionicons name={s.icon} size={17} color={colors.primary} />
                 </View>
-                <Text style={[styles.stepText, { color: colors.text }]}>{line}</Text>
+                <Text style={[styles.stepText, { color: colors.text }]}>{s.text}</Text>
               </View>
             ))}
-
-            {/* highlighted "where the code comes from" note */}
-            <View style={[styles.note, { backgroundColor: colors.primary + '14', borderColor: colors.primary + '33' }]}>
-              <Text style={[styles.noteText, { color: colors.text }]}>
-                {t('auth.cNote') || "📩 6 xonali kod shu botga keladi — o'sha yerdan olasiz"}
-              </Text>
-            </View>
 
             <View style={{ height: 8 }} />
             <BigButton
@@ -365,6 +364,9 @@ const styles = StyleSheet.create({
   bigBtnText: { fontSize: SIZES.base, ...FONTS.bold },
 
   footerRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 20 },
+
+  formHint: { flexDirection: 'row', alignItems: 'center', marginTop: -6, marginBottom: 18, paddingHorizontal: 2 },
+  formHintText: { fontSize: SIZES.sm, marginLeft: 6, flex: 1 },
 
   bigIcon: {
     width: 80, height: 80, borderRadius: 26, alignSelf: 'center',

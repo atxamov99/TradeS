@@ -122,7 +122,7 @@ export default function LoginScreen({ navigation }) {
             onPress={handleLogin}
             loading={loading}
             variant="primary"
-            style={{ height: 52 }}
+            style={{ height: 52, backgroundColor: colors.primary }}
           />
 
           <Button

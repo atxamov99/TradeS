@@ -23,7 +23,6 @@ import Card from '../components/ui/Card';
 export default function LoginScreen({ navigation }) {
   const { t } = useTranslation();
   const { colors } = useTheme();
-  const isDark = colors.text === '#FFFFFF';
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -83,7 +82,7 @@ export default function LoginScreen({ navigation }) {
           <View style={[styles.logoCircle, { backgroundColor: colors.primary }]}>
             <Ionicons name="cart" size={40} color="#fff" />
           </View>
-          <Text style={[styles.appName, { color: colors.primary }]}>TradeS</Text>
+          <Text style={[styles.appName, { color: colors.primary }]}>SAVDO-E</Text>
           <Text style={[styles.appSubtitle, { color: colors.textMuted }]}>{t('app.subtitle') || 'Boshqaruv tizimi'}</Text>
         </View>
 
@@ -97,7 +96,6 @@ export default function LoginScreen({ navigation }) {
             value={phone}
             onChangeText={handlePhoneChange}
             keyboardType="phone-pad"
-            isDark={isDark}
             icon={<Ionicons name="call-outline" size={20} color={colors.textMuted} />}
           />
 
@@ -107,7 +105,6 @@ export default function LoginScreen({ navigation }) {
             value={password}
             onChangeText={setPassword}
             secureTextEntry={!showPassword}
-            isDark={isDark}
             icon={<Ionicons name="lock-closed-outline" size={20} color={colors.textMuted} />}
             rightIcon={
               <Ionicons
@@ -125,7 +122,7 @@ export default function LoginScreen({ navigation }) {
             onPress={handleLogin}
             loading={loading}
             variant="primary"
-            style={{ height: 52, backgroundColor: colors.primary }}
+            style={{ height: 52 }}
           />
 
           <Button

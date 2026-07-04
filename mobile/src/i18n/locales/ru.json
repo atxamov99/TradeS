@@ -36,7 +36,21 @@
     "registerSuccess": "Аккаунт успешно создан! Пожалуйста, войдите.",
     "registerFailed": "Ошибка регистрации. Попробуйте снова.",
     "fillAllFields": "Пожалуйста, заполните все поля.",
-    "alreadyHaveAccount": "Уже есть аккаунт?"
+    "alreadyHaveAccount": "Уже есть аккаунт?",
+    "otpSubtitle": "Зарегистрируйтесь по номеру телефона",
+    "getCode": "Получить код",
+    "haveAccount": "Уже есть аккаунт?",
+    "connectTitle": "Подключите Telegram",
+    "connectShort": "Код бесплатно — придёт в Telegram",
+    "cStep1": "Откройте бота и нажмите «Start»",
+    "cStep2": "Нажмите «📱 Поделиться номером»",
+    "cStep3": "Вернитесь сюда и нажмите «Отправить код»",
+    "openBot": "Открыть Telegram-бота",
+    "connectDone": "Подключил — отправить код",
+    "otpTitle": "Код подтверждения",
+    "otpDesc": "6-значный код из Telegram",
+    "verify": "Подтвердить",
+    "resend": "Отправить код повторно"
   },
   "dashboard": {
     "title": "Savdo",

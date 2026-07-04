@@ -36,7 +36,21 @@
     "registerSuccess": "Hisob muvaffaqiyatli yaratildi! Iltimos, tizimga kiring.",
     "registerFailed": "Ro'yxatdan o'tishda xatolik. Qayta urinib ko'ring.",
     "fillAllFields": "Iltimos, barcha maydonlarni to'ldiring.",
-    "alreadyHaveAccount": "Hisobingiz bormi?"
+    "alreadyHaveAccount": "Hisobingiz bormi?",
+    "otpSubtitle": "Telefon raqamingiz orqali ro'yxatdan o'ting",
+    "getCode": "Kod olish",
+    "haveAccount": "Hisobingiz bormi?",
+    "connectTitle": "Telegram'ni ulang",
+    "connectShort": "Kod bepul — Telegram orqali keladi",
+    "cStep1": "Botni oching va «Start» bosing",
+    "cStep2": "«📱 Raqamni ulashish» tugmasini bosing",
+    "cStep3": "Bu yerga qaytib, «Kod yuborish» bosing",
+    "openBot": "Telegram botni ochish",
+    "connectDone": "Uladim — kod yuborish",
+    "otpTitle": "Tasdiqlash kodi",
+    "otpDesc": "Telegram'ga yuborilgan 6 xonali kod",
+    "verify": "Tasdiqlash",
+    "resend": "Kodni qayta yuborish"
   },
   "dashboard": {
     "title": "Savdo",

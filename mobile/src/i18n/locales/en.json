@@ -36,7 +36,21 @@
     "registerSuccess": "Account created successfully! Please sign in.",
     "registerFailed": "Registration failed. Please try again.",
     "fillAllFields": "Please fill in all fields.",
-    "alreadyHaveAccount": "Already have an account?"
+    "alreadyHaveAccount": "Already have an account?",
+    "otpSubtitle": "Sign up with your phone number",
+    "getCode": "Get Code",
+    "haveAccount": "Already have an account?",
+    "connectTitle": "Connect Telegram",
+    "connectShort": "The code is free — delivered via Telegram",
+    "cStep1": "Open the bot and press «Start»",
+    "cStep2": "Tap the «📱 Share number» button",
+    "cStep3": "Come back here and press «Send code»",
+    "openBot": "Open Telegram bot",
+    "connectDone": "Connected — send code",
+    "otpTitle": "Verification Code",
+    "otpDesc": "6-digit code sent to your Telegram",
+    "verify": "Verify",
+    "resend": "Resend code"
   },
   "dashboard": {
     "title": "Savdo",

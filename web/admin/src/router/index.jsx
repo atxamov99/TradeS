@@ -57,7 +57,7 @@ export function AppRouter() {
           <Route path="/roles" element={<RolesPage />} />
           <Route path="/permissions" element={<PermissionsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/admins" element={<Navigate to="/users?tab=admins" replace />} />
+          <Route path="/admins" element={<UsersPage />} />
         </Route>
 
         <Route path="*" element={<NotFoundPage />} />

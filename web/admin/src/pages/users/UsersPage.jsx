@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { Modal } from "../../components/shared/Modal";
 import { useAuth } from "../../store";
 import { useAdminData } from "../../store/adminData";
@@ -18,31 +18,20 @@ export function UsersPage() {
   const { users, admins, createUser, updateUser, toggleUserStatus, deleteUser, grantAdminToUser, revokeAdminFromUser, toggleAdminStatus } = useAdminData();
   const { t } = useI18n();
   const isPrimary = profile?.isPrimary;
-  const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
 
-  // URL ?tab=admins orqali admin tabini ochish (super admin uchun)
-  const [activeTab, setActiveTab] = useState(() => {
-    const tab = searchParams.get("tab");
-    return tab === "admins" ? "admins" : "users";
-  });
+  // Tab /admins route'i orqali yoki ?tab=admins query bilan aniqlanadi (sidebar
+  // to'g'ridan-to'g'ri /admins ga navigate qiladi, shuning uchun pathname aynan
+  // shu bo'yicha, na query orqali tekshiriladi — aks holda sidebar/header
+  // "Foydalanuvchilar" bo'lib qolib qolaverardi).
+  const isAdminsRoute = location.pathname === "/admins" || searchParams.get("tab") === "admins";
+  const [activeTab, setActiveTab] = useState(() => (isAdminsRoute ? "admins" : "users"));
 
   useEffect(() => {
-    // Always mirror the URL: /users → users tab, /users?tab=admins → admins tab.
-    // (Previously, navigating to /users with no param left the tab stuck on "admins",
-    // so switching between the "Foydalanuvchilar" and "Adminlar" sidebar links looked
-    // like nothing changed.)
-    const tab = searchParams.get("tab");
-    setActiveTab(tab === "admins" ? "admins" : "users");
-  }, [searchParams]);
+    setActiveTab(isAdminsRoute ? "admins" : "users");
+  }, [isAdminsRoute]);
 
-  function changeTab(tab) {
-    setActiveTab(tab);
-    if (tab === "admins") {
-      setSearchParams({ tab: "admins" });
-    } else {
-      setSearchParams({});
-    }
-  }
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -114,7 +103,9 @@ export function UsersPage() {
         {/* Header + Tabs */}
         <div className="px-5 py-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h2 className="font-semibold text-gray-900">{t("users.title")}</h2>
+            <h2 className="font-semibold text-gray-900">
+              {activeTab === "users" ? t("users.title") : t("navigation.menu.admins.label")}
+            </h2>
             <p className="text-xs text-gray-400 mt-0.5">
               {activeTab === "users"
                 ? t("navigation.pageMeta.users.eyebrow", {}, "Foydalanuvchilar va ularning huquqlari")

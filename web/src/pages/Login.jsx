@@ -4,7 +4,6 @@ import {
   Eye, EyeOff, LogIn, ShoppingBag, Globe, ChevronDown
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { GoogleLogin } from '@react-oauth/google';
 import useAuthStore from '../store/authStore';
 
 const LANGS = ['uz', 'ru', 'en'];
@@ -18,6 +17,7 @@ const TX = {
     login_sub:   "Hisobingizga kiring",
     no_account:  "Hisob yo'qmi?",
     register:    "Ro'yxatdan o'ting",
+    phone_required: "Telefon raqamni to'liq kiriting",
     trust: ["Ma'lumotlaringiz xavfsiz", "Bepul foydalanish", "O'rnatish shart emas"],
   },
   ru: {
@@ -28,6 +28,7 @@ const TX = {
     login_sub:   "Войдите в ваш аккаунт",
     no_account:  "Нет аккаунта?",
     register:    "Зарегистрироваться",
+    phone_required: "Введите номер телефона полностью",
     trust: ["Ваши данные в безопасности", "Бесплатное использование", "Установка не нужна"],
   },
   en: {
@@ -38,8 +39,22 @@ const TX = {
     login_sub:   "Sign into your account",
     no_account:  "Don't have an account?",
     register:    "Sign Up",
+    phone_required: "Enter your full phone number",
     trust: ["Your data is secure", "Free to use", "No installation needed"],
   },
+};
+
+// Format as +998 XX XXX XX XX from raw digits
+const formatPhone = (raw) => {
+  let d = raw.replace(/\D/g, '');
+  if (d.startsWith('998')) d = d.slice(3);
+  d = d.slice(0, 9);
+  let out = '+998';
+  if (d.length) out += ' ' + d.slice(0, 2);
+  if (d.length > 2) out += ' ' + d.slice(2, 5);
+  if (d.length > 5) out += ' ' + d.slice(5, 7);
+  if (d.length > 7) out += ' ' + d.slice(7, 9);
+  return out;
 };
 
 export default function Login() {
@@ -47,31 +62,23 @@ export default function Login() {
   const lang = i18n.language.startsWith('ru') ? 'ru' : i18n.language.startsWith('en') ? 'en' : 'uz';
   const tx = TX[lang];
 
-  const [form, setForm] = useState({ email: '', password: '' });
+  const [form, setForm] = useState({ phone: '+998 ', password: '' });
   const [showPwd, setShowPwd] = useState(false);
   const [errors, setErrors] = useState({});
   const [langOpen, setLangOpen] = useState(false);
 
   const login = useAuthStore((s) => s.login);
-  const googleLogin = useAuthStore((s) => s.googleLogin);
   const isLoading = useAuthStore((s) => s.isLoading);
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname || '/dashboard';
 
-  const handleGoogleSuccess = async ({ credential }) => {
-    try {
-      const user = await googleLogin(credential);
-      if (!['ADMIN', 'SUPER_ADMIN'].includes(user?.role)) {
-        navigate(from === '/login' ? '/dashboard' : from, { replace: true });
-      }
-    } catch (_) {}
-  };
+  const phoneDigits = form.phone.replace(/\D/g, '');
 
   const validate = () => {
     const e = {};
-    if (!form.email.trim()) e.email = t('email_required');
-    if (!form.password)     e.password = t('password_required');
+    if (phoneDigits.length < 12) e.phone = tx.phone_required;
+    if (!form.password)          e.password = t('password_required');
     return e;
   };
 
@@ -81,15 +88,14 @@ export default function Login() {
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setErrors({});
     try {
-      const user = await login({ email: form.email.trim(), password: form.password });
-      if (!['ADMIN', 'SUPER_ADMIN'].includes(user?.role)) {
-        navigate(from === '/login' ? '/dashboard' : from, { replace: true });
-      }
+      await login({ phone: form.phone.replace(/\s/g, ''), password: form.password });
+      navigate(from === '/login' ? '/dashboard' : from, { replace: true });
     } catch (_) {}
   };
 
   const onChange = (f) => (e) => {
-    setForm((p) => ({ ...p, [f]: e.target.value }));
+    const val = f === 'phone' ? formatPhone(e.target.value) : e.target.value;
+    setForm((p) => ({ ...p, [f]: val }));
     if (errors[f]) setErrors((p) => ({ ...p, [f]: '' }));
   };
 
@@ -153,31 +159,11 @@ export default function Login() {
             <p className="text-slate-400 text-sm mt-1">{tx.login_sub}</p>
           </div>
 
-          {/* Google login */}
-          <div className="mb-6 flex flex-col gap-4">
-            <div className="flex items-center justify-center">
-              <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={() => {}}
-                width="352"
-                shape="rectangular"
-                theme="outline"
-                text="signin_with"
-                locale="uz"
-              />
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="flex-1 h-px bg-[#2ECC71]/10" />
-              <span className="text-xs text-slate-500 font-medium">yoki</span>
-              <div className="flex-1 h-px bg-[#2ECC71]/10" />
-            </div>
-          </div>
-
           <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">{t('email')}</label>
-              <input type="email" autoComplete="email" value={form.email} onChange={onChange('email')} placeholder={t('enter_email')} className={inputCls('email')} />
-              {errors.email && <p className="text-red-400 text-xs mt-0.5">{errors.email}</p>}
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">{t('phone')}</label>
+              <input type="tel" autoComplete="tel" value={form.phone} onChange={onChange('phone')} placeholder="+998 90 123 45 67" className={inputCls('phone')} />
+              {errors.phone && <p className="text-red-400 text-xs mt-0.5">{errors.phone}</p>}
             </div>
 
             <div className="flex flex-col gap-1.5">

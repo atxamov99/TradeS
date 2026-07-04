@@ -33,34 +33,6 @@ const useAuthStore = create(
         }
       },
 
-      googleLogin: async (credential) => {
-        set({ isLoading: true });
-        try {
-          const res = await authApi.googleAuth(credential);
-          const { user } = res.data.data;
-          set({ user, isLoading: false });
-          toast.success(`Xush kelibsiz, ${user.name}!`);
-
-          if (['ADMIN', 'SUPER_ADMIN'].includes(user.role)) {
-            const adminUrl = import.meta.env.VITE_ADMIN_URL || 'http://localhost:5174';
-            const params = new URLSearchParams({
-              name:    user.name  || '',
-              email:   user.email || '',
-              role:    user.role  || '',
-            });
-            window.location.href = `${adminUrl}/sso?${params.toString()}`;
-            return user;
-          }
-
-          return user;
-        } catch (err) {
-          set({ isLoading: false });
-          const message = err.response?.data?.message || 'Google orqali kirish muvaffaqiyatsiz';
-          toast.error(message);
-          throw err;
-        }
-      },
-
       // Ask backend to send a 6-digit OTP to the user's Telegram.
       // Throws with err.response.status === 428 when the phone isn't linked yet.
       requestOtp: async (phone) => {
@@ -94,19 +66,6 @@ const useAuthStore = create(
           const { user } = res.data.data;
           set({ user, isLoading: false });
           toast.success(`Welcome back, ${user.name}!`);
-
-          // ADMIN / SUPER_ADMIN — admin panelga SSO orqali yo'naltirish
-          if (['ADMIN', 'SUPER_ADMIN'].includes(user.role)) {
-            const adminUrl = import.meta.env.VITE_ADMIN_URL || 'http://localhost:5174';
-            const params = new URLSearchParams({
-              name:    user.name  || '',
-              email:   user.email || '',
-              role:    user.role  || '',
-            });
-            window.location.href = `${adminUrl}/sso?${params.toString()}`;
-            return user;
-          }
-
           return user;
         } catch (err) {
           set({ isLoading: false });

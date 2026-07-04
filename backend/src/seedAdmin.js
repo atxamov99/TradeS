@@ -2,13 +2,8 @@ require('dotenv').config();
 const prisma = require('./config/prisma');
 const bcrypt = require('bcryptjs');
 
+// Super Admin is n1565559@gmail.com (promoted from a real user account) — not seeded here.
 const admins = [
-  {
-    name: 'Super Admin',
-    email: 'superadmin@savdo.uz',
-    password: 'Admin@1234',
-    role: 'SUPER_ADMIN',
-  },
   {
     name: 'Admin',
     email: 'admin@savdo.uz',

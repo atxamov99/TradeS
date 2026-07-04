@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   TextInput,
   Pressable,
   ActivityIndicator,
+  AppState,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,9 +30,26 @@ const OTP_LEN = 6;
 
 /* ── Segmented OTP input (6 boxes, single hidden field) ─────────── */
 function OtpBoxes({ value, onChange, colors, isDark }) {
+  const ref = useRef(null);
   const digits = value.split('');
+
+  // blur→focus reliably (re)opens the iOS keyboard even when RN still thinks the
+  // field is focused (e.g. after coming back from Telegram to copy the code).
+  const focusInput = () => {
+    ref.current?.blur();
+    requestAnimationFrame(() => ref.current?.focus());
+  };
+
+  // Re-open the keyboard automatically when the app returns to the foreground.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') setTimeout(() => ref.current?.focus(), 350);
+    });
+    return () => sub.remove();
+  }, []);
+
   return (
-    <View style={styles.otpRow}>
+    <Pressable style={styles.otpRow} onPress={focusInput}>
       {/* visual boxes (behind, not touchable) */}
       <View style={styles.otpBoxesRow} pointerEvents="none">
         {Array.from({ length: OTP_LEN }).map((_, i) => {
@@ -54,17 +72,19 @@ function OtpBoxes({ value, onChange, colors, isDark }) {
           );
         })}
       </View>
-      {/* full-cover transparent input on top — tapping it opens the keyboard directly */}
+      {/* real input on top; Pressable handles taps and (re)focuses it */}
       <TextInput
+        ref={ref}
         value={value}
         onChangeText={(v) => onChange(v.replace(/\D/g, '').slice(0, OTP_LEN))}
         keyboardType="number-pad"
         maxLength={OTP_LEN}
         autoFocus
         caretHidden
+        pointerEvents="none"
         style={styles.otpOverlayInput}
       />
-    </View>
+    </Pressable>
   );
 }
 

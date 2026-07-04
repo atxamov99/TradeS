@@ -259,6 +259,13 @@ export default function RegisterScreen({ navigation }) {
               </View>
             ))}
 
+            {/* highlighted "where the code comes from" note */}
+            <View style={[styles.note, { backgroundColor: colors.primary + '14', borderColor: colors.primary + '33' }]}>
+              <Text style={[styles.noteText, { color: colors.text }]}>
+                {t('auth.cNote') || "📩 6 xonali kod shu botga keladi — o'sha yerdan olasiz"}
+              </Text>
+            </View>
+
             <View style={{ height: 8 }} />
             <BigButton
               title={t('auth.openBot') || 'Telegram botni ochish'}
@@ -290,6 +297,13 @@ export default function RegisterScreen({ navigation }) {
               {t('auth.otpDesc') || "Telegram'ga yuborilgan 6 xonali kod"}
             </Text>
             <Text style={[styles.phoneChip, { color: colors.primary }]}>{phone}</Text>
+
+            <View style={[styles.tgHint, { backgroundColor: TG_BLUE + '14' }]}>
+              <Ionicons name="paper-plane" size={14} color={TG_BLUE} />
+              <Text style={[styles.tgHintText, { color: colors.textMuted }]}>
+                {t('auth.otpHint') || 'Kod @trades_uz_bot botiga yuborildi'}
+              </Text>
+            </View>
 
             <OtpBoxes value={code} onChange={setCode} colors={colors} isDark={isDark} />
 
@@ -361,7 +375,17 @@ const styles = StyleSheet.create({
   stepNumText: { fontSize: SIZES.md, ...FONTS.bold },
   stepText: { flex: 1, fontSize: SIZES.md, lineHeight: 19 },
 
-  phoneChip: { fontSize: SIZES.base, ...FONTS.bold, textAlign: 'center', marginBottom: 22 },
+  note: {
+    borderRadius: 14, borderWidth: 1, paddingVertical: 12, paddingHorizontal: 14, marginTop: 4,
+  },
+  noteText: { fontSize: SIZES.md, lineHeight: 19, ...FONTS.medium },
+
+  phoneChip: { fontSize: SIZES.base, ...FONTS.bold, textAlign: 'center', marginBottom: 12 },
+  tgHint: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 14, borderRadius: 20, marginBottom: 22,
+  },
+  tgHintText: { fontSize: SIZES.sm, marginLeft: 6 },
 
   otpRow: { flexDirection: 'row', justifyContent: 'space-between', position: 'relative' },
   otpBox: {

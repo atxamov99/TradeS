@@ -41,16 +41,18 @@
     "getCode": "Get Code",
     "haveAccount": "Already have an account?",
     "connectTitle": "Connect Telegram",
-    "connectShort": "The code is free — delivered via Telegram",
-    "cStep1": "Open the bot and press «Start»",
-    "cStep2": "Tap the «📱 Share number» button",
-    "cStep3": "Come back here and press «Send code»",
+    "connectShort": "The code is sent by the @trades_uz_bot Telegram bot. First register in the bot:",
+    "cStep1": "Tap «Open Telegram bot»",
+    "cStep2": "In the bot press «Start», then send your number with «📱 Share number»",
+    "cStep3": "Come back to this screen and tap «Connected — send code»",
     "openBot": "Open Telegram bot",
     "connectDone": "Connected — send code",
     "otpTitle": "Verification Code",
     "otpDesc": "6-digit code sent to your Telegram",
     "verify": "Verify",
-    "resend": "Resend code"
+    "resend": "Resend code",
+    "cNote": "📩 The 6-digit code arrives in this bot — take it from there",
+    "otpHint": "Code sent to the @trades_uz_bot bot"
   },
   "dashboard": {
     "title": "Savdo",

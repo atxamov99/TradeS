@@ -121,6 +121,6 @@ export const THEMES = [
   }
 ];
 
-export const DEFAULT_THEME = 'pos-dark';
+export const DEFAULT_THEME = 'earthy-warm';
 
 export const THEME_KEY = '@savdo_theme';

@@ -39,6 +39,7 @@ const Input = ({
           secureTextEntry={secureTextEntry}
           keyboardType={keyboardType}
           autoCapitalize="none"
+          textAlignVertical="center"
         />
         {rightIcon && (
           <TouchableOpacity
@@ -69,10 +70,10 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
-    paddingHorizontal: 12,
-    height: 48,
+    paddingHorizontal: 16,
+    height: 54,
   },
   inputWrapperLight: {
     backgroundColor: COLORS.white,
@@ -86,6 +87,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: '100%',
     fontSize: SIZES.base,
+    paddingVertical: 0,
     ...FONTS.regular,
   },
   inputError: {
@@ -97,7 +99,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   iconContainer: {
-    marginRight: 10,
+    marginRight: 12,
   },
   rightIconContainer: {
     marginLeft: 8,

@@ -10,12 +10,14 @@ import {
   TextInput,
   Switch,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../store/ThemeContext';
 import { changeLanguage } from '../i18n/i18n';
-import { clearToken, clearUser, getUser, setUser } from '../store/authStore';
+import { clearToken, clearUser, getUser, getToken, setUser } from '../store/authStore';
+import { ADMIN_URL } from '../constants/api';
 import api from '../services/api';
 import {
   getSettings,
@@ -76,6 +78,15 @@ export default function SettingsScreen({ navigation }) {
 
   const handleLangChange = async (langCode) => {
     await changeLanguage(langCode);
+  };
+
+  const handleOpenAdminPanel = async () => {
+    const token = await getToken();
+    if (!token) return;
+    const url = `${ADMIN_URL}/sso?accessToken=${encodeURIComponent(token)}`;
+    Linking.openURL(url).catch(() =>
+      Alert.alert(t('common.error'), t('settings.adminPanelOpenFailed'))
+    );
   };
 
   const handlePasswordChange = async () => {
@@ -270,7 +281,23 @@ export default function SettingsScreen({ navigation }) {
     >
       {renderProfileCard()}
 
-
+      {['ADMIN', 'SUPER_ADMIN'].includes(user?.role?.toUpperCase()) && renderSettingCard('settings.adminPanel', (
+        <>
+          {renderRow(
+            <Ionicons name="people-outline" size={20} color={colors.accent} />,
+            'Foydalanuvchilar',
+            () => navigation.navigate('AdminUsers'),
+            <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+          )}
+          {renderRow(
+            <Ionicons name="shield-checkmark-outline" size={20} color={colors.accent} />,
+            t('settings.openAdminPanel'),
+            handleOpenAdminPanel,
+            <Ionicons name="open-outline" size={20} color={colors.textMuted} />,
+            true
+          )}
+        </>
+      ))}
 
       {renderSettingCard('settings.language', (
         LANGUAGES.map((lang, idx) =>

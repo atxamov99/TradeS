@@ -15,6 +15,7 @@ import ProductsScreen from '../screens/ProductsScreen';
 import NewSaleScreen from '../screens/NewSaleScreen';
 import SalesScreen from '../screens/SalesScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import AdminUsersScreen from '../screens/AdminUsersScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -154,6 +155,7 @@ export default function AppNavigator() {
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
       <Stack.Screen name="MainTabs" component={MainTabs} />
+      <Stack.Screen name="AdminUsers" component={AdminUsersScreen} />
     </Stack.Navigator>
   );
 }

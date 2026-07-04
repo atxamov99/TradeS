@@ -29,40 +29,42 @@ const OTP_LEN = 6;
 
 /* ── Segmented OTP input (6 boxes, single hidden field) ─────────── */
 function OtpBoxes({ value, onChange, colors, isDark }) {
-  const ref = useRef(null);
   const digits = value.split('');
   return (
-    <Pressable style={styles.otpRow} onPress={() => ref.current?.focus()}>
-      {Array.from({ length: OTP_LEN }).map((_, i) => {
-        const filled = i < digits.length;
-        const active = i === digits.length;
-        return (
-          <View
-            key={i}
-            style={[
-              styles.otpBox,
-              {
-                backgroundColor: colors.card,
-                borderColor: active ? colors.primary : filled ? colors.primary + '66' : colors.border,
-              },
-              active && { borderWidth: 2 },
-            ]}
-          >
-            <Text style={[styles.otpDigit, { color: colors.text }]}>{digits[i] || ''}</Text>
-          </View>
-        );
-      })}
+    <View style={styles.otpRow}>
+      {/* visual boxes (behind, not touchable) */}
+      <View style={styles.otpBoxesRow} pointerEvents="none">
+        {Array.from({ length: OTP_LEN }).map((_, i) => {
+          const filled = i < digits.length;
+          const active = i === digits.length;
+          return (
+            <View
+              key={i}
+              style={[
+                styles.otpBox,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: active ? colors.primary : filled ? colors.primary + '66' : colors.border,
+                },
+                active && { borderWidth: 2 },
+              ]}
+            >
+              <Text style={[styles.otpDigit, { color: colors.text }]}>{digits[i] || ''}</Text>
+            </View>
+          );
+        })}
+      </View>
+      {/* full-cover transparent input on top — tapping it opens the keyboard directly */}
       <TextInput
-        ref={ref}
         value={value}
         onChangeText={(v) => onChange(v.replace(/\D/g, '').slice(0, OTP_LEN))}
         keyboardType="number-pad"
         maxLength={OTP_LEN}
         autoFocus
         caretHidden
-        style={styles.hiddenInput}
+        style={styles.otpOverlayInput}
       />
-    </Pressable>
+    </View>
   );
 }
 
@@ -389,13 +391,17 @@ const styles = StyleSheet.create({
   },
   tgHintText: { fontSize: SIZES.sm, marginLeft: 6 },
 
-  otpRow: { flexDirection: 'row', justifyContent: 'space-between', position: 'relative' },
+  otpRow: { position: 'relative', height: 56, justifyContent: 'center' },
+  otpBoxesRow: { flexDirection: 'row', justifyContent: 'space-between' },
   otpBox: {
     width: 46, height: 56, borderRadius: 14, borderWidth: 1.5,
     alignItems: 'center', justifyContent: 'center',
   },
   otpDigit: { fontSize: 24, ...FONTS.bold },
-  hiddenInput: { position: 'absolute', width: '100%', height: '100%', opacity: 0 },
+  otpOverlayInput: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    opacity: 0, color: 'transparent',
+  },
 
   resendBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 18 },
 });

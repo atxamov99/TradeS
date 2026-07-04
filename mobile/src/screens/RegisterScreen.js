@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,10 @@ import {
   ScrollView,
   Alert,
   Linking,
+  TouchableOpacity,
+  TextInput,
+  Pressable,
+  ActivityIndicator,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,15 +21,77 @@ import { SIZES, FONTS } from '../constants/theme';
 import apiClient from '../services/api';
 import { setToken, setUser } from '../store/authStore';
 import { formatPhone } from '../utils/phoneFormatter';
-import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
-import Card from '../components/ui/Card';
 
 const BOT_URL = 'https://t.me/trades_uz_bot';
+const TG_BLUE = '#229ED9';
+const OTP_LEN = 6;
+
+/* ── Segmented OTP input (6 boxes, single hidden field) ─────────── */
+function OtpBoxes({ value, onChange, colors, isDark }) {
+  const ref = useRef(null);
+  const digits = value.split('');
+  return (
+    <Pressable style={styles.otpRow} onPress={() => ref.current?.focus()}>
+      {Array.from({ length: OTP_LEN }).map((_, i) => {
+        const filled = i < digits.length;
+        const active = i === digits.length;
+        return (
+          <View
+            key={i}
+            style={[
+              styles.otpBox,
+              {
+                backgroundColor: colors.card,
+                borderColor: active ? colors.primary : filled ? colors.primary + '66' : colors.border,
+              },
+              active && { borderWidth: 2 },
+            ]}
+          >
+            <Text style={[styles.otpDigit, { color: colors.text }]}>{digits[i] || ''}</Text>
+          </View>
+        );
+      })}
+      <TextInput
+        ref={ref}
+        value={value}
+        onChangeText={(v) => onChange(v.replace(/\D/g, '').slice(0, OTP_LEN))}
+        keyboardType="number-pad"
+        maxLength={OTP_LEN}
+        autoFocus
+        caretHidden
+        style={styles.hiddenInput}
+      />
+    </Pressable>
+  );
+}
+
+/* ── Primary gradient-ish button ────────────────────────────────── */
+function BigButton({ title, onPress, loading, disabled, color, textColor = '#fff', icon }) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      disabled={disabled || loading}
+      activeOpacity={0.85}
+      style={[styles.bigBtn, { backgroundColor: color }, (disabled || loading) && { opacity: 0.55 }]}
+    >
+      {loading ? (
+        <ActivityIndicator color={textColor} />
+      ) : (
+        <>
+          {icon && <Ionicons name={icon} size={18} color={textColor} style={{ marginRight: 8 }} />}
+          <Text style={[styles.bigBtnText, { color: textColor }]}>{title}</Text>
+        </>
+      )}
+    </TouchableOpacity>
+  );
+}
 
 export default function RegisterScreen({ navigation }) {
   const { t } = useTranslation();
   const { colors } = useTheme();
+  const isDark = colors.text === '#FFFFFF';
+
   const [step, setStep] = useState('form'); // 'form' | 'connect' | 'otp'
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -35,19 +101,17 @@ export default function RegisterScreen({ navigation }) {
   const [showPassword, setShowPassword] = useState(false);
 
   const phoneDigits = phone.replace(/\D/g, '');
+  const stepNum = step === 'form' ? 1 : 2;
 
-  // Send (or resend) the OTP. On 428 the phone isn't linked to Telegram yet.
   const sendCode = async () => {
     setLoading(true);
     try {
       await apiClient.post('/auth/request-otp', { phone });
+      setCode('');
       setStep('otp');
     } catch (error) {
-      if (error.response?.status === 428) {
-        setStep('connect');
-      } else {
-        Alert.alert(t('common.error'), error.response?.data?.message || t('auth.registerFailed'));
-      }
+      if (error.response?.status === 428) setStep('connect');
+      else Alert.alert(t('common.error'), error.response?.data?.message || t('auth.registerFailed'));
     } finally {
       setLoading(false);
     }
@@ -62,15 +126,12 @@ export default function RegisterScreen({ navigation }) {
   };
 
   const handleVerify = async () => {
-    if (code.replace(/\D/g, '').length !== 6) {
-      Alert.alert(t('common.error'), t('auth.fillAllFields'));
-      return;
-    }
+    if (code.length !== OTP_LEN) return;
     setLoading(true);
     try {
       const res = await apiClient.post('/auth/verify-otp', {
         phone,
-        code: code.replace(/\D/g, ''),
+        code,
         name: name.trim(),
         password: password.trim(),
       });
@@ -85,29 +146,41 @@ export default function RegisterScreen({ navigation }) {
     }
   };
 
-  const handlePhoneChange = (text) => setPhone(formatPhone(text));
+  const goBack = () => (step === 'form' ? navigation.navigate('Login') : setStep('form'));
 
   return (
     <KeyboardAvoidingView
       style={[styles.flex, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <StatusBar style={colors.background === '#0F172A' ? 'light' : 'dark'} backgroundColor={colors.background} />
+      <StatusBar style={isDark ? 'light' : 'dark'} backgroundColor={colors.background} />
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        <View style={styles.headerSection}>
-          <View style={[styles.logoCircle, { backgroundColor: colors.primary }]}>
-            <Ionicons name="cart" size={40} color="#fff" />
+
+        {/* Top bar: back + step pills */}
+        <View style={styles.topBar}>
+          <TouchableOpacity onPress={goBack} activeOpacity={0.7} style={[styles.backBtn, { borderColor: colors.border }]}>
+            <Ionicons name="arrow-back" size={20} color={colors.text} />
+          </TouchableOpacity>
+          <View style={styles.stepPills}>
+            <View style={[styles.pill, { backgroundColor: colors.primary }]} />
+            <View style={[styles.pill, { backgroundColor: stepNum >= 2 ? colors.primary : colors.border }]} />
           </View>
-          <Text style={[styles.appName, { color: colors.primary }]}>TradeS</Text>
-          <Text style={[styles.appSubtitle, { color: colors.textMuted }]}>{t('app.subtitle') || 'Boshqaruv tizimi'}</Text>
         </View>
 
-        {/* ── STEP: FORM ─────────────────────────────── */}
+        {/* Brand header */}
+        <View style={styles.header}>
+          <View style={[styles.logoTile, { backgroundColor: colors.primary, shadowColor: colors.primary }]}>
+            <Ionicons name="cart" size={34} color="#fff" />
+          </View>
+          <Text style={[styles.brand, { color: colors.text }]}>TradeS</Text>
+        </View>
+
+        {/* ── STEP 1: FORM ─────────────────────────── */}
         {step === 'form' && (
-          <Card style={styles.card}>
-            <Text style={[styles.cardTitle, { color: colors.text }]}>{t('auth.signUp')}</Text>
-            <Text style={[styles.cardSubtitle, { color: colors.textMuted }]}>
-              {t('auth.otpSubtitle') || 'Telefon raqamingiz orqali ro\'yxatdan o\'ting'}
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.title, { color: colors.text }]}>{t('auth.signUp')}</Text>
+            <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+              {t('auth.otpSubtitle') || "Telefon raqamingiz orqali ro'yxatdan o'ting"}
             </Text>
 
             <Input
@@ -115,139 +188,130 @@ export default function RegisterScreen({ navigation }) {
               placeholder={t('auth.namePlaceholder')}
               value={name}
               onChangeText={setName}
+              isDark={isDark}
               icon={<Ionicons name="person-outline" size={20} color={colors.textMuted} />}
             />
-
             <Input
               label={t('auth.phone')}
               placeholder="+998 90 123 45 67"
               value={phone}
-              onChangeText={handlePhoneChange}
+              onChangeText={(txt) => setPhone(formatPhone(txt))}
               keyboardType="phone-pad"
+              isDark={isDark}
               icon={<Ionicons name="call-outline" size={20} color={colors.textMuted} />}
             />
-
             <Input
               label={t('auth.password')}
               placeholder={t('auth.passwordPlaceholder')}
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
+              isDark={isDark}
               icon={<Ionicons name="lock-closed-outline" size={20} color={colors.textMuted} />}
               rightIcon={<Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={colors.textMuted} />}
               onRightIconPress={() => setShowPassword(!showPassword)}
-              containerStyle={{ marginBottom: 24 }}
+              containerStyle={{ marginBottom: 20 }}
             />
 
-            <Button
+            <BigButton
               title={t('auth.getCode') || 'Kod olish'}
               onPress={handleStart}
               loading={loading}
-              variant="primary"
-              style={{ height: 52 }}
+              color={colors.primary}
+              icon="arrow-forward"
             />
 
-            <Button
-              title={t('auth.signIn')}
-              onPress={() => navigation.navigate('Login')}
-              variant="outline"
-              style={{ marginTop: 12, borderHeight: 0, borderColor: 'transparent' }}
-              textStyle={{ color: colors.primary }}
-            />
-          </Card>
+            <View style={styles.footerRow}>
+              <Text style={{ color: colors.textMuted, fontSize: SIZES.md }}>
+                {t('auth.haveAccount') || 'Hisobingiz bormi?'}{' '}
+              </Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+                <Text style={{ color: colors.primary, fontSize: SIZES.md, ...FONTS.bold }}>{t('auth.signIn')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         )}
 
-        {/* ── STEP: CONNECT TELEGRAM ─────────────────── */}
+        {/* ── STEP 2a: CONNECT TELEGRAM ────────────── */}
         {step === 'connect' && (
-          <Card style={styles.card}>
-            <View style={styles.centerIcon}>
-              <View style={[styles.iconCircle, { backgroundColor: '#229ED922' }]}>
-                <Ionicons name="paper-plane" size={36} color="#229ED9" />
-              </View>
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={[styles.bigIcon, { backgroundColor: TG_BLUE + '1F' }]}>
+              <Ionicons name="paper-plane" size={38} color={TG_BLUE} />
             </View>
-            <Text style={[styles.cardTitle, { color: colors.text, textAlign: 'center' }]}>
-              {t('auth.connectTitle') || 'Telegram\'ni ulang'}
+            <Text style={[styles.title, { color: colors.text, textAlign: 'center' }]}>
+              {t('auth.connectTitle') || "Telegram'ni ulang"}
             </Text>
-            <Text style={[styles.cardSubtitle, { color: colors.textMuted, textAlign: 'center' }]}>
-              {t('auth.connectDesc') ||
-                'Tasdiqlash kodi Telegram orqali yuboriladi (bepul). Botni oching, «Start» bosing va «📱 Raqamni ulashish» tugmasi bilan raqamingizni yuboring.'}
+            <Text style={[styles.subtitle, { color: colors.textMuted, textAlign: 'center' }]}>
+              {t('auth.connectShort') || 'Kod bepul — Telegram orqali keladi'}
             </Text>
 
-            <Button
+            {/* numbered steps */}
+            {[
+              t('auth.cStep1') || 'Botni oching va «Start» bosing',
+              t('auth.cStep2') || '«📱 Raqamni ulashish» tugmasini bosing',
+              t('auth.cStep3') || 'Bu yerga qaytib, «Kod yuborish» bosing',
+            ].map((line, i) => (
+              <View key={i} style={styles.stepLine}>
+                <View style={[styles.stepNum, { backgroundColor: colors.primary + '22' }]}>
+                  <Text style={[styles.stepNumText, { color: colors.primary }]}>{i + 1}</Text>
+                </View>
+                <Text style={[styles.stepText, { color: colors.text }]}>{line}</Text>
+              </View>
+            ))}
+
+            <View style={{ height: 8 }} />
+            <BigButton
               title={t('auth.openBot') || 'Telegram botni ochish'}
               onPress={() => Linking.openURL(BOT_URL)}
-              variant="primary"
-              style={{ height: 52, backgroundColor: '#229ED9', marginBottom: 12 }}
+              color={TG_BLUE}
+              icon="paper-plane"
             />
-            <Button
+            <View style={{ height: 12 }} />
+            <BigButton
               title={t('auth.connectDone') || 'Uladim — kod yuborish'}
               onPress={sendCode}
               loading={loading}
-              variant="primary"
-              style={{ height: 52 }}
+              color={colors.primary}
+              icon="checkmark"
             />
-            <Button
-              title={t('common.back') || 'Orqaga'}
-              onPress={() => setStep('form')}
-              variant="outline"
-              style={{ marginTop: 12, borderColor: 'transparent' }}
-              textStyle={{ color: colors.textMuted }}
-            />
-          </Card>
+          </View>
         )}
 
-        {/* ── STEP: OTP ──────────────────────────────── */}
+        {/* ── STEP 2b: OTP ─────────────────────────── */}
         {step === 'otp' && (
-          <Card style={styles.card}>
-            <View style={styles.centerIcon}>
-              <View style={[styles.iconCircle, { backgroundColor: colors.primary + '22' }]}>
-                <Ionicons name="key" size={36} color={colors.primary} />
-              </View>
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={[styles.bigIcon, { backgroundColor: colors.primary + '1F' }]}>
+              <Ionicons name="shield-checkmark" size={38} color={colors.primary} />
             </View>
-            <Text style={[styles.cardTitle, { color: colors.text, textAlign: 'center' }]}>
+            <Text style={[styles.title, { color: colors.text, textAlign: 'center' }]}>
               {t('auth.otpTitle') || 'Tasdiqlash kodi'}
             </Text>
-            <Text style={[styles.cardSubtitle, { color: colors.textMuted, textAlign: 'center' }]}>
-              {(t('auth.otpDesc') || 'Telegram\'ga yuborilgan 6 xonali kodni kiriting')}
+            <Text style={[styles.subtitle, { color: colors.textMuted, textAlign: 'center', marginBottom: 6 }]}>
+              {t('auth.otpDesc') || "Telegram'ga yuborilgan 6 xonali kod"}
             </Text>
-            <Text style={[styles.phoneLabel, { color: colors.primary }]}>{phone}</Text>
+            <Text style={[styles.phoneChip, { color: colors.primary }]}>{phone}</Text>
 
-            <Input
-              label={t('auth.code') || 'Kod'}
-              placeholder="••••••"
-              value={code}
-              onChangeText={(v) => setCode(v.replace(/\D/g, '').slice(0, 6))}
-              keyboardType="number-pad"
-              maxLength={6}
-              icon={<Ionicons name="keypad-outline" size={20} color={colors.textMuted} />}
-              containerStyle={{ marginBottom: 24 }}
-            />
+            <OtpBoxes value={code} onChange={setCode} colors={colors} isDark={isDark} />
 
-            <Button
+            <View style={{ height: 24 }} />
+            <BigButton
               title={t('auth.verify') || 'Tasdiqlash'}
               onPress={handleVerify}
               loading={loading}
-              variant="primary"
-              style={{ height: 52 }}
+              disabled={code.length !== OTP_LEN}
+              color={colors.primary}
+              icon="checkmark-circle"
             />
-            <Button
-              title={t('auth.resend') || 'Kodni qayta yuborish'}
-              onPress={sendCode}
-              variant="outline"
-              style={{ marginTop: 12, borderColor: 'transparent' }}
-              textStyle={{ color: colors.primary }}
-            />
-            <Button
-              title={t('common.back') || 'Orqaga'}
-              onPress={() => setStep('form')}
-              variant="outline"
-              style={{ marginTop: 4, borderColor: 'transparent' }}
-              textStyle={{ color: colors.textMuted }}
-            />
-          </Card>
+
+            <TouchableOpacity onPress={sendCode} disabled={loading} style={styles.resendBtn}>
+              <Ionicons name="refresh" size={15} color={colors.textMuted} />
+              <Text style={{ color: colors.textMuted, fontSize: SIZES.md, marginLeft: 6 }}>
+                {t('auth.resend') || 'Kodni qayta yuborish'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         )}
 
-        <Text style={[styles.footer, { color: colors.textMuted }]}>{t('app.version')}</Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -255,40 +319,57 @@ export default function RegisterScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  container: {
-    flexGrow: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 40,
+  container: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 22, paddingVertical: 36 },
+
+  topBar: { flexDirection: 'row', alignItems: 'center', marginBottom: 24 },
+  backBtn: {
+    width: 42, height: 42, borderRadius: 14, borderWidth: 1,
+    alignItems: 'center', justifyContent: 'center',
   },
-  headerSection: { alignItems: 'center', marginBottom: 40 },
-  logoCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 5,
+  stepPills: { flexDirection: 'row', gap: 6, marginLeft: 14, flex: 1 },
+  pill: { height: 5, borderRadius: 3, flex: 1 },
+
+  header: { alignItems: 'center', marginBottom: 24 },
+  logoTile: {
+    width: 68, height: 68, borderRadius: 22,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 12,
+    shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.35, shadowRadius: 16, elevation: 8,
   },
-  appName: { fontSize: 28, ...FONTS.bold, letterSpacing: 1 },
-  appSubtitle: { fontSize: SIZES.md, marginTop: 4 },
-  card: { width: '100%', padding: 24 },
-  cardTitle: { fontSize: 24, ...FONTS.bold, marginBottom: 8 },
-  cardSubtitle: { fontSize: SIZES.base, marginBottom: 24, lineHeight: 20 },
-  centerIcon: { alignItems: 'center', marginBottom: 16 },
-  iconCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+  brand: { fontSize: 26, ...FONTS.bold, letterSpacing: 0.5 },
+
+  card: {
+    width: '100%', borderRadius: 24, borderWidth: 1, padding: 24,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.12, shadowRadius: 24, elevation: 4,
   },
-  phoneLabel: { fontSize: SIZES.md, ...FONTS.bold, textAlign: 'center', marginBottom: 20 },
-  footer: { marginTop: 40, fontSize: SIZES.xs },
+  title: { fontSize: 23, ...FONTS.bold, marginBottom: 6 },
+  subtitle: { fontSize: SIZES.md, marginBottom: 22, lineHeight: 20 },
+
+  bigBtn: {
+    height: 54, borderRadius: 16, flexDirection: 'row',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  bigBtnText: { fontSize: SIZES.base, ...FONTS.bold },
+
+  footerRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 20 },
+
+  bigIcon: {
+    width: 80, height: 80, borderRadius: 26, alignSelf: 'center',
+    alignItems: 'center', justifyContent: 'center', marginBottom: 18,
+  },
+  stepLine: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
+  stepNum: { width: 28, height: 28, borderRadius: 9, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  stepNumText: { fontSize: SIZES.md, ...FONTS.bold },
+  stepText: { flex: 1, fontSize: SIZES.md, lineHeight: 19 },
+
+  phoneChip: { fontSize: SIZES.base, ...FONTS.bold, textAlign: 'center', marginBottom: 22 },
+
+  otpRow: { flexDirection: 'row', justifyContent: 'space-between', position: 'relative' },
+  otpBox: {
+    width: 46, height: 56, borderRadius: 14, borderWidth: 1.5,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  otpDigit: { fontSize: 24, ...FONTS.bold },
+  hiddenInput: { position: 'absolute', width: '100%', height: '100%', opacity: 0 },
+
+  resendBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 18 },
 });

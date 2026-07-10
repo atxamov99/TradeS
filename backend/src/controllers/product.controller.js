@@ -10,7 +10,7 @@ const getProducts = asyncHandler(async (req, res) => {
 });
 
 const getProductById = asyncHandler(async (req, res) => {
-  const product = await productService.getProductById(req.params.id, req.user.id, { isAdmin: isAdmin(req) });
+  const product = await productService.getProductById(req.params.id);
   res.status(200).json(new ApiResponse(200, { product }, 'Product retrieved'));
 });
 
@@ -45,7 +45,7 @@ const addReview = asyncHandler(async (req, res) => {
 });
 
 const getCategories = asyncHandler(async (req, res) => {
-  const categories = await productService.getCategories(req.user.id, { isAdmin: isAdmin(req) });
+  const categories = await productService.getCategories();
   res.status(200).json(new ApiResponse(200, { categories }, 'Categories retrieved'));
 });
 

@@ -1,6 +1,9 @@
 import { useEffect, useRef } from "react";
+import axios from "axios";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../store";
+import { appConfig } from "../../config/appConfig";
+import { authApi } from "../../services/api/auth.api";
 
 const STORAGE_KEY = "savdo-admin-auth";
 
@@ -40,33 +43,60 @@ function buildProfile(user) {
 export function SsoPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { isAuthenticated, ssoLogin } = useAuth();
+  const { ssoLogin } = useAuth();
   const ran = useRef(false);
 
   useEffect(() => {
     if (ran.current) return;
     ran.current = true;
 
-    const name     = searchParams.get("name");
-    const email    = searchParams.get("email");
-    const role     = searchParams.get("role");
+    const accessToken = searchParams.get("accessToken");
 
     // URLdan ma'lumotlarni darhol tozalaymiz (history'da qolmasligi uchun)
     window.history.replaceState({}, document.title, window.location.pathname);
 
-    // Auth endi httpOnly cookie orqali (token URL'da uzatilmaydi). Cookie localhost
-    // portlar aro (5173↔5174) baham ko'riladi. Profilni React state'ga hydrate qilamiz
-    // (oddiy login bilan bir xil yo'l) va SPA navigatsiya qilamiz — to'liq reload
-    // qilmaymiz, aks holda AuthProvider'ning localStorage-tozalash effekti bilan
-    // race bo'lib, dashboard qayta /login'ga tushib qolardi.
-    if (email && ["ADMIN", "SUPER_ADMIN"].includes(role)) {
-      ssoLogin({ id: "", name, email, role });
-      navigate("/dashboard", { replace: true });
-    } else if (isAuthenticated) {
-      navigate("/dashboard", { replace: true });
-    } else {
-      navigate("/login", { replace: true });
+    // Mobil ilova — foydalanuvchi allaqachon Bearer accessToken bilan tizimga
+    // kirgan (cookie'siz, native http client). Uni shu accessToken bilan
+    // /auth/sso-adopt'ga yuboramiz — u admin panelning O'Z origin'ida yangi
+    // httpOnly cookie sessiyasini o'rnatadi.
+    if (accessToken) {
+      axios
+        .post(
+          `${appConfig.apiBaseUrl}/auth/sso-adopt`,
+          {},
+          { headers: { Authorization: `Bearer ${accessToken}` }, withCredentials: true }
+        )
+        .then(({ data }) => {
+          const user = data?.data?.user;
+          if (!user || !["ADMIN", "SUPER_ADMIN"].includes(user.role?.toUpperCase())) {
+            throw new Error("Ruxsat yo'q");
+          }
+          ssoLogin({ id: user.id, name: user.name, email: user.email, role: user.role });
+          navigate("/dashboard", { replace: true });
+        })
+        .catch(() => navigate("/login", { replace: true }));
+      return;
     }
+
+    // Auth endi httpOnly cookie orqali (token URL'da uzatilmaydi). Cookie localhost
+    // portlar aro (5173↔5174) baham ko'riladi — lekin shu sababli brauzerda oldin
+    // qolgan boshqa (masalan oddiy USER) sessiyaning cookie'si bo'lishi mumkin.
+    // Query paramlardagi email/role'ga ishonib to'g'ridan-to'g'ri dashboardga
+    // kiritish xavfli edi (adminsiz odam ham "admin" holatida ko'rinardi va
+    // keyinchalik har bir yozish amali serverda 403/404 bilan qulardi). Shuning
+    // uchun sessiyani /auth/me orqali backendda tasdiqlab, faqat shundan keyin
+    // haqiqiy foydalanuvchi ma'lumoti bilan dashboardga o'tamiz.
+    authApi
+      .getMe()
+      .then(({ data }) => {
+        const user = data?.user;
+        if (!user || !["ADMIN", "SUPER_ADMIN"].includes(user.role?.toUpperCase())) {
+          throw new Error("Ruxsat yo'q");
+        }
+        ssoLogin({ id: user.id, name: user.name, email: user.email, role: user.role });
+        navigate("/dashboard", { replace: true });
+      })
+      .catch(() => navigate("/login", { replace: true }));
   }, []);
 
   return (

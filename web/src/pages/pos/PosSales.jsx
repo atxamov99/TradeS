@@ -126,7 +126,7 @@ export default function PosSales() {
       ) : (
         <div className="space-y-2">
           {sales.map((s) => (
-            <div key={s._id} className="flex items-center justify-between p-4 bg-pos-card border border-pos-border rounded-xl">
+            <div key={s.id} className="flex items-center justify-between p-4 bg-pos-card border border-pos-border rounded-xl">
               <div>
                 <p className="font-medium">{s.productName}</p>
                 <p className="text-pos-muted text-xs mt-0.5">

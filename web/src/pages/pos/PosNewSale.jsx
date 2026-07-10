@@ -68,7 +68,7 @@ export default function PosNewSale() {
     setIsSubmitting(true);
 
     const salePayload = {
-      product: selected._id,
+      product: selected.id,
       productName: selected.name,
       quantity: qty,
       sellPrice: selected.finalPrice || selected.sellPrice || selected.price,
@@ -168,7 +168,7 @@ export default function PosNewSale() {
               <div className="space-y-2">
                 {products.map((p) => (
                   <button
-                    key={p._id}
+                    key={p.id}
                     onClick={() => selectProduct(p)}
                     className="w-full flex items-center justify-between p-4 bg-pos-card border border-pos-border rounded-xl hover:border-pos-accent transition-colors text-left"
                   >

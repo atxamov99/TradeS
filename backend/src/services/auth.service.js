@@ -356,4 +356,72 @@ const verifyOtp = async ({ phone: rawPhone, code, name, password }, meta = {}) =
   return { user: userResponse, accessToken, refreshToken };
 };
 
-module.exports = { register, login, refreshTokens, logout, logoutAll, googleAuth, requestOtp, verifyOtp };
+const PASSWORD_RESET_EXPIRES_MIN = 30;
+
+const hashResetToken = (rawToken) =>
+  crypto.createHash('sha256').update(rawToken).digest('hex');
+
+/**
+ * Request a password reset. Generates a random token, stores its hash + expiry on
+ * the user, and returns the raw token in a dev-safe way (no real email/SMS is
+ * configured). Always returns the same generic message to avoid user enumeration.
+ */
+const forgotPassword = async (email) => {
+  const genericMessage = 'Agar email mavjud bo\'lsa, tiklash tokeni yuborildi';
+  if (!email) return { message: genericMessage };
+
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) return { message: genericMessage };
+
+  const rawToken = crypto.randomBytes(32).toString('hex');
+  const expiresAt = new Date(Date.now() + PASSWORD_RESET_EXPIRES_MIN * 60 * 1000);
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { passwordResetToken: hashResetToken(rawToken), passwordResetExpires: expiresAt },
+  });
+
+  // Dev-safe delivery: in production this token would be emailed; here we log it
+  // and (in non-production) return it so the flow is testable end-to-end.
+  const logger = require('../utils/logger');
+  logger.info(`Password reset token for ${email}: ${rawToken} (valid ${PASSWORD_RESET_EXPIRES_MIN}m)`);
+
+  const result = { message: genericMessage };
+  if (process.env.NODE_ENV !== 'production') {
+    result.resetToken = rawToken;
+    result.expiresAt = expiresAt;
+  }
+  return result;
+};
+
+/**
+ * Reset a password using a valid, unexpired token. Verifies the token hash,
+ * updates the password, clears the token, and revokes all refresh sessions.
+ */
+const resetPassword = async (rawToken, newPassword) => {
+  const user = await prisma.user.findFirst({
+    where: {
+      passwordResetToken: hashResetToken(rawToken),
+      passwordResetExpires: { gt: new Date() },
+    },
+  });
+  if (!user) throw new ApiError(400, 'Token yaroqsiz yoki muddati tugagan');
+
+  const hashed = await bcrypt.hash(newPassword, 10);
+
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id: user.id },
+      data: { password: hashed, passwordResetToken: null, passwordResetExpires: null },
+    }),
+    // Invalidate every existing session — a reset must lock out anyone holding old tokens.
+    prisma.refreshToken.updateMany({
+      where: { userId: user.id, isRevoked: false },
+      data: { isRevoked: true },
+    }),
+  ]);
+
+  return { message: 'Parol muvaffaqiyatli yangilandi' };
+};
+
+module.exports = { register, login, refreshTokens, logout, logoutAll, googleAuth, requestOtp, verifyOtp, issueTokens, forgotPassword, resetPassword };

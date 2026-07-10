@@ -8,6 +8,7 @@ import useCartStore from '../store/cartStore';
 import useAuthStore from '../store/authStore';
 import Button from '../components/ui/Button';
 import { Skeleton } from '../components/ui/Skeleton';
+import formatPrice from '../utils/formatPrice';
 import toast from 'react-hot-toast';
 
 export default function ProductDetail() {
@@ -26,12 +27,12 @@ export default function ProductDetail() {
 
   const handleAddToCart = () => {
     if (!user) { toast.error('Please login to add to cart'); return; }
-    addItem(product._id, qty);
+    addItem(product.id, qty);
   };
 
   const handleWishlist = async () => {
     if (!user) { toast.error('Please login'); return; }
-    const res = await wishlistApi.toggleWishlist(product._id);
+    const res = await wishlistApi.toggleWishlist(product.id);
     const action = res.data.data.action;
     toast.success(action === 'added' ? 'Added to wishlist' : 'Removed from wishlist');
   };
@@ -57,6 +58,12 @@ export default function ProductDetail() {
       <Link to="/products" className="btn-primary btn mt-4">Back to Products</Link>
     </div>
   );
+
+  const reviews = product.reviews || [];
+  const reviewCount = reviews.length;
+  const avgRating = reviewCount
+    ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviewCount
+    : 0;
 
   return (
     <div className="container py-8">
@@ -99,23 +106,25 @@ export default function ProductDetail() {
             {product.brand && <p className="text-sm text-gray-500 mt-1">by {product.brand}</p>}
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="flex">
-              {[1,2,3,4,5].map((s) => (
-                <Star key={s} className={`h-4 w-4 ${s <= Math.round(product.rating?.average) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
-              ))}
+          {reviewCount > 0 && (
+            <div className="flex items-center gap-2">
+              <div className="flex">
+                {[1,2,3,4,5].map((s) => (
+                  <Star key={s} className={`h-4 w-4 ${s <= Math.round(avgRating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
+                ))}
+              </div>
+              <span className="text-sm font-medium">{avgRating.toFixed(1)}</span>
+              <span className="text-sm text-gray-400">({reviewCount} {reviewCount === 1 ? 'review' : 'reviews'})</span>
             </div>
-            <span className="text-sm font-medium">{product.rating?.average?.toFixed(1)}</span>
-            <span className="text-sm text-gray-400">({product.rating?.count} reviews)</span>
-          </div>
+          )}
 
           <div>
             <span className="text-3xl font-bold text-primary-600">
-              ${product.finalPrice?.toFixed(2)}
+              {formatPrice(product.finalPrice)}
             </span>
             {product.discount > 0 && (
               <>
-                <span className="ml-2 text-lg text-gray-400 line-through">${product.price?.toFixed(2)}</span>
+                <span className="ml-2 text-lg text-gray-400 line-through">{formatPrice(product.price)}</span>
                 <span className="ml-2 badge bg-red-100 text-red-600">{product.discount}% OFF</span>
               </>
             )}

@@ -75,6 +75,24 @@ const getMe = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, { user: req.user }, 'User retrieved'));
 });
 
+// Mobile app is already logged in (holds a Bearer accessToken) and wants to
+// open the web admin panel, which only trusts httpOnly cookies. `protect`
+// verified the Bearer token above; here we just mint a fresh cookie session
+// for whichever browser/webview made this call.
+const ssoAdopt = asyncHandler(async (req, res) => {
+  if (!['ADMIN', 'SUPER_ADMIN'].includes(req.user.role)) {
+    throw new ApiError(403, 'Admin panelga kirish uchun ruxsat yo\'q');
+  }
+
+  const meta = { userAgent: req.headers['user-agent'] || '', ip: req.ip };
+  const { accessToken, refreshToken } = await authService.issueTokens(req.user, meta);
+
+  res.cookie('accessToken', accessToken, COOKIE_OPTIONS);
+  res.cookie('refreshToken', refreshToken, COOKIE_OPTIONS);
+
+  res.status(200).json(new ApiResponse(200, { user: req.user }, 'SSO muvaffaqiyatli'));
+});
+
 const googleAuth = asyncHandler(async (req, res) => {
   const meta = { userAgent: req.headers['user-agent'] || '', ip: req.ip };
   const { user, accessToken, refreshToken } = await authService.googleAuth(req.body.credential, meta);
@@ -107,14 +125,9 @@ const verifyOtp = asyncHandler(async (req, res) => {
 });
 
 const forgotPassword = asyncHandler(async (req, res) => {
-  // Minimal: hozircha faqat tasdiqlash, email jo'natish keyinroq qo'shiladi
   const { email } = req.body;
-  if (!email) {
-    res.status(200).json(new ApiResponse(200, null, 'Agar email mavjud bo\'lsa, tiklash havolasi yuborildi'));
-    return;
-  }
-  // Production'da: tokenni DB ga saqlash + email jo'natish
-  res.status(200).json(new ApiResponse(200, null, 'Agar email mavjud bo\'lsa, tiklash havolasi yuborildi'));
+  const result = await authService.forgotPassword(email);
+  res.status(200).json(new ApiResponse(200, result, result.message));
 });
 
 const resetPassword = asyncHandler(async (req, res) => {
@@ -125,8 +138,8 @@ const resetPassword = asyncHandler(async (req, res) => {
   if (password.length < 6) {
     throw new ApiError(400, 'Parol kamida 6 ta belgidan iborat bo\'lishi kerak');
   }
-  // Production'da: tokenni tekshirish + parolni yangilash
-  res.status(200).json(new ApiResponse(200, null, 'Parol muvaffaqiyatli yangilandi'));
+  const result = await authService.resetPassword(token, password);
+  res.status(200).json(new ApiResponse(200, null, result.message));
 });
 
-module.exports = { register, login, refreshToken, logout, logoutAll, getMe, forgotPassword, resetPassword, googleAuth, requestOtp, verifyOtp };
+module.exports = { register, login, refreshToken, logout, logoutAll, getMe, forgotPassword, resetPassword, googleAuth, requestOtp, verifyOtp, ssoAdopt };

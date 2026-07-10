@@ -29,7 +29,7 @@ export default function Sales() {
     const allProducts = productsData?.data?.data?.products || [];
     const inStock = Array.isArray(allProducts) ? allProducts.filter((p) => p.stock > 0) : [];
 
-    const selected = inStock.find((p) => p._id === productId);
+    const selected = inStock.find((p) => p.id === productId);
     const profit = selected
       ? (selected.sellPrice - selected.buyPrice) * Number(quantity || 0)
       : 0;
@@ -68,7 +68,7 @@ export default function Sales() {
       const errs = validate();
       if (Object.keys(errs).length) { setErrors(errs); return; }
       mutation.mutate({
-        product: selected._id,
+        product: selected.id,
         productName: selected.name,
         quantity: Number(quantity),
         sellPrice: Number(selected.sellPrice) || 0,
@@ -102,7 +102,7 @@ export default function Sales() {
                 >
                   <option value="">{t('select_product_placeholder')}</option>
                   {inStock.map((p) => (
-                    <option key={p._id} value={p._id}>
+                    <option key={p.id} value={p.id}>
                       {p.name} — {p.stock} {t(`unit_${p.unit || 'pcs'}`)} {t('remains')}
                     </option>
                   ))}
@@ -253,7 +253,7 @@ export default function Sales() {
                   minute: '2-digit',
                 });
                 return (
-                  <div key={sale._id} className="flex items-center justify-between px-5 py-4">
+                  <div key={sale.id} className="flex items-center justify-between px-5 py-4">
                     <div>
                       <p className="text-sm font-semibold text-[#0F172A]">
                         {sale.productName || 'Mahsulot'}

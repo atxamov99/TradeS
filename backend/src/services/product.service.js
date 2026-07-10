@@ -4,15 +4,12 @@ const slugify = require('slugify');
 
 const getProducts = async (userId, queryParams = {}, options = {}) => {
   const { search, page = 1, limit = 50, sortBy = 'createdAt', order = 'desc' } = queryParams;
-  const { isAdmin = false } = options;
 
+  // Products are a shared global catalog: every authenticated user sees every
+  // product regardless of who created it. No ownerId filter on reads.
   const where = {};
   if (search) {
     where.name = { contains: search, mode: 'insensitive' };
-  }
-  // Faqat oddiy userlar uchun ownerId filter
-  if (!isAdmin && userId) {
-    where.ownerId = userId;
   }
 
   const skip = (Number(page) - 1) * Number(limit);
@@ -38,16 +35,12 @@ const getProducts = async (userId, queryParams = {}, options = {}) => {
   };
 };
 
-const getProductById = async (id, userId, options = {}) => {
-  const { isAdmin = false } = options;
-  const where = { id };
-  if (!isAdmin && userId) {
-    where.ownerId = userId;
-  }
-
-  const product = await prisma.product.findFirst({
-    where,
+const getProductById = async (id) => {
+  // Global catalog: any authenticated user can view any product by id.
+  const product = await prisma.product.findUnique({
+    where: { id },
     include: {
+      images: true,
       reviews: true,
     },
   });
@@ -179,14 +172,9 @@ const addReview = async (productId, userId, userName, { rating, comment }) => {
   return review;
 };
 
-const getCategories = async (userId, options = {}) => {
-  const { isAdmin = false } = options;
-  const where = {};
-  if (!isAdmin && userId) {
-    where.ownerId = userId;
-  }
+const getCategories = async () => {
+  // Global catalog: categories are aggregated across all products.
   const products = await prisma.product.findMany({
-    where,
     select: { category: true },
     distinct: ['category'],
   });

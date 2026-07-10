@@ -17,6 +17,7 @@ import { adminsApi } from "../services/api/admins.api";
 import { auditLogsApi } from "../services/api/auditLogs.api";
 import { contentApi } from "../services/api/content.api";
 import { ordersApi } from "../services/api/orders.api";
+import { settingsApi } from "../services/api/settings.api";
 import { useAuth } from "./index";
 
 const AdminDataContext = createContext(null);
@@ -89,13 +90,14 @@ export function AdminDataProvider({ children }) {
 
     async function load() {
       try {
-        const [usersRes, productsRes, adminsRes, auditRes, contentRes, ordersRes] = await Promise.allSettled([
+        const [usersRes, productsRes, adminsRes, auditRes, contentRes, ordersRes, settingsRes] = await Promise.allSettled([
           usersApi.getAll({ limit: 100 }),
           productsApi.getAll({ limit: 100 }),
           adminsApi.getAll(),
           auditLogsApi.getAll({ limit: 10 }),
           contentApi.getAll({ limit: 100 }),
-          ordersApi.getAll({ limit: 100 })
+          ordersApi.getAll({ limit: 100 }),
+          settingsApi.getAll()
         ]);
 
         let rawUsers = [];
@@ -139,6 +141,14 @@ export function AdminDataProvider({ children }) {
         if (ordersRes.status === "fulfilled") {
           const rawOrders = ordersRes.value?.data?.orders || ordersRes.value?.data || [];
           setOrders(Array.isArray(rawOrders) ? rawOrders : []);
+        }
+        // Settings-backed roles/permissions — load once so the 30s poll never
+        // clobbers unsaved in-memory permission edits.
+        if (settingsRes.status === "fulfilled" && !loadedRef.current) {
+          const s = settingsRes.value?.data?.settings || {};
+          if (Array.isArray(s.roles)) setRoles(s.roles);
+          if (Array.isArray(s.permissionMatrix)) setPermissionMatrix(s.permissionMatrix);
+          loadedRef.current = true;
         }
 
         // Generate dynamic notifications based on fetched users
@@ -389,23 +399,38 @@ export function AdminDataProvider({ children }) {
     }
   }
 
-  function saveSettings(section) {
-    logAudit("Sozlamalar saqlandi", section, "settings", "success");
-    pushToast("Sozlamalar saqlandi");
+  // ── Settings persistence (generic key-value store) ────────
+  // PUT /settings/:key requires SUPER_ADMIN — a plain ADMIN gets 403, which we
+  // surface as a clear toast instead of faking success.
+  async function persistSetting(key, value) {
+    try {
+      await settingsApi.put(key, value);
+      return true;
+    } catch (err) {
+      const msg = err?.status === 403
+        ? "Faqat super admin o'zgartira oladi"
+        : (err?.message || "Saqlashda xatolik");
+      pushToast(msg, "danger");
+      return false;
+    }
   }
 
   // ── Roles ─────────────────────────────────────────────────
-  function createRole(payload) {
+  async function createRole(payload) {
     const role = { id: `role-${Date.now()}`, name: payload.name, scope: payload.scope, note: payload.note, members: 0, isSystem: false };
-    setRoles((curr) => [...curr, role]);
+    const nextRoles = [...roles, role];
+    if (!(await persistSetting("roles", nextRoles))) return;
+    setRoles(nextRoles);
     logAudit("Rol yaratildi", role.name, "settings", "success");
     pushToast(`"${role.name}" roli yaratildi`);
   }
 
-  function deleteRole(id) {
+  async function deleteRole(id) {
     const target = roles.find((r) => r.id === id);
     if (target?.isSystem) { pushToast("Tizim rolini o'chirib bo'lmaydi", "danger"); return; }
-    setRoles((curr) => curr.filter((r) => r.id !== id));
+    const nextRoles = roles.filter((r) => r.id !== id);
+    if (!(await persistSetting("roles", nextRoles))) return;
+    setRoles(nextRoles);
     logAudit("Rol o'chirildi", target?.name || id, "settings", "danger");
     pushToast(`"${target?.name}" roli o'chirildi`, "danger");
   }
@@ -422,7 +447,8 @@ export function AdminDataProvider({ children }) {
     );
   }
 
-  function savePermissions() {
+  async function savePermissions() {
+    if (!(await persistSetting("permissionMatrix", permissionMatrix))) return;
     logAudit("Ruxsatlar saqlandi", "Permission Matrix", "settings", "success");
     pushToast("Ruxsatlar saqlandi");
   }
@@ -506,7 +532,6 @@ export function AdminDataProvider({ children }) {
       grantAdminToUser, revokeAdminFromUser,
       toggleAdminStatus, createAdmin,
       createContent, updateContentStatus, deleteContent,
-      saveSettings,
       createRole, deleteRole,
       togglePermission, savePermissions,
       createProduct, updateProduct, deleteProduct, toggleProductStatus,

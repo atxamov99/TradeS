@@ -14,8 +14,8 @@ const features = [
 
 export default function Home() {
   const { data, isLoading } = useQuery({
-    queryKey: ['featured-products'],
-    queryFn: () => productsApi.getProducts({ limit: 8, sortBy: 'rating.average', order: 'desc' }),
+    queryKey: ['storefront-products'],
+    queryFn: () => productsApi.getProducts({ limit: 100 }),
   });
 
   const products = data?.data?.data?.products || [];
@@ -61,16 +61,13 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Featured Products */}
+      {/* Products */}
       <section className="container py-16">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h2 className="text-2xl font-bold">Featured Products</h2>
-            <p className="text-gray-500 text-sm mt-1">Top rated picks just for you</p>
+            <h2 className="text-2xl font-bold">All Products</h2>
+            <p className="text-gray-500 text-sm mt-1">Browse everything listed by our sellers</p>
           </div>
-          <Link to="/products" className="flex items-center gap-1 text-primary-600 hover:text-primary-700 text-sm font-medium">
-            View all <ArrowRight className="h-4 w-4" />
-          </Link>
         </div>
 
         {isLoading ? (
@@ -82,7 +79,7 @@ export default function Home() {
         ) : (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             {products.map((p) => (
-              <ProductCard key={p._id} product={p} />
+              <ProductCard key={p.id} product={p} />
             ))}
           </div>
         )}

@@ -26,5 +26,6 @@ router.use(protect);
 router.post('/logout', authController.logout);
 router.post('/logout-all', authController.logoutAll);
 router.get('/me', authController.getMe);
+router.post('/sso-adopt', authController.ssoAdopt);
 
 module.exports = router;

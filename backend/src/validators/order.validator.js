@@ -5,10 +5,11 @@ const createOrderSchema = Joi.object({
     .items(
       Joi.object({
         product: Joi.string().required(),
-        quantity: Joi.number().integer().min(1).required(),
+        quantity: Joi.number().integer().min(1).max(10000).required(),
       })
     )
     .min(1)
+    .max(50)
     .required(),
   shippingAddress: Joi.object({
     street: Joi.string().trim().required(),
@@ -21,6 +22,9 @@ const createOrderSchema = Joi.object({
     .valid('card', 'cash_on_delivery', 'paypal')
     .default('cash_on_delivery'),
   notes: Joi.string().trim().max(500).allow('').default(''),
+  // Merchant POS flow (mobile): also record a Sale per item under the buyer's
+  // account so their Dashboard/Reports reflect this in-store sale.
+  posSale: Joi.boolean().default(false),
 });
 
 const updateOrderStatusSchema = Joi.object({

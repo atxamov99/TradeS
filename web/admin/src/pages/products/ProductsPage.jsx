@@ -59,11 +59,14 @@ export function ProductsPage() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const payload = { ...form, price: Number(form.price), stock: Number(form.stock) };
+      const priceNum = Number(form.price);
+      const stockNum = Number(form.stock);
       if (editTarget) {
-        await updateProduct(editTarget.id, payload);
+        await updateProduct(editTarget.id, { ...form, price: priceNum, stock: stockNum });
       } else {
-        await createProduct(payload);
+        // Backend requires buyPrice + sellPrice (POS fields). The admin catalog form
+        // only captures the retail price, so map it to sellPrice; cost is unknown → 0.
+        await createProduct({ ...form, price: priceNum, stock: stockNum, sellPrice: priceNum, buyPrice: 0 });
       }
       closeModal();
     } finally {

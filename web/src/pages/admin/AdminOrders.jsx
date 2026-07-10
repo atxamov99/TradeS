@@ -61,7 +61,7 @@ export default function AdminOrders() {
               </thead>
               <tbody className="divide-y">
                 {orders.map((order) => (
-                  <tr key={order._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                  <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
                     <td className="px-4 py-3 font-mono text-xs">{order.orderNumber}</td>
                     <td className="px-4 py-3">
                       <p className="font-medium">{order.user?.name}</p>
@@ -73,7 +73,7 @@ export default function AdminOrders() {
                     <td className="px-4 py-3">
                       <select
                         value={order.orderStatus}
-                        onChange={(e) => updateMutation.mutate({ id: order._id, orderStatus: e.target.value })}
+                        onChange={(e) => updateMutation.mutate({ id: order.id, orderStatus: e.target.value })}
                         className="input py-1.5 text-xs w-32"
                       >
                         {STATUS_OPTIONS.map((s) => (

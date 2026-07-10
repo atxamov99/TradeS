@@ -52,11 +52,11 @@ export function LoginPage() {
       >
         {/* Logo / Header */}
         <div className="text-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-indigo-600 flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 11c0-1.657-1.343-3-3-3S6 9.343 6 11m6 0c0-1.657 1.343-3 3-3s3 1.343 3 3m-6 0v5m0-5H9m3 0h3" />
-            </svg>
-          </div>
+          <img
+            src="/logo.png"
+            alt="TradeS"
+            className="w-14 h-14 rounded-2xl object-contain mx-auto mb-4 bg-white"
+          />
           <h1 className="text-2xl font-bold">Savdo Admin</h1>
           <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>
             Admin paneliga kirish

@@ -78,7 +78,7 @@ export default function AdminDashboard() {
               </thead>
               <tbody className="divide-y">
                 {(stats.recentOrders || []).map((order) => (
-                  <tr key={order._id}>
+                  <tr key={order.id}>
                     <td className="py-3 font-mono text-xs">{order.orderNumber}</td>
                     <td className="py-3">{order.user?.name}</td>
                     <td className="py-3"><OrderStatusBadge status={order.orderStatus} /></td>

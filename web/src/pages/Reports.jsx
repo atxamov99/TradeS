@@ -124,7 +124,7 @@ export default function Reports() {
                   minute: '2-digit',
                 });
                 return (
-                  <div key={sale._id} className="flex items-center justify-between px-5 py-3">
+                  <div key={sale.id} className="flex items-center justify-between px-5 py-3">
                     <div>
                       <p className="text-sm font-semibold text-[#0F172A]">{sale.productName || 'Mahsulot'}</p>
                       <p className="text-xs text-[#64748B] mt-0.5">

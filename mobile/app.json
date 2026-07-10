@@ -1,33 +1,72 @@
 {
   "expo": {
-    "name": "TradeS",
-    "slug": "savdo-mobile",
+    "name": "Savdo",
+    "slug": "savdo",
+    "owner": "x_crs7",
+    "scheme": "savdo",
     "version": "1.0.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "dark",
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "sdkVersion": "54.0.0",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#16a34a"
+    },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.savdo.pos"
+      "bundleIdentifier": "uz.savdo.app"
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#0F172A"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#16a34a"
       },
-      "package": "com.savdo.pos",
+      "package": "uz.savdo.app",
       "permissions": [
-        "ACCESS_NETWORK_STATE",
-        "INTERNET"
+        "NOTIFICATIONS",
+        "RECEIVE_BOOT_COMPLETED",
+        "CAMERA",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "plugins": [
+      "expo-router",
+      "expo-notifications",
+      [
+        "expo-secure-store",
+        {
+          "faceIDPermission": "Allow Savdo to use Face ID."
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "gradleProperties": {
+              "org.gradle.jvmargs": "-Xmx4g -XX:MaxMetaspaceSize=512m"
+            }
+          }
+        }
+      ],
+      "expo-sqlite",
+      "expo-camera",
+      "expo-web-browser",
       "expo-font"
     ],
+    "updates": {
+      "enabled": false
+    },
+    "experiments": {
+      "typedRoutes": true
+    },
     "extra": {
+      "router": {},
       "eas": {
-        "projectId": "79bb3c6a-9da4-4f75-bc7a-26b8cc63a002"
+        "projectId": "4ef25a7a-5d40-44c5-b533-07ba04958917"
       }
     }
   }

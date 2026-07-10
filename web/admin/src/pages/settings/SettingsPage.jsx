@@ -13,7 +13,7 @@ const tabs = (t) => [
 export function SettingsPage() {
   const { locale, setLocale, supportedLocales, t } = useI18n();
   const { profile, updateProfile, changePassword } = useAuth();
-  const { saveSettings } = useAdminData();
+  const { pushToast } = useAdminData();
   const { theme, setTheme } = useTheme();
 
   const [activeTab, setActiveTab] = useState("profile");
@@ -38,7 +38,9 @@ export function SettingsPage() {
     setSaving(true);
     try {
       await updateProfile({ name: form.name, email: form.email });
-      saveSettings(t("settings.profileSettings"));
+      pushToast(t("common.saveChanges"));
+    } catch (err) {
+      pushToast(err?.message || "Xatolik yuz berdi", "danger");
     } finally {
       setSaving(false);
     }

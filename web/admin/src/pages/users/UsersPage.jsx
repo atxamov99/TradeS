@@ -68,7 +68,7 @@ export function UsersPage() {
     () =>
       allAdmins.filter((a) => {
         const q = search.toLowerCase();
-        return [a.name, a.email].join(" ").toLowerCase().includes(q);
+        return [a.name, a.phone].join(" ").toLowerCase().includes(q);
       }),
     [allAdmins, search]
   );
@@ -84,9 +84,11 @@ export function UsersPage() {
   function handleSubmit(e) {
     e.preventDefault();
     const payload = { ...form };
-    if (!editId) {
-      payload.role = "USER";
-    }
+    // Bu forma faqat oddiy foydalanuvchilar (role=USER) uchun — admin huquqi
+    // "Admin qilish" tugmasi orqali alohida beriladi, shuning uchun rol har doim
+    // USER bo'lib qoladi (backend Role enum'ida viewer/editor/manager kabi
+    // qiymatlar yo'q, shuning uchun ularni yuborish xatoga olib kelardi).
+    payload.role = "USER";
     if (!payload.email) delete payload.email;
     if (!payload.phone) delete payload.phone;
     if (editId) {
@@ -261,7 +263,7 @@ export function UsersPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100">
-                  {["Admin", "Email", "Status", "Oxirgi kirish", "Yaratilgan", "Amallar"].map((h) => (
+                  {["Admin", "Telefon", "Status", "Oxirgi kirish", "Yaratilgan", "Amallar"].map((h) => (
                     <th key={h} className="text-left text-xs font-medium text-gray-400 px-4 py-3 whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -277,7 +279,7 @@ export function UsersPage() {
                         <p className="font-medium text-gray-900">{admin.name}</p>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-xs text-gray-500">{admin.email}</td>
+                    <td className="px-4 py-3 text-xs text-gray-500">{admin.phone || "—"}</td>
                     <td className="px-4 py-3">
                       <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${statusStyle[admin.status] || "bg-gray-100 text-gray-600"}`}>
                         {t(`labels.statuses.${admin.status}`, {}, admin.status)}
@@ -354,16 +356,6 @@ export function UsersPage() {
             </div>
           ))}
           <p className="text-xs text-gray-400">* Email yoki telefon raqamdan kamida bittasi to'ldirilishi shart</p>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t("common.role")}</label>
-            <select name="role" value={form.role} onChange={(e) => setForm((c) => ({ ...c, role: e.target.value }))}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 bg-white">
-              <option value="viewer">{t("labels.roles.viewer")}</option>
-              <option value="editor">{t("labels.roles.editor")}</option>
-              <option value="manager">{t("labels.roles.manager")}</option>
-              <option value="customer_support">{t("labels.roles.customer_support")}</option>
-            </select>
-          </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">{t("common.status")}</label>
             <select name="status" value={form.status} onChange={(e) => setForm((c) => ({ ...c, status: e.target.value }))}

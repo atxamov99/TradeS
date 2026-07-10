@@ -27,6 +27,8 @@ model User {
   isBlocked       Boolean        @default(false)
   isEmailVerified Boolean        @default(false)
   lastLogin       DateTime?
+  passwordResetToken   String?
+  passwordResetExpires DateTime?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
@@ -294,6 +296,17 @@ model Wishlist {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   products  Product[]
+}
+
+// App-wide admin configuration as key-value JSON blobs. Backs the admin panel's
+// Settings, Roles (roles catalog), and Permissions (permission matrix) pages,
+// which persist arbitrary config that is not enforced by the enum Role system.
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // Phone auth via Telegram bot OTP.

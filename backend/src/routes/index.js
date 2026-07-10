@@ -15,6 +15,7 @@ const aiRoutes = require('./ai.routes');
 const auditRoutes = require('./audit.routes');
 const contentRoutes = require('./content.routes');
 const telegramRoutes = require('./telegram.routes');
+const settingsRoutes = require('./settings.routes');
 
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
@@ -30,5 +31,6 @@ router.use('/ai', aiRoutes);
 router.use('/audit-logs', auditRoutes);
 router.use('/content', contentRoutes);
 router.use('/telegram', telegramRoutes);
+router.use('/settings', settingsRoutes);
 
 module.exports = router;

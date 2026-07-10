@@ -1,20 +1,27 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { CheckCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { CheckCircle, ShoppingBag } from 'lucide-react';
 import useCartStore from '../store/cartStore';
+import useAuthStore from '../store/authStore';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import * as ordersApi from '../api/orders.api';
+import formatPrice from '../utils/formatPrice';
 import toast from 'react-hot-toast';
 
 export default function Checkout() {
-  const { cart, resetCart } = useCartStore();
+  const { cart, fetchCart, resetCart } = useCartStore();
+  const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [form, setForm] = useState({
     street: '', city: '', state: '', country: '', zipCode: '',
     paymentMethod: 'cash_on_delivery',
   });
+
+  useEffect(() => {
+    if (user) fetchCart();
+  }, [user]);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -26,25 +33,46 @@ export default function Checkout() {
     try {
       const { street, city, state, country, zipCode, paymentMethod } = form;
       const items = cart.items.map((i) => ({
-        product: i.product?._id || i.product,
+        product: i.productId,
         quantity: i.quantity,
       }));
 
-      const res = await ordersApi.createOrder({
+      await ordersApi.createOrder({
         items,
         shippingAddress: { street, city, state, country, zipCode },
         paymentMethod,
       });
 
-      const orderId = res.data.data.order._id;
       resetCart();
       toast.success('Order placed successfully!');
-      navigate(`/orders/${orderId}`);
+      navigate('/products');
     } catch (_) {
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (!user) {
+    return (
+      <div className="container py-20 text-center">
+        <ShoppingBag className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+        <h2 className="text-xl font-semibold mb-2">Your cart is empty</h2>
+        <p className="text-gray-500 mb-6">Please login to checkout.</p>
+        <Link to="/login" className="btn-primary btn">Login</Link>
+      </div>
+    );
+  }
+
+  if (!cart || cart.items?.length === 0) {
+    return (
+      <div className="container py-20 text-center">
+        <ShoppingBag className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+        <h2 className="text-xl font-semibold mb-2">Your cart is empty</h2>
+        <p className="text-gray-500 mb-6">Add some products before checking out.</p>
+        <Link to="/products" className="btn-primary btn">Browse Products</Link>
+      </div>
+    );
+  }
 
   const subtotal = cart?.totalPrice || 0;
   const shipping = subtotal >= 50 ? 0 : 5;
@@ -97,16 +125,16 @@ export default function Checkout() {
               {cart?.items?.map((item, i) => (
                 <div key={i} className="flex justify-between text-sm">
                   <span className="text-gray-600 truncate mr-2">{item.product?.name} × {item.quantity}</span>
-                  <span className="font-medium flex-shrink-0">${(item.price * item.quantity).toFixed(2)}</span>
+                  <span className="font-medium flex-shrink-0">{formatPrice(item.price * item.quantity)}</span>
                 </div>
               ))}
             </div>
             <div className="space-y-2 border-t pt-3 text-sm">
-              <div className="flex justify-between text-gray-500"><span>Subtotal</span><span>${subtotal.toFixed(2)}</span></div>
-              <div className="flex justify-between text-gray-500"><span>Shipping</span><span>{shipping === 0 ? 'Free' : `$${shipping.toFixed(2)}`}</span></div>
-              <div className="flex justify-between text-gray-500"><span>Tax</span><span>${tax.toFixed(2)}</span></div>
+              <div className="flex justify-between text-gray-500"><span>Subtotal</span><span>{formatPrice(subtotal)}</span></div>
+              <div className="flex justify-between text-gray-500"><span>Shipping</span><span>{shipping === 0 ? 'Free' : formatPrice(shipping)}</span></div>
+              <div className="flex justify-between text-gray-500"><span>Tax</span><span>{formatPrice(tax)}</span></div>
               <div className="flex justify-between font-bold text-lg border-t pt-2">
-                <span>Total</span><span>${total.toFixed(2)}</span>
+                <span>Total</span><span>{formatPrice(total)}</span>
               </div>
             </div>
             <Button type="submit" isLoading={isLoading} className="w-full" size="lg">

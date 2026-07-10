@@ -25,6 +25,7 @@ export default function AdminLayout() {
       {/* Sidebar */}
       <aside className="w-64 border-r bg-white dark:bg-gray-900 flex flex-col">
         <div className="flex items-center gap-2 px-6 py-5 border-b">
+          <img src="/logo.png" alt="TradeS" className="h-8 w-8 rounded-lg bg-white object-contain" />
           <span className="text-lg font-bold text-primary-600">TradeS</span>
           <span className="text-xs badge bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">Admin</span>
         </div>

@@ -72,7 +72,7 @@ export default function AdminUsers() {
               </thead>
               <tbody className="divide-y">
                 {users.map((u) => (
-                  <tr key={u._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                  <tr key={u.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <div className="h-8 w-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-xs font-bold text-primary-700">
@@ -99,7 +99,7 @@ export default function AdminUsers() {
                       <div className="flex items-center justify-end gap-1">
                         {u.isBlocked ? (
                           <button
-                            onClick={() => unblockMutation.mutate(u._id)}
+                            onClick={() => unblockMutation.mutate(u.id)}
                             className="p-1.5 rounded-lg text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
                             title="Unblock"
                           >
@@ -107,7 +107,7 @@ export default function AdminUsers() {
                           </button>
                         ) : (
                           <button
-                            onClick={() => blockMutation.mutate(u._id)}
+                            onClick={() => blockMutation.mutate(u.id)}
                             className="p-1.5 rounded-lg text-yellow-600 hover:bg-yellow-50 dark:hover:bg-yellow-900/20"
                             title="Block"
                           >
@@ -116,7 +116,7 @@ export default function AdminUsers() {
                         )}
                         <button
                           onClick={() => {
-                            if (confirm(`Delete ${u.name}?`)) deleteMutation.mutate(u._id);
+                            if (confirm(`Delete ${u.name}?`)) deleteMutation.mutate(u.id);
                           }}
                           className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
                           title="Delete"

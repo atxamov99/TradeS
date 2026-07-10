@@ -68,12 +68,15 @@ export default function Dashboard() {
   const recentSales = Array.isArray(allSales) ? allSales.slice(0, 5) : [];
 
   const locale = i18n.language.startsWith('uz') ? 'uz-UZ' : i18n.language.startsWith('ru') ? 'ru-RU' : 'en-US';
-  const todayDate = new Date().toLocaleDateString(locale, {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+
+  // Chrome's bundled ICU data has incomplete uz-UZ weekday/month names
+  // (falls back to "M07"/"Sun"), so format Uzbek dates manually instead of via Intl.
+  const UZ_WEEKDAYS = ['yakshanba', 'dushanba', 'seshanba', 'chorshanba', 'payshanba', 'juma', 'shanba'];
+  const UZ_MONTHS = ['yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun', 'iyul', 'avgust', 'sentabr', 'oktabr', 'noyabr', 'dekabr'];
+  const now = new Date();
+  const todayDate = locale === 'uz-UZ'
+    ? `${UZ_WEEKDAYS[now.getDay()]}, ${now.getDate()}-${UZ_MONTHS[now.getMonth()]}, ${now.getFullYear()}`
+    : now.toLocaleDateString(locale, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
   const handleLogout = async () => {
     await logout();
@@ -142,7 +145,7 @@ export default function Dashboard() {
             </div>
             <div className="divide-y divide-[#E2E8F0]">
               {lowStock.map((p) => (
-                <div key={p._id} className="flex items-center justify-between px-5 py-3">
+                <div key={p.id} className="flex items-center justify-between px-5 py-3">
                   <span className="text-sm font-medium text-[#0F172A]">{p.name}</span>
                   <span className={`text-sm font-bold px-2.5 py-1 rounded-lg ${p.stock === 0
                       ? 'bg-red-100 text-red-600'
@@ -196,7 +199,7 @@ export default function Dashboard() {
                   minute: '2-digit',
                 });
                 return (
-                  <div key={sale._id} className="flex items-center justify-between px-5 py-4">
+                  <div key={sale.id} className="flex items-center justify-between px-5 py-4">
                     <div>
                       <p className="text-sm font-semibold text-[#0F172A]">
                         {sale.productName || 'Mahsulot'}

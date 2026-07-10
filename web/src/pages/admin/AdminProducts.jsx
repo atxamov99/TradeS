@@ -59,15 +59,18 @@ export default function AdminProducts() {
     e.preventDefault();
     setSaving(true);
     try {
+      const price = Number(form.price);
       const payload = {
         ...form,
-        price: Number(form.price),
+        price,
+        buyPrice: price,
+        sellPrice: price,
         discount: Number(form.discount),
         stock: Number(form.stock),
         images: form.images.filter((img) => img.url),
       };
       if (editing) {
-        await productsApi.updateProduct(editing._id, payload);
+        await productsApi.updateProduct(editing.id, payload);
         toast.success('Product updated');
       } else {
         await productsApi.createProduct(payload);
@@ -112,7 +115,7 @@ export default function AdminProducts() {
               </thead>
               <tbody className="divide-y">
                 {products.map((p) => (
-                  <tr key={p._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                  <tr key={p.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <img src={p.images?.[0]?.url || 'https://placehold.co/40x40'} alt="" className="h-10 w-10 rounded-lg object-cover bg-gray-100" />
@@ -133,7 +136,7 @@ export default function AdminProducts() {
                           <Pencil className="h-4 w-4" />
                         </button>
                         <button
-                          onClick={() => { if (confirm(`Delete ${p.name}?`)) deleteMutation.mutate(p._id); }}
+                          onClick={() => { if (confirm(`Delete ${p.name}?`)) deleteMutation.mutate(p.id); }}
                           className="p-1.5 rounded-lg text-red-500 hover:bg-red-50"
                         >
                           <Trash2 className="h-4 w-4" />

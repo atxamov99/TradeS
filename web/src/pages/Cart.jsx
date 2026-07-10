@@ -4,6 +4,7 @@ import { Minus, Plus, Trash2, ShoppingBag } from 'lucide-react';
 import useCartStore from '../store/cartStore';
 import useAuthStore from '../store/authStore';
 import Button from '../components/ui/Button';
+import formatPrice from '../utils/formatPrice';
 
 export default function Cart() {
   const { cart, fetchCart, updateItem, removeItem, isLoading } = useCartStore();
@@ -51,28 +52,25 @@ export default function Cart() {
         <div className="lg:col-span-2 space-y-3">
           {items.map((item) => {
             const product = item.product;
+            const productId = item.productId;
             const image = product?.images?.[0]?.url || 'https://placehold.co/100x100';
             return (
-              <div key={item._id || item.product?._id} className="card p-4 flex gap-4">
-                <Link to={`/products/${product?.slug || product?._id}`}>
-                  <img src={image} alt={product?.name} className="h-20 w-20 rounded-lg object-cover bg-gray-100" />
-                </Link>
+              <div key={item.id || productId} className="card p-4 flex gap-4">
+                <img src={image} alt={product?.name} className="h-20 w-20 rounded-lg object-cover bg-gray-100" />
                 <div className="flex-1 min-w-0">
-                  <Link to={`/products/${product?.slug || product?._id}`} className="font-medium text-sm hover:text-primary-600 line-clamp-1">
-                    {product?.name}
-                  </Link>
-                  <p className="text-primary-600 font-semibold mt-1">${item.price?.toFixed(2)}</p>
+                  <p className="font-medium text-sm line-clamp-1">{product?.name}</p>
+                  <p className="text-primary-600 font-semibold mt-1">{formatPrice(item.price)}</p>
                   <div className="flex items-center gap-3 mt-2">
                     <div className="flex items-center border rounded-lg">
                       <button
-                        onClick={() => item.quantity > 1 ? updateItem(product?._id, item.quantity - 1) : removeItem(product?._id)}
+                        onClick={() => item.quantity > 1 ? updateItem(productId, item.quantity - 1) : removeItem(productId)}
                         className="p-1.5 hover:bg-gray-50 dark:hover:bg-gray-800"
                       >
                         <Minus className="h-3.5 w-3.5" />
                       </button>
                       <span className="px-3 text-sm">{item.quantity}</span>
                       <button
-                        onClick={() => updateItem(product?._id, item.quantity + 1)}
+                        onClick={() => updateItem(productId, item.quantity + 1)}
                         disabled={item.quantity >= (product?.stock || 99)}
                         className="p-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-40"
                       >
@@ -80,7 +78,7 @@ export default function Cart() {
                       </button>
                     </div>
                     <button
-                      onClick={() => removeItem(product?._id)}
+                      onClick={() => removeItem(productId)}
                       className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -88,7 +86,7 @@ export default function Cart() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <span className="font-bold">${(item.price * item.quantity).toFixed(2)}</span>
+                  <span className="font-bold">{formatPrice(item.price * item.quantity)}</span>
                 </div>
               </div>
             );
@@ -100,23 +98,23 @@ export default function Cart() {
           <h2 className="font-bold text-lg border-b pb-3">Order Summary</h2>
           <div className="flex justify-between text-sm">
             <span className="text-gray-500">Subtotal</span>
-            <span>${subtotal.toFixed(2)}</span>
+            <span>{formatPrice(subtotal)}</span>
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-gray-500">Shipping</span>
-            <span>{shipping === 0 ? <span className="text-green-600">Free</span> : `$${shipping.toFixed(2)}`}</span>
+            <span>{shipping === 0 ? <span className="text-green-600">Free</span> : formatPrice(shipping)}</span>
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-gray-500">Tax (10%)</span>
-            <span>${tax.toFixed(2)}</span>
+            <span>{formatPrice(tax)}</span>
           </div>
           <div className="flex justify-between font-bold text-lg border-t pt-3">
             <span>Total</span>
-            <span>${total.toFixed(2)}</span>
+            <span>{formatPrice(total)}</span>
           </div>
           {subtotal < 50 && (
             <p className="text-xs text-primary-600 bg-primary-50 dark:bg-primary-900/20 rounded-lg p-2">
-              Add ${(50 - subtotal).toFixed(2)} more for free shipping!
+              Add {formatPrice(50 - subtotal)} more for free shipping!
             </p>
           )}
           <Button className="w-full" size="lg" onClick={() => navigate('/checkout')}>

@@ -4,7 +4,14 @@ import { Toaster } from 'react-hot-toast';
 
 import AppLayout from './components/layout/AppLayout';
 import PosLayout from './components/layout/PosLayout';
+import Layout from './components/layout/Layout';
 import { ProtectedRoute, GuestRoute } from './components/common/ProtectedRoute';
+
+import Home from './pages/Home';
+import ProductDetail from './pages/ProductDetail';
+import Cart from './pages/Cart';
+import Checkout from './pages/Checkout';
+import Wishlist from './pages/Wishlist';
 
 import PosDashboard from './pages/pos/PosDashboard';
 import PosSales from './pages/pos/PosSales';
@@ -40,14 +47,16 @@ function AdminRoute({ children }) {
 
 export default function App() {
   const fetchMe = useAuthStore((s) => s.fetchMe);
-  const accessToken = useAuthStore((s) => s.accessToken);
   const user = useAuthStore((s) => s.user);
 
+  // Revalidate the cached user against the server on every app load so role/permission
+  // changes (e.g. being granted admin elsewhere) take effect without a manual re-login —
+  // the persisted `user` in localStorage was otherwise never refreshed after initial login.
   useEffect(() => {
-    if (accessToken && !user) {
+    if (user) {
       fetchMe();
     }
-  }, [accessToken]);
+  }, []);
 
   return (
     <>
@@ -79,6 +88,16 @@ export default function App() {
           <GuestRoute><ForgotPasswordPage /></GuestRoute>
         } />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
+
+        {/* Public storefront (customer-facing shop) */}
+        <Route element={<Layout />}>
+          <Route path="/shop" element={<Navigate to="/products" replace />} />
+          <Route path="/products" element={<Home />} />
+          <Route path="/products/:slug" element={<ProductDetail />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/wishlist" element={<Wishlist />} />
+        </Route>
 
         {/* Protected user routes */}
         <Route path="/dashboard" element={

@@ -107,7 +107,7 @@ export default function PosDashboard() {
           ) : (
             <div className="space-y-2">
               {lowStock.map((p) => (
-                <div key={p._id} className="flex items-center justify-between py-2 border-b border-pos-border last:border-0">
+                <div key={p.id} className="flex items-center justify-between py-2 border-b border-pos-border last:border-0">
                   <span className="text-sm">{p.name}</span>
                   <span className={`text-sm font-bold ${p.stock === 0 ? 'text-red-400' : 'text-yellow-400'}`}>
                     {p.stock} left

@@ -41,8 +41,9 @@ export default function PosProducts() {
   const handleSave = async (e) => {
     e.preventDefault();
     try {
-      const payload = { ...form, price: Number(form.price), discount: Number(form.discount || 0), stock: Number(form.stock) };
-      if (editing) await productsApi.updateProduct(editing._id, payload);
+      const price = Number(form.price);
+      const payload = { ...form, price, buyPrice: price, sellPrice: price, discount: Number(form.discount || 0), stock: Number(form.stock) };
+      if (editing) await productsApi.updateProduct(editing.id, payload);
       else await productsApi.createProduct(payload);
       toast.success(editing ? 'Updated' : 'Created');
       qc.invalidateQueries(['pos-products-list']);
@@ -81,7 +82,7 @@ export default function PosProducts() {
       ) : (
         <div className="space-y-2">
           {products.map((p) => (
-            <div key={p._id} className="flex items-center justify-between p-4 bg-pos-card border border-pos-border rounded-xl hover:border-pos-accent/50 transition-colors">
+            <div key={p.id} className="flex items-center justify-between p-4 bg-pos-card border border-pos-border rounded-xl hover:border-pos-accent/50 transition-colors">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="font-medium truncate">{p.name}</p>
@@ -102,7 +103,7 @@ export default function PosProducts() {
                   <button onClick={() => openEdit(p)} className="p-2 rounded-lg hover:bg-blue-500/20 text-blue-400 transition-colors">
                     <Pencil className="h-4 w-4" />
                   </button>
-                  <button onClick={() => { if (confirm('Delete?')) deleteMutation.mutate(p._id); }} className="p-2 rounded-lg hover:bg-red-500/20 text-red-400 transition-colors">
+                  <button onClick={() => { if (confirm('Delete?')) deleteMutation.mutate(p.id); }} className="p-2 rounded-lg hover:bg-red-500/20 text-red-400 transition-colors">
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>

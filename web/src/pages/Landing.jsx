@@ -6,9 +6,8 @@ import {
   CheckCircle, 
   Cpu, 
   Layers, 
-  BarChart3, 
-  ShoppingBag, 
-  Sparkles, 
+  BarChart3,
+  Sparkles,
   Activity, 
   Globe, 
   ChevronDown,
@@ -120,7 +119,6 @@ export default function Landing() {
   const { i18n } = useTranslation();
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
-  const accessToken = useAuthStore((s) => s.accessToken);
   const [langOpen, setLangOpen] = useState(false);
   const [activeFaq, setActiveFaq] = useState(null);
 
@@ -150,9 +148,7 @@ export default function Landing() {
       <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-[#0E150F]/80 border-b border-[#2ECC71]/10 transition-all duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#2ECC71] to-[#1ABC9C] flex items-center justify-center shadow-lg shadow-[#2ECC71]/20">
-              <ShoppingBag className="w-5 h-5 text-slate-950" />
-            </div>
+            <img src="/logo.png" alt="TradeS" className="w-10 h-10 rounded-xl bg-white object-contain shadow-lg shadow-[#2ECC71]/20" />
             <span className="text-xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-slate-400">
               TradeS
             </span>
@@ -192,7 +188,7 @@ export default function Landing() {
             </div>
 
             {/* Auth CTA */}
-            {accessToken ? (
+            {user ? (
               <Link 
                 to="/dashboard"
                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-[#2ECC71] to-[#1ABC9C] hover:from-[#2ecc71]/95 hover:to-[#1abc9c]/95 text-slate-950 shadow-lg shadow-[#2ECC71]/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
@@ -259,7 +255,7 @@ export default function Landing() {
           transition={{ duration: 0.6, delay: 0.3 }}
           className="flex flex-col sm:flex-row justify-center items-center gap-4 mb-20"
         >
-          {accessToken ? (
+          {user ? (
             <button
               onClick={() => navigate('/dashboard')}
               className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-base font-bold bg-gradient-to-r from-[#2ECC71] to-[#1ABC9C] hover:from-[#2ecc71]/90 hover:to-[#1abc9c]/90 text-slate-950 shadow-xl shadow-[#2ECC71]/25 transition-all hover:scale-[1.03]"
@@ -489,7 +485,7 @@ export default function Landing() {
             {t('ctaSubtitle')}
           </p>
           <div>
-            {accessToken ? (
+            {user ? (
               <Link 
                 to="/dashboard"
                 className="inline-flex items-center gap-2 px-8 py-4 rounded-xl text-base font-bold bg-gradient-to-r from-[#2ECC71] to-[#1ABC9C] hover:from-[#2ecc71]/90 hover:to-[#1abc9c]/90 text-slate-950 shadow-xl shadow-[#2ECC71]/20 transition-all hover:scale-[1.02]"
@@ -514,9 +510,7 @@ export default function Landing() {
       <footer className="py-12 border-t border-[#2ECC71]/10 bg-[#0E150F] text-slate-500 text-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-[#2ECC71] flex items-center justify-center">
-              <ShoppingBag className="w-3.5 h-3.5 text-slate-950" />
-            </div>
+            <img src="/logo.png" alt="TradeS" className="w-6 h-6 rounded-md bg-white object-contain" />
             <span className="font-bold text-slate-400">TradeS</span>
           </div>
           <div>

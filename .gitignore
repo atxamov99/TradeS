@@ -44,3 +44,7 @@ logs/
 
 # Coverage
 coverage/
+
+# Local backups of pre-swap apps (history preserved in git)
+mobile_old_*/
+web_old_*/

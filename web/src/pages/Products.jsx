@@ -112,7 +112,7 @@ export default function Products() {
         ) : (
           <div className="flex flex-col gap-3">
             {products.map((product) => (
-              <div key={product._id} className="bg-white rounded-2xl border border-[#E2E8F0] p-4 flex items-center justify-between gap-3">
+              <div key={product.id} className="bg-white rounded-2xl border border-[#E2E8F0] p-4 flex items-center justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <p className="font-bold text-[#0F172A] truncate">{product.name}</p>
@@ -220,7 +220,7 @@ function ProductModal({ product, onClose, t, fmt, UNITS }) {
       unit: form.unit,
     };
     if (product) {
-      updateMutation.mutate({ id: product._id, data: payload });
+      updateMutation.mutate({ id: product.id, data: payload });
     } else {
       createMutation.mutate(payload);
     }
@@ -313,7 +313,7 @@ function ProductModal({ product, onClose, t, fmt, UNITS }) {
 function DeleteConfirm({ product, onClose, t }) {
   const qc = useQueryClient();
   const deleteMutation = useMutation({
-    mutationFn: () => productsApi.deleteProduct(product._id),
+    mutationFn: () => productsApi.deleteProduct(product.id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['products'] });
       toast.success(t('product_deleted'));

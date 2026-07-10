@@ -28,5 +28,13 @@ export const authApi = {
 
   /** GET /api/auth/me */
   getMe: () =>
-    http.get("/auth/me")
+    http.get("/auth/me"),
+
+  /** PATCH /api/users/profile — update own profile */
+  updateProfile: (data) =>
+    http.patch("/users/profile", data),
+
+  /** PATCH /api/users/change-password */
+  changePassword: (data) =>
+    http.patch("/users/change-password", data)
 };

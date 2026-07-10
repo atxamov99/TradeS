@@ -140,7 +140,17 @@ const resources = {
             "role_super_admin": "Super Admin",
             "total_profit": "Jami foyda",
             "error_loading": "Ma'lumot yuklanmadi",
-            "retry": "Qayta urinish"
+            "retry": "Qayta urinish",
+
+            // Profile
+            "edit_profile": "Profilni tahrirlash",
+            "current_password": "Joriy parol",
+            "new_password": "Yangi parol",
+            "update_password": "Parolni yangilash",
+            "password_updated": "Parol yangilandi!",
+            "profile_updated": "Profil yangilandi!",
+            "change_password": "Parolni o'zgartirish",
+            "edit": "Tahrirlash"
         }
     },
     ru: {
@@ -280,7 +290,17 @@ const resources = {
             "role_super_admin": "Супер Админ",
             "total_profit": "Общая прибыль",
             "error_loading": "Ошибка загрузки",
-            "retry": "Повторить"
+            "retry": "Повторить",
+
+            // Profile
+            "edit_profile": "Редактировать профиль",
+            "current_password": "Текущий пароль",
+            "new_password": "Новый пароль",
+            "update_password": "Обновить пароль",
+            "password_updated": "Пароль обновлен!",
+            "profile_updated": "Профиль обновлен!",
+            "change_password": "Изменить пароль",
+            "edit": "Изменить"
         }
     },
     en: {
@@ -420,7 +440,17 @@ const resources = {
             "role_super_admin": "Super Admin",
             "total_profit": "Total Profit",
             "error_loading": "Failed to load data",
-            "retry": "Retry"
+            "retry": "Retry",
+
+            // Profile
+            "edit_profile": "Edit Profile",
+            "current_password": "Current Password",
+            "new_password": "New Password",
+            "update_password": "Update Password",
+            "password_updated": "Password updated!",
+            "profile_updated": "Profile updated!",
+            "change_password": "Change Password",
+            "edit": "Edit"
         }
     }
 };

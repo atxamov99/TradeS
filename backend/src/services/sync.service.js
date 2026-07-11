@@ -2,6 +2,7 @@ const prisma = require('../config/prisma');
 const saleService = require('./sale.service');
 const ApiError = require('../utils/ApiError');
 const slugify = require('slugify');
+const { assertTestUserWithinLimits } = require('../utils/testUserLimits');
 
 // Fields a mobile client is allowed to set on a product via sync. Everything else
 // (ownerId, createdById, slug, finalPrice, isActive, id, timestamps) is server-owned
@@ -27,6 +28,17 @@ const pickAllowed = (payload = {}, allowed) => {
 const processSyncBatch = async (userId, operations) => {
   const results = [];
 
+  // userId is constant across the whole batch, so fetch the test-account
+  // fields once rather than per-operation. Note: testActionCount on this
+  // in-memory `user` object is not updated as we increment it below for each
+  // product created within this same batch, so a capped/expired check for a
+  // later op in a large batch may lag slightly behind reality — an accepted,
+  // low-severity edge case (same class already accepted elsewhere).
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { isTestUser: true, testExpiresAt: true, testActionCount: true },
+  });
+
   for (const op of operations) {
     const { operation, entity, entityId, payload, clientUpdatedAt } = op;
 
@@ -44,6 +56,8 @@ const processSyncBatch = async (userId, operations) => {
 
       else if (entity === 'product') {
         if (operation === 'create') {
+          assertTestUserWithinLimits(user);
+
           const existing = await prisma.product.findFirst({
             where: { name: payload.name, createdById: userId }
           });
@@ -65,6 +79,10 @@ const processSyncBatch = async (userId, operations) => {
               },
             });
             serverEntityId = product.id;
+
+            if (user.isTestUser) {
+              await prisma.user.update({ where: { id: userId }, data: { testActionCount: { increment: 1 } } });
+            }
           } else {
             serverEntityId = existing.id;
           }

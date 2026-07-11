@@ -268,7 +268,7 @@ const googleAuth = async (credential, meta = {}) => {
     }
   }
 
-  if (user.isBlocked) throw new ApiError(403, 'Hisobingiz bloklangan');
+  if (user.isBlocked) throw new ApiError(403, 'Hisobingiz bloklangan', [], '', 'ACCOUNT_BLOCKED');
 
   const { accessToken, refreshToken } = await issueTokens(user, meta);
   await prisma.user.update({ where: { id: user.id }, data: { lastLogin: new Date() } });
@@ -381,7 +381,7 @@ const verifyOtp = async ({ phone: rawPhone, code, name, password }, meta = {}) =
     },
   });
 
-  if (user.isBlocked) throw new ApiError(403, 'Hisobingiz bloklangan');
+  if (user.isBlocked) throw new ApiError(403, 'Hisobingiz bloklangan', [], '', 'ACCOUNT_BLOCKED');
 
   const { accessToken, refreshToken } = await issueTokens(user, meta);
   await prisma.user.update({ where: { id: user.id }, data: { lastLogin: new Date() } });

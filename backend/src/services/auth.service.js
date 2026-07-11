@@ -44,11 +44,11 @@ const issueTokens = async (user, meta = {}) => {
 const register = async ({ name, email, phone, password }) => {
   if (email) {
     const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing) throw new ApiError(409, 'Email already registered');
+    if (existing) throw new ApiError(409, 'Bu email allaqachon ro\'yxatdan o\'tgan', [], '', 'ACCOUNT_EXISTS');
   }
   if (phone) {
     const existing = await prisma.user.findFirst({ where: { phone } });
-    if (existing) throw new ApiError(409, 'Phone already registered');
+    if (existing) throw new ApiError(409, 'Bu raqam allaqachon ro\'yxatdan o\'tgan', [], '', 'ACCOUNT_EXISTS');
   }
 
   const salt = await bcrypt.genSalt(10);
@@ -85,7 +85,7 @@ const login = async ({ email, phone, password }, meta = {}) => {
       actor: email || phone || 'unknown',
       ip: meta.ip || '',
     }).catch(() => {});
-    throw new ApiError(401, 'Invalid credentials');
+    throw new ApiError(404, 'Bunday hisob topilmadi', [], '', 'ACCOUNT_NOT_FOUND');
   }
 
   const isPasswordMatch = await bcrypt.compare(password, user.password);
@@ -97,12 +97,12 @@ const login = async ({ email, phone, password }, meta = {}) => {
       actor: email || phone,
       ip: meta.ip || '',
     }).catch(() => {});
-    throw new ApiError(401, 'Invalid credentials');
+    throw new ApiError(400, 'Parol noto\'g\'ri', [], '', 'WRONG_PASSWORD');
   }
 
   if (user.isBlocked) {
     logger.warn(`Login failed: Account blocked for ${email || phone}`);
-    throw new ApiError(403, 'Your account has been blocked');
+    throw new ApiError(403, 'Your account has been blocked', [], '', 'ACCOUNT_BLOCKED');
   }
 
   logger.info(`Login successful for ${email || phone} (${user.role})`);
@@ -367,8 +367,19 @@ const verifyOtp = async ({ phone: rawPhone, code, name, password }, meta = {}) =
     // The account already exists, yet the caller supplied a password — this is a
     // registration attempt for an already-registered phone. Refuse instead of
     // silently logging into the existing account and discarding the new name/password.
-    throw new ApiError(409, 'Bu raqam allaqachon ro\'yxatdan o\'tgan. Kirish sahifasi orqali kiring.');
+    throw new ApiError(409, 'Bu raqam allaqachon ro\'yxatdan o\'tgan. Kirish sahifasi orqali kiring.', [], '', 'ACCOUNT_EXISTS');
   }
+
+  if (!password) throw new ApiError(400, 'Ro\'yxatdan o\'tish uchun parol talab qilinadi');
+  const hashed = await bcrypt.hash(password, 10);
+  user = await prisma.user.create({
+    data: {
+      name: name || 'Foydalanuvchi',
+      phone: canonicalPhone,
+      password: hashed,
+      isEmailVerified: false,
+    },
+  });
 
   if (user.isBlocked) throw new ApiError(403, 'Hisobingiz bloklangan');
 

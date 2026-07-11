@@ -38,7 +38,7 @@ const protect = asyncHandler(async (req, res, next) => {
   }
 
   if (user.isBlocked) {
-    throw new ApiError(403, 'Your account has been blocked. Contact support.');
+    throw new ApiError(403, 'Your account has been blocked. Contact support.', [], '', 'ACCOUNT_BLOCKED');
   }
 
   // Remove password from user object

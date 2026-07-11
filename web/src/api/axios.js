@@ -10,6 +10,7 @@ const ERROR_CODE_KEYS = {
   ACCOUNT_EXISTS: 'error_account_exists',
   ACCOUNT_BLOCKED: 'error_account_blocked',
   BAG_WEIGHT_REQUIRED: 'bag_weight_required',
+  TEST_USER_EXPIRED: 'error_test_user_expired',
 };
 
 // Prefer a translated string for known error codes so the message respects

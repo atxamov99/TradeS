@@ -1,6 +1,7 @@
 const prisma = require('../config/prisma');
 const ApiError = require('../utils/ApiError');
 const { clampLimit } = require('../utils/pagination');
+const { assertTestUserWithinLimits } = require('../utils/testUserLimits');
 
 const createSale = async (userId, saleData) => {
   const { product: productId, productName, quantity, sellPrice, buyPrice, unit, note, syncId, isFromOffline, createdAt } = saleData;
@@ -10,6 +11,12 @@ const createSale = async (userId, saleData) => {
     const existing = await prisma.sale.findUnique({ where: { syncId } });
     if (existing) return existing;
   }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { isTestUser: true, testExpiresAt: true, testActionCount: true },
+  });
+  assertTestUserWithinLimits(user);
 
   const qty = Number(quantity);
   const sp = Number(sellPrice) || 0;
@@ -55,6 +62,10 @@ const createSale = async (userId, saleData) => {
         where: { id: productId },
         data: { stock: { decrement: qty } },
       });
+    }
+
+    if (user.isTestUser) {
+      await tx.user.update({ where: { id: userId }, data: { testActionCount: { increment: 1 } } });
     }
 
     return sale;

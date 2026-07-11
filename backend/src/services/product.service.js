@@ -2,6 +2,7 @@ const prisma = require('../config/prisma');
 const ApiError = require('../utils/ApiError');
 const slugify = require('slugify');
 const { clampLimit } = require('../utils/pagination');
+const { assertTestUserWithinLimits } = require('../utils/testUserLimits');
 
 const getProducts = async (userId, queryParams = {}, options = {}) => {
   const { search, page = 1, limit = 50, sortBy = 'createdAt', order = 'desc' } = queryParams;
@@ -61,6 +62,12 @@ const getProductBySlug = async (slug) => {
 };
 
 const createProduct = async (productData, userId) => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { isTestUser: true, testExpiresAt: true, testActionCount: true },
+  });
+  assertTestUserWithinLimits(user);
+
   // images is a relation (ProductImage[]) — Prisma needs { create: [...] }, not a raw array
   const { images = [], ...rest } = productData;
   if (rest.unit === 'box' && !(Number(rest.bagWeightKg) > 0)) {
@@ -80,6 +87,11 @@ const createProduct = async (productData, userId) => {
     },
     include: { images: true },
   });
+
+  if (user.isTestUser) {
+    await prisma.user.update({ where: { id: userId }, data: { testActionCount: { increment: 1 } } });
+  }
+
   return product;
 };
 

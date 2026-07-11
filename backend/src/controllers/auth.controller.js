@@ -15,6 +15,16 @@ const register = asyncHandler(async (req, res) => {
   res.status(201).json(new ApiResponse(201, { user }, 'Registration successful'));
 });
 
+const registerTestUser = asyncHandler(async (req, res) => {
+  const meta = { userAgent: req.headers['user-agent'] || '', ip: req.ip };
+  const { user, accessToken, refreshToken } = await authService.registerTestUser(meta);
+
+  res.cookie('accessToken', accessToken, COOKIE_OPTIONS);
+  res.cookie('refreshToken', refreshToken, COOKIE_OPTIONS);
+
+  res.status(201).json(new ApiResponse(201, { user, accessToken, refreshToken }, 'Test account created'));
+});
+
 const login = asyncHandler(async (req, res) => {
   const meta = {
     userAgent: req.headers['user-agent'] || '',
@@ -178,4 +188,4 @@ const resetPassword = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, null, result.message));
 });
 
-module.exports = { register, login, refreshToken, logout, logoutAll, getMe, forgotPassword, resetPassword, googleAuth, requestOtp, verifyOtp, requestEmailOtp, verifyEmailOtp, ssoAdopt };
+module.exports = { register, registerTestUser, login, refreshToken, logout, logoutAll, getMe, forgotPassword, resetPassword, googleAuth, requestOtp, verifyOtp, requestEmailOtp, verifyEmailOtp, ssoAdopt };

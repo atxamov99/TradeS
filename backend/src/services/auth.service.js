@@ -8,6 +8,7 @@ const bcrypt = require('bcryptjs');
 const { createAuditLog } = require('./audit.service');
 const telegramService = require('./telegram.service');
 const emailService = require('./email.service');
+const { testUserExpiresAt } = require('../utils/testUserLimits');
 
 const OTP_EXPIRES_MIN = 5;
 const OTP_MAX_ATTEMPTS = 5;
@@ -61,6 +62,32 @@ const register = async ({ name, email, phone, password }) => {
   const userResponse = { ...user };
   delete userResponse.password;
   return userResponse;
+};
+
+/**
+ * Register a Test User — no email/phone required, auto-expires per
+ * testUserLimits. Distinct from the normal register() path so a test account
+ * is never created by accident via the regular signup form.
+ */
+const registerTestUser = async (meta = {}) => {
+  const now = new Date();
+  const password = crypto.randomBytes(16).toString('hex');
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  const user = await prisma.user.create({
+    data: {
+      name: `Test User ${now.getTime().toString().slice(-6)}`,
+      password: hashedPassword,
+      isTestUser: true,
+      testExpiresAt: testUserExpiresAt(now),
+    },
+  });
+
+  const { accessToken, refreshToken } = await issueTokens(user, meta);
+
+  const userResponse = { ...user };
+  delete userResponse.password;
+  return { user: userResponse, accessToken, refreshToken };
 };
 
 /**
@@ -632,4 +659,4 @@ const verifyEmailOtp = async ({ email: rawEmail, code, name, password }, meta = 
   return { user: userResponse, accessToken, refreshToken };
 };
 
-module.exports = { register, login, refreshTokens, logout, logoutAll, googleAuth, requestOtp, verifyOtp, issueTokens, forgotPassword, resetPassword, forgotPasswordByPhone, resetPasswordByPhone, requestEmailOtp, verifyEmailOtp };
+module.exports = { register, registerTestUser, login, refreshTokens, logout, logoutAll, googleAuth, requestOtp, verifyOtp, issueTokens, forgotPassword, resetPassword, forgotPasswordByPhone, resetPasswordByPhone, requestEmailOtp, verifyEmailOtp };

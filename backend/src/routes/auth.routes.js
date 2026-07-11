@@ -20,6 +20,7 @@ const {
 
 // Public routes
 router.post('/register', authLimiter, validate(registerSchema), authController.register);
+router.post('/register-test', authLimiter, authController.registerTestUser);
 router.post('/login', authLimiter, validate(loginSchema), authController.login);
 router.post('/google', authLimiter, validate(googleSchema), authController.googleAuth);
 router.post('/request-otp', authLimiter, validate(requestOtpSchema), authController.requestOtp);

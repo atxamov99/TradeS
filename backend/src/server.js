@@ -117,14 +117,21 @@ const cleanupExpiredTestUsers = async () => {
     if (expired.length === 0) return;
     const ids = expired.map((u) => u.id);
 
-    // Sale.userId and Product.ownerId/createdById have no onDelete: Cascade
-    // to User, so these throwaway rows must be deleted explicitly before the
-    // User row itself — otherwise the required Sale.userId FK would reject
-    // the whole batched User delete. All three deletes run in one
-    // transaction so we never end up with orphaned Sales/Products and a
-    // still-present User, or vice versa.
-    const [, , { count }] = await prisma.$transaction([
+    // Sale.userId, SyncQueue.userId, Order.userId, and InventoryBatch.userId
+    // are all required FKs with no onDelete: Cascade to User (same for
+    // Product.ownerId/createdById, though those are optional), so these
+    // throwaway rows must be deleted explicitly before the User row itself —
+    // otherwise a required FK on any one of them would reject the whole
+    // batched User delete. Order already cascades to OrderItem/
+    // ShippingAddress via their own onDelete: Cascade, so deleting Order
+    // rows alone covers those. All deletes run in one transaction so we
+    // never end up with orphaned rows and a still-present User, or vice
+    // versa.
+    const [, , , , , { count }] = await prisma.$transaction([
       prisma.sale.deleteMany({ where: { userId: { in: ids } } }),
+      prisma.syncQueue.deleteMany({ where: { userId: { in: ids } } }),
+      prisma.order.deleteMany({ where: { userId: { in: ids } } }),
+      prisma.inventoryBatch.deleteMany({ where: { userId: { in: ids } } }),
       prisma.product.deleteMany({ where: { OR: [{ ownerId: { in: ids } }, { createdById: { in: ids } }] } }),
       prisma.user.deleteMany({ where: { id: { in: ids } } }),
     ]);

@@ -67,12 +67,13 @@ model Product {
   buyPrice    Float    @default(0)
   sellPrice   Float    @default(0)
   unit        String   @default("dona")
+  bagWeightKg Float?
   description String   @default("")
   price       Float    @default(0)
   discount    Float    @default(0)
   finalPrice  Float    @default(0)
   category    String   @default("")
-  stock       Int      @default(0)
+  stock       Float    @default(0)
   brand       String   @default("")
   tags        String[]
   isActive    Boolean  @default(true)
@@ -95,6 +96,8 @@ model Product {
   @@index([slug])
   @@index([category])
   @@index([price])
+  @@index([ownerId])
+  @@index([createdById])
 }
 
 model ProductImage {

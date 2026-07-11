@@ -127,14 +127,20 @@ const cleanupExpiredTestUsers = async () => {
     // rows alone covers those. All deletes run in one transaction so we
     // never end up with orphaned rows and a still-present User, or vice
     // versa.
-    const [, , , , , { count }] = await prisma.$transaction([
+    //
+    // NOTE: if a test user's Product is ever referenced by another user's
+    // OrderItem/CartItem (both required FKs, default Restrict), this whole
+    // transaction will fail-and-retry every cycle for that batch until the
+    // referencing row is gone — a known, non-destructive limitation.
+    const results = await prisma.$transaction([
       prisma.sale.deleteMany({ where: { userId: { in: ids } } }),
       prisma.syncQueue.deleteMany({ where: { userId: { in: ids } } }),
       prisma.order.deleteMany({ where: { userId: { in: ids } } }),
       prisma.inventoryBatch.deleteMany({ where: { userId: { in: ids } } }),
       prisma.product.deleteMany({ where: { OR: [{ ownerId: { in: ids } }, { createdById: { in: ids } }] } }),
-      prisma.user.deleteMany({ where: { id: { in: ids } } }),
+      prisma.user.deleteMany({ where: { id: { in: ids } } }), // last element — the actual count we report
     ]);
+    const { count } = results[results.length - 1];
     if (count > 0) logger.info(`Test User cleanup: removed ${count} expired account(s)`);
   } catch (err) {
     logger.error(`Test User cleanup failed: ${err.message}`);

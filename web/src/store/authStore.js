@@ -33,6 +33,19 @@ const useAuthStore = create(
         }
       },
 
+      registerTestUser: async () => {
+        set({ isLoading: true });
+        try {
+          const res = await authApi.registerTestUser();
+          const { user } = res.data.data;
+          set({ user, isLoading: false });
+          return user;
+        } catch (err) {
+          set({ isLoading: false });
+          throw err;
+        }
+      },
+
       // Ask backend to send a 6-digit OTP to the user's Telegram.
       // Throws with err.response.status === 428 when the phone isn't linked yet.
       requestOtp: async (phone) => {

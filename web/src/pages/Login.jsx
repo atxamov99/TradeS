@@ -110,6 +110,7 @@ export default function Login() {
   const login = useAuthStore((s) => s.login);
   const requestEmailOtp = useAuthStore((s) => s.requestEmailOtp);
   const verifyEmailOtp = useAuthStore((s) => s.verifyEmailOtp);
+  const registerTestUser = useAuthStore((s) => s.registerTestUser);
   const isLoading = useAuthStore((s) => s.isLoading);
   const navigate = useNavigate();
   const location = useLocation();
@@ -162,6 +163,13 @@ export default function Login() {
     } catch (err) {
       toast.error(err.response?.data?.message || 'Kod noto\'g\'ri');
     }
+  };
+
+  const handleTryDemo = async () => {
+    try {
+      await registerTestUser();
+      navigate('/dashboard', { replace: true });
+    } catch (_) {}
   };
 
   const onChange = (f) => (e) => {
@@ -353,6 +361,14 @@ export default function Login() {
               </button>
             </form>
           )}
+
+          <button
+            type="button"
+            onClick={handleTryDemo}
+            className="w-full h-11 mt-3 rounded-xl border border-dashed border-slate-700 text-slate-400 text-sm font-semibold hover:bg-slate-800 transition-all"
+          >
+            {t('try_demo_cta')}
+          </button>
 
           <div className="mt-6 text-center text-sm text-slate-400">
             {tx.no_account}{' '}

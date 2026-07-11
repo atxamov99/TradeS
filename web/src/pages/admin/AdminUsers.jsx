@@ -85,7 +85,10 @@ export default function AdminUsers() {
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <Badge color={roleColors[u.role] || 'gray'}>{u.role}</Badge>
+                      <div className="flex items-center gap-1.5">
+                        <Badge color={roleColors[u.role] || 'gray'}>{u.role}</Badge>
+                        {u.isTestUser && <Badge color="yellow">Test</Badge>}
+                      </div>
                     </td>
                     <td className="px-4 py-3">
                       <Badge color={u.isBlocked ? 'red' : 'green'}>

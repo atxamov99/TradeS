@@ -1,6 +1,7 @@
 import api from './axios';
 
 export const register = (data) => api.post('/auth/register', data);
+export const registerTestUser = () => api.post('/auth/register-test');
 export const login = (data) => api.post('/auth/login', data);
 export const requestOtp = (phone) => api.post('/auth/request-otp', { phone });
 export const verifyOtp = (data) => api.post('/auth/verify-otp', data);

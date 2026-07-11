@@ -63,6 +63,9 @@ const getProductBySlug = async (slug) => {
 const createProduct = async (productData, userId) => {
   // images is a relation (ProductImage[]) — Prisma needs { create: [...] }, not a raw array
   const { images = [], ...rest } = productData;
+  if (rest.unit === 'box' && !(Number(rest.bagWeightKg) > 0)) {
+    throw new ApiError(400, 'Bag weight (kg) is required', [], '', 'BAG_WEIGHT_REQUIRED');
+  }
   const slug = slugify(rest.name, { lower: true, strict: true }) + '-' + Date.now();
   const finalPrice = rest.price - (rest.price * (rest.discount || 0)) / 100;
 
@@ -93,6 +96,11 @@ const updateProduct = async (id, userId, updateData, options = {}) => {
   // images is a relation — pull it out of the scalar update and, if provided,
   // replace the whole image set (delete existing + create new)
   const { name, price, discount, images, ...newData } = updateData;
+  const effectiveUnit = newData.unit !== undefined ? newData.unit : product.unit;
+  const effectiveBagWeight = newData.bagWeightKg !== undefined ? newData.bagWeightKg : product.bagWeightKg;
+  if (effectiveUnit === 'box' && !(Number(effectiveBagWeight) > 0)) {
+    throw new ApiError(400, 'Bag weight (kg) is required', [], '', 'BAG_WEIGHT_REQUIRED');
+  }
   if (name !== undefined) newData.name = name;
   if (price !== undefined) newData.price = price;
   if (discount !== undefined) newData.discount = discount;

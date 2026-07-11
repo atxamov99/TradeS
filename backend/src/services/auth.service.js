@@ -278,6 +278,16 @@ const requestOtp = async (rawPhone) => {
   const phone = telegramService.normalizePhone(rawPhone);
   if (!phone) throw new ApiError(400, 'Telefon raqam noto\'g\'ri');
 
+  // requestOtp is only used by the registration flow — reject already-registered
+  // phones before sending a code, so we don't waste a Telegram message on someone
+  // who will be rejected at the verify step anyway. (verifyOtp keeps its own 409
+  // guard as defense in depth.)
+  const canonicalPhone = `+${phone}`;
+  const existingUser = await prisma.user.findFirst({ where: { phone: canonicalPhone } });
+  if (existingUser) {
+    throw new ApiError(409, 'Bu raqam allaqachon ro\'yxatdan o\'tgan. Kirish sahifasi orqali kiring.');
+  }
+
   const record = await prisma.phoneAuth.findUnique({ where: { phone } });
   if (!record || !record.telegramChatId) {
     // The bot has no chat for this phone yet — user must connect Telegram first.

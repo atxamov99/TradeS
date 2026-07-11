@@ -1,7 +1,24 @@
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import i18n from '../i18n';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api/v1';
+
+const ERROR_CODE_KEYS = {
+  ACCOUNT_NOT_FOUND: 'error_account_not_found',
+  WRONG_PASSWORD: 'error_wrong_password',
+  ACCOUNT_EXISTS: 'error_account_exists',
+  ACCOUNT_BLOCKED: 'error_account_blocked',
+  BAG_WEIGHT_REQUIRED: 'bag_weight_required',
+};
+
+// Prefer a translated string for known error codes so the message respects
+// the active locale instead of showing the backend's raw (Uzbek) text.
+export const resolveErrorMessage = (error) => {
+  const code = error.response?.data?.code;
+  if (code && ERROR_CODE_KEYS[code]) return i18n.t(ERROR_CODE_KEYS[code]);
+  return error.response?.data?.message || 'Something went wrong';
+};
 
 const api = axios.create({
   baseURL: API_BASE,
@@ -78,9 +95,8 @@ api.interceptors.response.use(
     }
 
     const status = error.response?.status;
-    const message = error.response?.data?.message || 'Something went wrong';
     if (status !== 401 && status !== 422) {
-      toast.error(message);
+      toast.error(resolveErrorMessage(error));
     }
 
     return Promise.reject(error);

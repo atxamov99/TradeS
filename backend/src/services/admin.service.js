@@ -264,16 +264,62 @@ const unblockUser = async (userId) => {
   }
 };
 
+// A hard delete is blocked by any related record whose FK uses RESTRICT/NO ACTION
+// (Sale, Order, InventoryBatch, SyncQueue all have a required userId with no
+// onDelete). Products (owner/createdBy) would only be orphaned (SetNull), but we
+// also refuse then so ownership/financial attribution isn't silently lost.
+// Detects both Prisma's normalized P2003 and a raw Postgres FK error
+// (23503 = foreign_key_violation, 23001 = restrict_violation) that can slip past
+// Prisma's normalization as a ConnectorError.
+const isForeignKeyViolation = (err) => {
+  const code = err?.code;
+  if (code === 'P2003' || code === '23503' || code === '23001') return true;
+  const msg = String(err?.message || '');
+  return /foreign key constraint|violates .*constraint|restrict|23503|23001/i.test(msg);
+};
+
 const deleteUser = async (userId, adminId, actorRole) => {
   if (userId === adminId) {
     throw new ApiError(400, 'You cannot delete yourself');
   }
   await assertCanActOn(userId, actorRole);
+
+  // Pre-check related records so we return a clear 409 instead of a raw DB error,
+  // and never destroy financial history via cascade. Admin should block instead.
+  const [salesCount, ordersCount, productsCount, inventoryCount, syncCount] = await Promise.all([
+    prisma.sale.count({ where: { userId } }),
+    prisma.order.count({ where: { userId } }),
+    prisma.product.count({ where: { OR: [{ ownerId: userId }, { createdById: userId }] } }),
+    prisma.inventoryBatch.count({ where: { userId } }),
+    prisma.syncQueue.count({ where: { userId } }),
+  ]);
+
+  const blockers = [];
+  if (salesCount) blockers.push(`${salesCount} ta sotuv`);
+  if (ordersCount) blockers.push(`${ordersCount} ta buyurtma`);
+  if (productsCount) blockers.push(`${productsCount} ta mahsulot`);
+  if (inventoryCount) blockers.push(`${inventoryCount} ta ombor partiyasi`);
+  if (syncCount) blockers.push(`${syncCount} ta sinxronizatsiya yozuvi`);
+
+  if (blockers.length) {
+    throw new ApiError(
+      409,
+      `Bu foydalanuvchini o'chirib bo'lmaydi: unga ${blockers.join(', ')} bog'langan. Moliyaviy tarix saqlanishi uchun o'rniga uni bloklang.`
+    );
+  }
+
   try {
     await prisma.user.delete({ where: { id: userId } });
     return { message: 'User deleted successfully' };
   } catch (err) {
     if (err.code === 'P2025') throw new ApiError(404, 'User not found');
+    // Race: related rows created between the pre-check and the delete.
+    if (isForeignKeyViolation(err)) {
+      throw new ApiError(
+        409,
+        'Bu foydalanuvchini o\'chirib bo\'lmaydi: unga bog\'langan yozuvlar mavjud. O\'rniga uni bloklang.'
+      );
+    }
     throw err;
   }
 };

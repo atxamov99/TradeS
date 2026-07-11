@@ -47,6 +47,7 @@ const errorMiddleware = (err, req, res, next) => {
     success: false,
     statusCode: error.statusCode,
     message: error.message,
+    code: error.code,
     errors: error.errors,
     ...(process.env.NODE_ENV === 'development' && { stack: error.stack }),
   });

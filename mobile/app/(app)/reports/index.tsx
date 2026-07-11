@@ -2,7 +2,7 @@ import { View, Text, ScrollView, TouchableOpacity, Alert } from "react-native";
 import { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import * as Sharing from "expo-sharing";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 import { useSales } from "@/hooks/useSales";
 import { useT } from "@/hooks/useT";
 import { useTheme } from "@/hooks/useTheme";

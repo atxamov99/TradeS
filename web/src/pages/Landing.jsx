@@ -148,7 +148,7 @@ export default function Landing() {
       <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-[#0E150F]/80 border-b border-[#2ECC71]/10 transition-all duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="TradeS" className="w-10 h-10 rounded-xl bg-white object-contain shadow-lg shadow-[#2ECC71]/20" />
+            <img src="/logo-dark.png" alt="TradeS" className="w-10 h-10 object-contain" />
             <span className="text-xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-slate-400">
               TradeS
             </span>
@@ -510,7 +510,7 @@ export default function Landing() {
       <footer className="py-12 border-t border-[#2ECC71]/10 bg-[#0E150F] text-slate-500 text-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="TradeS" className="w-6 h-6 rounded-md bg-white object-contain" />
+            <img src="/logo-dark.png" alt="TradeS" className="w-6 h-6 object-contain" />
             <span className="font-bold text-slate-400">TradeS</span>
           </div>
           <div>

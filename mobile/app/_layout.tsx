@@ -3,6 +3,7 @@ import { AppState, View } from "react-native";
 import { Stack, router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useAuthStore } from "@/store/authStore";
+import { useUserStore } from "@/store/userStore";
 import { useLangStore } from "@/store/langStore";
 import { useThemeStore } from "@/store/themeStore";
 import { useSubscriptionStore } from "@/store/subscriptionStore";
@@ -12,6 +13,7 @@ import "../global.css";
 
 export default function RootLayout() {
   const { token, loadToken } = useAuthStore();
+  const loadUser = useUserStore((s) => s.loadUser);
   const loadLang = useLangStore((s) => s.loadLang);
   const loadTheme = useThemeStore((s) => s.loadTheme);
   const loadSubscription = useSubscriptionStore((s) => s.load);
@@ -20,9 +22,13 @@ export default function RootLayout() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    Promise.all([loadToken(), loadLang(), loadTheme(), loadSubscription(), loadRole()])
+    // First paint faqat tez lokal o'qishlarga bog'lansin — tarmoq chaqiruvi (loadSubscription)
+    // ni bu yerga qo'shsak, backend "cold start" bo'lsa 10s gacha qora ekran ko'rinadi.
+    Promise.all([loadToken(), loadUser(), loadLang(), loadTheme(), loadRole()])
       .then(() => setReady(true))
       .catch(() => setReady(true));
+    // Obuna ma'lumoti tarmoq orqali keladi — fon rejimida yuklanadi, renderni bloklamaydi.
+    loadSubscription().catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -30,7 +36,7 @@ export default function RootLayout() {
     if (token) {
       router.replace("/(app)");
     } else {
-      router.replace("/(auth)/");
+      router.replace("/(auth)/login");
     }
   }, [token, ready]);
 

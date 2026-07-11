@@ -104,7 +104,17 @@ export default function ProductDetailScreen() {
     setShowDeleteModal(false);
     try {
       await database.write(async () => {
-        await product.destroyPermanently();
+        if (product.serverId) {
+          // Backend'ga allaqachon sinxronlangan — butunlay o'chirmaymiz, arxivlab
+          // qayta sinxronlashga navbatga qo'yamiz, shunda server ham isActive:false qiladi.
+          await product.update((p) => {
+            p.archivedAt = Date.now();
+            p.isSynced = false;
+          });
+        } else {
+          // Hali backend bilmaydigan lokal yozuv — xavfsiz butunlay o'chirish mumkin.
+          await product.destroyPermanently();
+        }
       });
       router.back();
     } catch {

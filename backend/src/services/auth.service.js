@@ -344,6 +344,11 @@ const verifyOtp = async ({ phone: rawPhone, code, name, password }, meta = {}) =
         isEmailVerified: false,
       },
     });
+  } else if (password) {
+    // The account already exists, yet the caller supplied a password — this is a
+    // registration attempt for an already-registered phone. Refuse instead of
+    // silently logging into the existing account and discarding the new name/password.
+    throw new ApiError(409, 'Bu raqam allaqachon ro\'yxatdan o\'tgan. Kirish sahifasi orqali kiring.');
   }
 
   if (user.isBlocked) throw new ApiError(403, 'Hisobingiz bloklangan');

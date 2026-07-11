@@ -1,22 +1,35 @@
 /**
- * Oflayn sync engine — TradeS backend `/sync/push` kontrakti bilan.
+ * Oflayn sync engine — TradeS backend `/sync/push` + `/sync/pull` kontrakti bilan.
  *
  * Backend kontrakti (backend/src/controllers/sync.controller.js):
  *   POST /sync/push  { operations: [{ operation, entity, entityId, payload, clientUpdatedAt }] }
  *   → { data: { results: [{ entityId, status: 'synced'|'failed', serverEntityId }] } }
+ *   GET  /sync/pull?lastSyncAt=<ISO>
+ *   → { data: { products: RemoteProduct[], sales: RemoteSale[], serverTime: ISOString } }
  *
- * Strategiya: local-first push. Har bir sinxronlanmagan yozuv bitta operatsiyaga
- * aylantiriladi va batch qilib yuboriladi. Server "Last Write Wins" (clientUpdatedAt
- * vs updatedAt) bo'yicha product update'ni hal qiladi.
+ * Strategiya: local-first push, so'ng pull. Har bir sinxronlanmagan yozuv bitta
+ * operatsiyaga aylantiriladi va batch qilib yuboriladi. Server "Last Write Wins"
+ * (clientUpdatedAt vs updatedAt) bo'yicha product update'ni hal qiladi. Push
+ * tugagandan keyin pull chaqiriladi — shu orqali admin panel/webda qilingan
+ * o'zgarishlar (yangi/yangilangan tovar, boshqa qurilmadagi sotuv) mobilga qaytib
+ * keladi. Pull faqat oxirgi pulldan keyingi o'zgarishlarni oladi (incremental,
+ * `lastSyncAt` mahalliy saqlanadi).
+ *
+ * Konflikt qoidasi: agar mahalliy yozuv hali push qilinmagan bo'lsa (is_synced=false),
+ * pull uni ustidan yozmaydi — mahalliy tahrir har doim ustun, keyingi sync push'da
+ * serverga jo'natiladi.
  *
  * runSync() — root layout da AppState "active" bo'lganda chaqiriladi.
  */
-import { database } from "@/db";
+import { database, productsCollection, salesCollection } from "@/db";
 import { Product } from "@/db/models/Product";
 import { Sale } from "@/db/models/Sale";
 import { Q } from "@nozbe/watermelondb";
 import { api } from "./api";
 import { useSyncStore } from "@/store/syncStore";
+import { mmkv } from "@/store/storage";
+
+const LAST_PULL_KEY = "lastSyncAt";
 
 type SyncOperation = {
   operation: "create" | "update" | "delete";
@@ -28,6 +41,27 @@ type SyncOperation = {
 
 type SyncResult = { entityId: string; status: string; serverEntityId?: string };
 
+type RemoteProduct = {
+  id: string;
+  name: string;
+  buyPrice: number;
+  sellPrice: number;
+  stock: number;
+  unit: string;
+  isActive: boolean;
+};
+
+type RemoteSale = {
+  id: string;
+  productId: string | null;
+  productName: string;
+  quantity: number;
+  sellPrice: number;
+  profit: number;
+  note: string | null;
+  createdAt: string;
+};
+
 function toMillis(v: Date | number): number {
   return v instanceof Date ? v.getTime() : Number(v);
 }
@@ -35,14 +69,17 @@ function toMillis(v: Date | number): number {
 export async function runSync() {
   if (useSyncStore.getState().isSyncing) return;
 
-  const pending = await getPendingCount();
-  useSyncStore.getState().setPendingCount(pending);
-  if (pending === 0) return;
-
   useSyncStore.getState().setSyncing(true);
   try {
-    await syncProducts();
-    await syncSales();
+    const pending = await getPendingCount();
+    useSyncStore.getState().setPendingCount(pending);
+    if (pending > 0) {
+      await syncProducts();
+      await syncSales();
+    }
+    // Pull har doim chaqiriladi — push uchun kutayotgan narsa bo'lmasa ham,
+    // admin panel/webda qilingan o'zgarishlar bo'lishi mumkin.
+    await pullSync();
     useSyncStore.getState().setLastSynced();
     useSyncStore.getState().setPendingCount(await getPendingCount());
   } catch (err) {
@@ -121,7 +158,6 @@ async function syncSales() {
 
   if (unsynced.length === 0) return;
 
-  const productsCollection = database.collections.get<Product>("products");
   const byLocalId = new Map(unsynced.map((s) => [s.id, s]));
 
   const operations: SyncOperation[] = [];
@@ -172,6 +208,101 @@ async function syncSales() {
       });
     }
   });
+}
+
+/**
+ * Server → Mobile: admin panel/webda qilingan o'zgarishlarni olib kelib,
+ * mahalliy bazaga (serverId bo'yicha) upsert qiladi. Hali push qilinmagan
+ * mahalliy yozuvlar (is_synced=false) ustidan yozilmaydi.
+ */
+async function pullSync() {
+  const lastSyncAt = await mmkv.getString(LAST_PULL_KEY);
+
+  const { data: body } = await api.get("/sync/pull", {
+    params: lastSyncAt ? { lastSyncAt } : undefined,
+  });
+  const payload = body?.data ?? body ?? {};
+  const remoteProducts: RemoteProduct[] = payload.products ?? [];
+  const remoteSales: RemoteSale[] = payload.sales ?? [];
+  const serverTime: string | undefined = payload.serverTime;
+
+  if (remoteProducts.length > 0) {
+    const localByServerId = new Map(
+      (await productsCollection.query(Q.where("server_id", Q.oneOf(remoteProducts.map((p) => p.id)))).fetch())
+        .map((p) => [p.serverId as string, p])
+    );
+
+    await database.write(async () => {
+      for (const rp of remoteProducts) {
+        const local = localByServerId.get(rp.id);
+        if (local) {
+          // Mahalliy tahrir hali serverga jo'natilmagan bo'lsa — pull uni bosib o'tmasin.
+          if (!local.isSynced) continue;
+          await local.update((p) => {
+            p.name = rp.name;
+            p.buyPrice = rp.buyPrice;
+            p.sellPrice = rp.sellPrice;
+            p.stockQty = rp.stock;
+            p.unit = rp.unit;
+            p.archivedAt = rp.isActive ? null : (p.archivedAt ?? Date.now());
+            p.isSynced = true;
+          });
+        } else {
+          await productsCollection.create((p) => {
+            p.name = rp.name;
+            p.buyPrice = rp.buyPrice;
+            p.sellPrice = rp.sellPrice;
+            p.stockQty = rp.stock;
+            p.unit = rp.unit;
+            p.barcode = null;
+            p.categoryId = null;
+            p.archivedAt = rp.isActive ? null : Date.now();
+            p.isSynced = true;
+            p.serverId = rp.id;
+          });
+        }
+      }
+    });
+  }
+
+  if (remoteSales.length > 0) {
+    const existingServerIds = new Set(
+      (await salesCollection.query(Q.where("server_id", Q.oneOf(remoteSales.map((s) => s.id)))).fetch())
+        .map((s) => s.serverId)
+    );
+    const newRemoteSales = remoteSales.filter((s) => !existingServerIds.has(s.id));
+
+    if (newRemoteSales.length > 0) {
+      // productId → mahalliy mahsulot id (topilmasa bo'sh qoldiriladi, UI productName'ga tayanadi)
+      const remoteProductIds = [...new Set(newRemoteSales.map((s) => s.productId).filter(Boolean))] as string[];
+      const localProductByServerId = new Map(
+        remoteProductIds.length > 0
+          ? (await productsCollection.query(Q.where("server_id", Q.oneOf(remoteProductIds))).fetch())
+              .map((p) => [p.serverId as string, p.id])
+          : []
+      );
+
+      await database.write(async () => {
+        for (const rs of newRemoteSales) {
+          await salesCollection.create((s) => {
+            s.productId = (rs.productId && localProductByServerId.get(rs.productId)) || "";
+            s.productName = rs.productName;
+            s.qty = rs.quantity;
+            s.sellPrice = rs.sellPrice;
+            s.profit = rs.profit;
+            s.note = rs.note ?? null;
+            s.soldAt = new Date(rs.createdAt).getTime();
+            s.isSynced = true;
+            s.serverId = rs.id;
+          });
+        }
+      });
+    }
+  }
+
+  if (serverTime) {
+    await mmkv.setString(LAST_PULL_KEY, serverTime);
+  }
 }
 
 export async function getPendingCount(): Promise<number> {

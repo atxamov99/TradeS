@@ -13,7 +13,7 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#16a34a"
+      "backgroundColor": "#FFFFFF"
     },
     "ios": {
       "supportsTablet": false,
@@ -22,7 +22,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#16a34a"
+        "backgroundColor": "#FFFFFF"
       },
       "package": "uz.savdo.app",
       "permissions": [

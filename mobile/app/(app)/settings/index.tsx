@@ -2,6 +2,7 @@ import { View, Text, TouchableOpacity, ScrollView, Alert, Switch } from "react-n
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuthStore } from "@/store/authStore";
+import { useUserStore } from "@/store/userStore";
 import { useLangStore } from "@/store/langStore";
 import { useThemeStore } from "@/store/themeStore";
 import { useTheme } from "@/hooks/useTheme";
@@ -64,6 +65,7 @@ function Divider() {
 
 export default function ProfileScreen() {
   const clearToken = useAuthStore((s) => s.clearToken);
+  const { user, clearUser } = useUserStore();
   const { lang, setLang } = useLangStore();
   const { isDark, toggleTheme } = useThemeStore();
   const { c } = useTheme();
@@ -73,7 +75,7 @@ export default function ProfileScreen() {
   function handleLogout() {
     Alert.alert(t.settings.logout, t.settings.logoutConfirm, [
       { text: t.products.cancel, style: "cancel" },
-      { text: t.settings.logout, style: "destructive", onPress: () => clearToken() },
+      { text: t.settings.logout, style: "destructive", onPress: () => { clearUser(); clearToken(); } },
     ]);
   }
 
@@ -88,8 +90,8 @@ export default function ProfileScreen() {
             <Ionicons name="person" size={24} color={c.primary} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ color: c.text, fontWeight: "800", fontSize: 16 }}>Savdogar</Text>
-            <Text style={{ color: c.textMuted, fontSize: 12, marginTop: 2 }}>v1.0.0</Text>
+            <Text style={{ color: c.text, fontWeight: "800", fontSize: 16 }}>{user?.name || "Savdogar"}</Text>
+            <Text style={{ color: c.textMuted, fontSize: 12, marginTop: 2 }}>{user?.phone || "v1.0.0"}</Text>
           </View>
           <Ionicons name="chevron-forward" size={16} color={c.border} />
         </View>
@@ -130,15 +132,6 @@ export default function ProfileScreen() {
           right={<Ionicons name="chevron-forward" size={18} color={c.textMuted} />}
           onPress={() => router.push("/reports")}
         />
-        <Divider />
-        <Row
-          iconName="card"
-          iconBg="#DBEAFE"
-          label={t.settings.subscription}
-          sub={`${t.subscription.free} — ${t.subscription.active}`}
-          right={<Ionicons name="chevron-forward" size={18} color={c.textMuted} />}
-          onPress={() => router.push("/settings/subscription")}
-        />
       </Section>
 
       {/* Team */}
@@ -177,8 +170,11 @@ export default function ProfileScreen() {
         <Row iconName="log-out" label={t.settings.logout} danger onPress={handleLogout} />
       </Section>
 
-      <Text style={{ color: c.textMuted, textAlign: "center", fontSize: 12, marginTop: 16, marginBottom: 40, opacity: 0.6 }}>
-        Savdo App © 2024
+      <Text style={{ color: c.textMuted, textAlign: "center", fontSize: 12, marginTop: 16, opacity: 0.6 }}>
+        TradeS App © {new Date().getFullYear()}
+      </Text>
+      <Text style={{ color: c.textMuted, textAlign: "center", fontSize: 11, marginTop: 2, marginBottom: 40, opacity: 0.5 }}>
+        Powered by KarvonEx
       </Text>
     </ScrollView>
   );

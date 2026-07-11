@@ -4,9 +4,14 @@ import { Search, Plus, X, Pencil, Trash2, Package, AlertCircle } from 'lucide-re
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import * as productsApi from '../api/products.api';
+import useAuthStore from '../store/authStore';
 
 export default function Products() {
   const { t, i18n } = useTranslation();
+  const user = useAuthStore((s) => s.user);
+  // Mirrors backend rule (product.service.js): owner OR ADMIN/SUPER_ADMIN may edit/delete.
+  const canManage = (product) =>
+    !!user && (['ADMIN', 'SUPER_ADMIN'].includes(user.role) || product.ownerId === user.id);
   const locale = i18n.language.startsWith('uz') ? 'uz-UZ' : i18n.language.startsWith('ru') ? 'ru-RU' : 'en-US';
 
   const UNITS = [
@@ -123,22 +128,24 @@ export default function Products() {
                     <span className="text-green-600 font-semibold">{t('sell_price')} {Number(product.sellPrice).toLocaleString(locale)} {t('currency')}</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setModal(product)}
-                    className="p-2.5 rounded-xl hover:bg-slate-100 text-[#64748B] hover:text-[#0F172A] transition"
-                    title={t('edit_product')}
-                  >
-                    <Pencil size={18} />
-                  </button>
-                  <button
-                    onClick={() => setDeleteTarget(product)}
-                    className="p-2.5 rounded-xl hover:bg-red-50 text-[#64748B] hover:text-red-500 transition"
-                    title={t('delete')}
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </div>
+                {canManage(product) && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setModal(product)}
+                      className="p-2.5 rounded-xl hover:bg-slate-100 text-[#64748B] hover:text-[#0F172A] transition"
+                      title={t('edit_product')}
+                    >
+                      <Pencil size={18} />
+                    </button>
+                    <button
+                      onClick={() => setDeleteTarget(product)}
+                      className="p-2.5 rounded-xl hover:bg-red-50 text-[#64748B] hover:text-red-500 transition"
+                      title={t('delete')}
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>

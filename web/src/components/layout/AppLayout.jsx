@@ -76,7 +76,7 @@ export default function AppLayout() {
       <aside className="hidden md:flex flex-col w-[220px] min-h-screen bg-white border-r border-[#E2E8F0] fixed left-0 top-0 bottom-0 z-30">
         {/* Logo */}
         <div className="px-5 py-6 border-b border-[#E2E8F0] flex items-center gap-2.5">
-          <img src="/logo.png" alt="TradeS" className="h-10 w-10 rounded-lg bg-white object-contain flex-shrink-0" />
+          <img src="/logo.png" alt="TradeS" className="h-10 w-10 rounded-lg object-contain flex-shrink-0" />
           <div className="min-w-0">
             <span className="text-2xl font-extrabold text-green-500 tracking-tight">TradeS</span>
             <p className="text-[11px] text-slate-400 font-medium mt-0.5">Business Manager</p>

@@ -1,4 +1,4 @@
-import { View, Text, FlatList, TouchableOpacity, TextInput, ScrollView, Modal } from "react-native";
+import { View, Text, FlatList, TouchableOpacity, TextInput, ScrollView, Modal, Alert } from "react-native";
 import { useState } from "react";
 import { router } from "expo-router";
 import { useProducts } from "@/hooks/useProducts";
@@ -31,9 +31,21 @@ export default function ProductsScreen() {
     setMenuProduct(null);
     try {
       await database.write(async () => {
-        await item.destroyPermanently();
+        if (item.serverId) {
+          // Backend'ga allaqachon sinxronlangan — butunlay o'chirmaymiz, arxivlab
+          // qayta sinxronlashga navbatga qo'yamiz, shunda server ham isActive:false qiladi.
+          await item.update((p) => {
+            p.archivedAt = Date.now();
+            p.isSynced = false;
+          });
+        } else {
+          // Hali backend bilmaydigan lokal yozuv — xavfsiz butunlay o'chirish mumkin.
+          await item.destroyPermanently();
+        }
       });
-    } catch {}
+    } catch {
+      Alert.alert(t.common.error, t.common.saveError);
+    }
   }
 
   return (

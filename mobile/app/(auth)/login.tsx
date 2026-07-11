@@ -1,27 +1,23 @@
 import { useState } from "react";
 import {
   View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator,
-  ScrollView, KeyboardAvoidingView, Platform,
+  ScrollView, KeyboardAvoidingView, Platform, Image,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useLangStore } from "@/store/langStore";
 import { useAuthStore } from "@/store/authStore";
+import { useUserStore } from "@/store/userStore";
 import { api } from "@/services/api";
-import { useTheme } from "@/hooks/useTheme";
 import { light } from "@/theme/colors";
-import { Lang } from "@/i18n";
 import { formatPhone, cleanIdentifier } from "@/utils/phone";
 
-const LANGS: { code: Lang; label: string; flag: string }[] = [
-  { code: "uz", label: "UZ", flag: "🇺🇿" },
-  { code: "ru", label: "RU", flag: "🇷🇺" },
-  { code: "en", label: "EN", flag: "🇬🇧" },
-];
+// Auth ekranlari eski ilovadagidek DOIM och (light) ko'rinadi — global dark tema majburlanmaydi.
+const c = light;
 
 function Field({
-  icon, placeholder, value, onChangeText, secure, onToggleSecure, showSecure, keyboardType, c,
+  label, icon, placeholder, value, onChangeText, secure, onToggleSecure, showSecure, keyboardType, c,
 }: {
+  label?: string;
   icon: React.ComponentProps<typeof Ionicons>["name"];
   placeholder: string;
   value: string;
@@ -33,24 +29,29 @@ function Field({
   c: typeof light;
 }) {
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: c.bg, borderRadius: 14, paddingHorizontal: 14, marginBottom: 12, borderWidth: 1.5, borderColor: c.border, height: 54 }}>
-      <Ionicons name={icon} size={17} color={c.textMuted} style={{ marginRight: 10 }} />
-      <TextInput
-        style={{ flex: 1, fontSize: 15, color: c.text }}
-        placeholder={placeholder}
-        placeholderTextColor={c.textMuted}
-        value={value}
-        onChangeText={onChangeText}
-        secureTextEntry={secure && !showSecure}
-        keyboardType={keyboardType ?? "default"}
-        autoCapitalize="none"
-        autoCorrect={false}
-      />
-      {secure && (
-        <TouchableOpacity onPress={onToggleSecure}>
-          <Ionicons name={showSecure ? "eye-off" : "eye"} size={18} color={c.textMuted} />
-        </TouchableOpacity>
-      )}
+    <View style={{ marginBottom: 16 }}>
+      {label ? (
+        <Text style={{ fontSize: 12, fontWeight: "600", color: c.textSub, marginBottom: 6 }}>{label}</Text>
+      ) : null}
+      <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: c.bgCard, borderRadius: 12, paddingHorizontal: 16, borderWidth: 1, borderColor: c.border, height: 50 }}>
+        <Ionicons name={icon} size={20} color={c.textMuted} style={{ marginRight: 10 }} />
+        <TextInput
+          style={{ flex: 1, fontSize: 16, color: c.text }}
+          placeholder={placeholder}
+          placeholderTextColor={c.textMuted}
+          value={value}
+          onChangeText={onChangeText}
+          secureTextEntry={secure && !showSecure}
+          keyboardType={keyboardType ?? "default"}
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+        {secure && (
+          <TouchableOpacity onPress={onToggleSecure} style={{ marginLeft: 8, padding: 2 }}>
+            <Ionicons name={showSecure ? "eye-off-outline" : "eye-outline"} size={20} color={c.textMuted} />
+          </TouchableOpacity>
+        )}
+      </View>
     </View>
   );
 }
@@ -61,9 +62,8 @@ export default function LoginScreen() {
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const { lang, setLang } = useLangStore();
   const { setToken } = useAuthStore();
-  const { c } = useTheme();
+  const { setUser } = useUserStore();
 
   const isValid = identifier.trim().length > 0 && password.length > 0;
 
@@ -83,6 +83,7 @@ export default function LoginScreen() {
 
       const res = await api.post("/auth/login", payload);
       const data = res.data?.data ?? res.data;
+      await setUser(data.user);
       await setToken(data.accessToken, data.refreshToken);
       // token o'zgarishi root _layout guard'ini ishga tushiradi → (app) ga o'tadi
     } catch (e: any) {
@@ -97,52 +98,35 @@ export default function LoginScreen() {
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <ScrollView
         style={{ flex: 1, backgroundColor: c.bg }}
-        contentContainerStyle={{ flexGrow: 1, justifyContent: "center", paddingHorizontal: 24, paddingVertical: 40 }}
+        contentContainerStyle={{ flexGrow: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 20, paddingVertical: 40 }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Logo */}
-        <View style={{ alignItems: "center", marginBottom: 28 }}>
-          <View style={{ width: 84, height: 84, backgroundColor: c.primary, borderRadius: 26, alignItems: "center", justifyContent: "center", marginBottom: 14, shadowColor: c.primary, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 16, elevation: 10 }}>
-            <Ionicons name="stats-chart" size={40} color="#fff" />
-          </View>
-          <Text style={{ color: c.text, fontSize: 30, fontWeight: "900", letterSpacing: -1 }}>Savdo</Text>
-          <Text style={{ color: c.textMuted, fontSize: 14, marginTop: 4 }}>Savdogar uchun ilova</Text>
-        </View>
-
-        {/* Language switcher */}
-        <View style={{ flexDirection: "row", backgroundColor: c.bgCard, borderRadius: 14, padding: 4, marginBottom: 24, borderWidth: 1, borderColor: c.border }}>
-          {LANGS.map((l) => {
-            const active = lang === l.code;
-            return (
-              <TouchableOpacity
-                key={l.code}
-                onPress={() => setLang(l.code)}
-                style={{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, height: 42, borderRadius: 10, backgroundColor: active ? c.primary : "transparent" }}
-              >
-                <Text style={{ fontSize: 15 }}>{l.flag}</Text>
-                <Text style={{ color: active ? "#fff" : c.textMuted, fontWeight: "700", fontSize: 14 }}>{l.label}</Text>
-              </TouchableOpacity>
-            );
-          })}
+        {/* Header: logo + brand */}
+        <View style={{ alignItems: "center", marginBottom: 32 }}>
+          <Image source={require("@/assets/logo.png")} style={{ width: 96, height: 96, marginBottom: 12 }} resizeMode="contain" />
+          <Text style={{ color: c.primary, fontSize: 28, fontWeight: "700", letterSpacing: 1 }}>TradeS</Text>
+          <Text style={{ color: c.textMuted, fontSize: 14, marginTop: 4 }}>Boshqaruv tizimi</Text>
         </View>
 
         {/* Card */}
-        <View style={{ backgroundColor: c.bgCard, borderRadius: 22, padding: 22, borderWidth: 1, borderColor: c.border }}>
-          <Text style={{ color: c.text, fontSize: 22, fontWeight: "800", marginBottom: 4 }}>Kirish</Text>
-          <Text style={{ color: c.textMuted, fontSize: 13, marginBottom: 20 }}>Hisobingizga kiring</Text>
+        <View style={{ width: "100%", backgroundColor: c.bgCard, borderRadius: 16, padding: 24, borderWidth: 1, borderColor: c.border, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 15, elevation: 2 }}>
+          <Text style={{ color: c.text, fontSize: 24, fontWeight: "700", marginBottom: 8 }}>Xush kelibsiz</Text>
+          <Text style={{ color: c.textMuted, fontSize: 16, marginBottom: 24 }}>Hisobingizga kiring</Text>
 
           <Field
-            icon="person-outline"
-            placeholder="Telefon yoki email"
+            label="Telefon"
+            icon="call-outline"
+            placeholder="+998 90 123 45 67"
             value={identifier}
             onChangeText={(v) => setIdentifier(formatPhone(v))}
-            keyboardType="default"
+            keyboardType="phone-pad"
             c={c}
           />
           <Field
+            label="Parol"
             icon="lock-closed-outline"
-            placeholder="Parol"
+            placeholder="Parolingiz"
             value={password}
             onChangeText={setPassword}
             secure
@@ -151,33 +135,34 @@ export default function LoginScreen() {
             c={c}
           />
 
-          <TouchableOpacity onPress={() => router.push("/forgot-password")} style={{ alignSelf: "flex-end", marginTop: 4, marginBottom: 16 }}>
-            <Text style={{ color: c.primary, fontWeight: "700", fontSize: 13 }}>Parolni unutdingizmi?</Text>
+          <TouchableOpacity onPress={() => router.push("/forgot-password")} style={{ alignSelf: "flex-end", marginTop: 2, marginBottom: 20 }}>
+            <Text style={{ color: c.primary, fontWeight: "600", fontSize: 13 }}>Parolni unutdingizmi?</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             onPress={handleLogin}
-            disabled={!isValid || loading}
-            style={{ height: 54, borderRadius: 16, backgroundColor: isValid && !loading ? c.primary : c.bgMuted, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 }}
+            disabled={loading}
+            activeOpacity={0.85}
+            style={{ height: 52, borderRadius: 12, backgroundColor: c.primary, flexDirection: "row", alignItems: "center", justifyContent: "center", opacity: loading ? 0.7 : 1 }}
           >
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <>
-                <Ionicons name="arrow-forward" size={18} color={isValid ? "#fff" : c.textMuted} />
-                <Text style={{ color: isValid ? "#fff" : c.textMuted, fontWeight: "800", fontSize: 16 }}>Kirish</Text>
-              </>
+              <Text style={{ color: "#fff", fontWeight: "600", fontSize: 16 }}>Kirish</Text>
             )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => router.push("/register")}
+            activeOpacity={0.7}
+            style={{ height: 50, borderRadius: 12, alignItems: "center", justifyContent: "center", marginTop: 12 }}
+          >
+            <Text style={{ color: c.primary, fontWeight: "600", fontSize: 16 }}>Ro'yxatdan o'tish</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Register link */}
-        <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", marginTop: 22 }}>
-          <Text style={{ color: c.textMuted, fontSize: 14 }}>Hisobingiz yo'qmi? </Text>
-          <TouchableOpacity onPress={() => router.push("/register")}>
-            <Text style={{ color: c.primary, fontSize: 14, fontWeight: "800" }}>Ro'yxatdan o'tish</Text>
-          </TouchableOpacity>
-        </View>
+        {/* Footer */}
+        <Text style={{ color: c.textMuted, fontSize: 10, marginTop: 40 }}>v1.0.0</Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );

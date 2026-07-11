@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Search, Pencil, Trash2, Package } from 'lucide-react';
 import * as productsApi from '../../api/products.api';
+import useAuthStore from '../../store/authStore';
 import toast from 'react-hot-toast';
 
 const EMPTY = { name: '', description: '-', price: '', discount: '0', category: 'general', stock: '', brand: '', images: [] };
@@ -11,6 +12,10 @@ function fmtPrice(n) { return Number(n || 0).toFixed(2); }
 
 export default function PosProducts() {
   const qc = useQueryClient();
+  const user = useAuthStore((s) => s.user);
+  // Mirrors backend rule (product.service.js): owner OR ADMIN/SUPER_ADMIN may edit/delete.
+  const canManage = (p) =>
+    !!user && (['ADMIN', 'SUPER_ADMIN'].includes(user.role) || p.ownerId === user.id);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [showForm, setShowForm] = useState(false);
@@ -99,14 +104,16 @@ export default function PosProducts() {
                   <p className={`font-bold text-lg ${stockColor(p.stock)}`}>{p.stock}</p>
                   <p className="text-pos-muted text-xs">in stock</p>
                 </div>
-                <div className="flex gap-1">
-                  <button onClick={() => openEdit(p)} className="p-2 rounded-lg hover:bg-blue-500/20 text-blue-400 transition-colors">
-                    <Pencil className="h-4 w-4" />
-                  </button>
-                  <button onClick={() => { if (confirm('Delete?')) deleteMutation.mutate(p.id); }} className="p-2 rounded-lg hover:bg-red-500/20 text-red-400 transition-colors">
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
+                {canManage(p) && (
+                  <div className="flex gap-1">
+                    <button onClick={() => openEdit(p)} className="p-2 rounded-lg hover:bg-blue-500/20 text-blue-400 transition-colors">
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button onClick={() => { if (confirm('Delete?')) deleteMutation.mutate(p.id); }} className="p-2 rounded-lg hover:bg-red-500/20 text-red-400 transition-colors">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           ))}

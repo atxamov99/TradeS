@@ -1,19 +1,22 @@
 import { useState, useRef, useEffect } from "react";
 import {
   View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator,
-  ScrollView, KeyboardAvoidingView, Platform, Linking, Pressable, AppState,
+  ScrollView, KeyboardAvoidingView, Platform, Linking, Pressable, AppState, Image,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuthStore } from "@/store/authStore";
+import { useUserStore } from "@/store/userStore";
 import { api } from "@/services/api";
-import { useTheme } from "@/hooks/useTheme";
 import { light } from "@/theme/colors";
 import { formatPhone, cleanIdentifier } from "@/utils/phone";
 
 const BOT_URL = "https://t.me/trades_uz_bot?start=register";
 const TG_BLUE = "#229ED9";
 const OTP_LEN = 6;
+
+// Auth ekranlari eski ilovadagidek DOIM och (light) ko'rinadi — global dark tema majburlanmaydi.
+const c = light;
 
 /* ── Segmented OTP input (6 boxes, single hidden field) ── */
 function OtpBoxes({ value, onChange, c }: { value: string; onChange: (v: string) => void; c: typeof light }) {
@@ -90,37 +93,43 @@ function BigButton({ title, onPress, loading, disabled, color, textColor = "#fff
   );
 }
 
-function Field({ icon, placeholder, value, onChangeText, secure, onToggleSecure, showSecure, keyboardType, c }: {
+function Field({ label, icon, placeholder, value, onChangeText, secure, onToggleSecure, showSecure, keyboardType, c }: {
+  label?: string;
   icon: React.ComponentProps<typeof Ionicons>["name"];
   placeholder: string; value: string; onChangeText: (v: string) => void;
   secure?: boolean; onToggleSecure?: () => void; showSecure?: boolean; keyboardType?: any; c: typeof light;
 }) {
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: c.bg, borderRadius: 14, paddingHorizontal: 14, marginBottom: 12, borderWidth: 1.5, borderColor: c.border, height: 54 }}>
-      <Ionicons name={icon} size={17} color={c.textMuted} style={{ marginRight: 10 }} />
-      <TextInput
-        style={{ flex: 1, fontSize: 15, color: c.text }}
-        placeholder={placeholder}
-        placeholderTextColor={c.textMuted}
-        value={value}
-        onChangeText={onChangeText}
-        secureTextEntry={secure && !showSecure}
-        keyboardType={keyboardType ?? "default"}
-        autoCapitalize="none"
-        autoCorrect={false}
-      />
-      {secure && (
-        <TouchableOpacity onPress={onToggleSecure}>
-          <Ionicons name={showSecure ? "eye-off" : "eye"} size={18} color={c.textMuted} />
-        </TouchableOpacity>
-      )}
+    <View style={{ marginBottom: 16 }}>
+      {label ? (
+        <Text style={{ fontSize: 12, fontWeight: "600", color: c.textSub, marginBottom: 6 }}>{label}</Text>
+      ) : null}
+      <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: c.bg, borderRadius: 12, paddingHorizontal: 16, borderWidth: 1, borderColor: c.border, height: 50 }}>
+        <Ionicons name={icon} size={20} color={c.textMuted} style={{ marginRight: 10 }} />
+        <TextInput
+          style={{ flex: 1, fontSize: 16, color: c.text }}
+          placeholder={placeholder}
+          placeholderTextColor={c.textMuted}
+          value={value}
+          onChangeText={onChangeText}
+          secureTextEntry={secure && !showSecure}
+          keyboardType={keyboardType ?? "default"}
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+        {secure && (
+          <TouchableOpacity onPress={onToggleSecure} style={{ marginLeft: 8, padding: 2 }}>
+            <Ionicons name={showSecure ? "eye-off-outline" : "eye-outline"} size={20} color={c.textMuted} />
+          </TouchableOpacity>
+        )}
+      </View>
     </View>
   );
 }
 
 export default function RegisterScreen() {
-  const { c } = useTheme();
   const { setToken } = useAuthStore();
+  const { setUser } = useUserStore();
 
   const [step, setStep] = useState<"form" | "connect" | "otp">("form");
   const [name, setName] = useState("");
@@ -166,6 +175,7 @@ export default function RegisterScreen() {
         password: password.trim(),
       });
       const data = res.data?.data ?? res.data;
+      await setUser(data.user);
       await setToken(data.accessToken, data.refreshToken);
       // token o'zgarishi root _layout guard'ini ishga tushiradi → (app) ga o'tadi
     } catch (error: any) {
@@ -198,10 +208,8 @@ export default function RegisterScreen() {
 
         {/* Brand header */}
         <View style={{ alignItems: "center", marginBottom: 24 }}>
-          <View style={{ width: 72, height: 72, borderRadius: 22, backgroundColor: c.primary, alignItems: "center", justifyContent: "center", marginBottom: 12, shadowColor: c.primary, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.35, shadowRadius: 16, elevation: 8 }}>
-            <Ionicons name="stats-chart" size={34} color="#fff" />
-          </View>
-          <Text style={{ fontSize: 26, fontWeight: "900", letterSpacing: -0.5, color: c.text }}>Savdo</Text>
+          <Image source={require("@/assets/logo.png")} style={{ width: 80, height: 80, marginBottom: 10 }} resizeMode="contain" />
+          <Text style={{ fontSize: 26, fontWeight: "900", letterSpacing: -0.5, color: c.text }}>TradeS</Text>
         </View>
 
         {/* ── STEP 1: FORM ── */}
@@ -212,10 +220,10 @@ export default function RegisterScreen() {
               Telefon raqamingiz orqali ro'yxatdan o'ting
             </Text>
 
-            <Field icon="person-outline" placeholder="Ismingiz" value={name} onChangeText={setName} c={c} />
-            <Field icon="call-outline" placeholder="+998 90 123 45 67" value={phone} onChangeText={(txt) => setPhone(formatPhone(txt))} keyboardType="phone-pad" c={c} />
+            <Field label="Ism" icon="person-outline" placeholder="Ismingiz" value={name} onChangeText={setName} c={c} />
+            <Field label="Telefon" icon="call-outline" placeholder="+998 90 123 45 67" value={phone} onChangeText={(txt) => setPhone(formatPhone(txt))} keyboardType="phone-pad" c={c} />
 
-            <View style={{ flexDirection: "row", alignItems: "center", marginTop: -4, marginBottom: 16, paddingHorizontal: 2 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", marginTop: -6, marginBottom: 16, paddingHorizontal: 2 }}>
               <Ionicons name="paper-plane-outline" size={13} color={c.textMuted} />
               <Text style={{ fontSize: 12, marginLeft: 6, flex: 1, color: c.textMuted }}>
                 Tasdiqlash kodi bepul — Telegram bot orqali keladi
@@ -223,7 +231,7 @@ export default function RegisterScreen() {
             </View>
 
             <Field
-              icon="lock-closed-outline" placeholder="Parol" value={password} onChangeText={setPassword}
+              label="Parol" icon="lock-closed-outline" placeholder="Parolingiz" value={password} onChangeText={setPassword}
               secure showSecure={showPassword} onToggleSecure={() => setShowPassword(!showPassword)} c={c}
             />
 

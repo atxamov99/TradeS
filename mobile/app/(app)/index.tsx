@@ -4,24 +4,13 @@ import { useT } from "@/hooks/useT";
 import { useTodayStats, useSales } from "@/hooks/useSales";
 import { useLowStockProducts } from "@/hooks/useProducts";
 import { useTheme } from "@/hooks/useTheme";
-import { useAuthStore } from "@/store/authStore";
+import { useUserStore } from "@/store/userStore";
 import { SaleCard } from "@/components/SaleCard";
 import { MiniChart } from "@/components/MiniChart";
 
 
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-
-function decodeName(token: string | null): string {
-  if (!token || token === "demo-token") return "";
-  try {
-    const b64 = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
-    const payload = JSON.parse(atob(b64));
-    return payload?.name || payload?.email?.split("@")[0] || "";
-  } catch {
-    return "";
-  }
-}
 
 function StatCard({ icon, label, value, color, onPress }: { icon: any; label: string; value: string; color: string; onPress: () => void }) {
   return (
@@ -69,9 +58,9 @@ export default function HomeScreen() {
   const weekSales = useSales("week");
   const lowStockProducts = useLowStockProducts();
   const { c } = useTheme();
-  const token = useAuthStore((s) => s.token);
+  const user = useUserStore((s) => s.user);
   const margin = revenue > 0 ? Math.round((profit / revenue) * 100) : 0;
-  const userName = decodeName(token) || "Savdogar";
+  const userName = user?.name || "Savdogar";
 
   const chartData = useMemo(() => {
     const days: number[] = [0, 0, 0, 0, 0, 0, 0];

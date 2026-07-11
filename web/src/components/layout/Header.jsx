@@ -23,7 +23,8 @@ export default function Header() {
       <div className="container flex h-16 items-center justify-between">
         {/* Logo */}
         <Link to="/products" className="flex items-center gap-2 text-xl font-bold text-primary-600">
-          <img src="/logo.png" alt="TradeS" className="h-9 w-9 rounded-lg bg-white object-contain" />
+          <img src="/logo.png" alt="TradeS" className="h-9 w-9 rounded-lg object-contain dark:hidden" />
+          <img src="/logo-dark.png" alt="TradeS" className="hidden h-9 w-9 rounded-lg object-contain dark:block" />
           Savdo<span className="text-gray-900 dark:text-white">-E</span>
         </Link>
 

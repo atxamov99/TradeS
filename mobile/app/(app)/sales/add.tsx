@@ -9,6 +9,8 @@ import { useProducts } from "@/hooks/useProducts";
 import { useT } from "@/hooks/useT";
 import { useTheme } from "@/hooks/useTheme";
 
+type SaleResult = { name: string; qty: number; totalAmount: number; profit: number };
+
 export default function AddSaleScreen() {
   const t = useT();
   const { c } = useTheme();

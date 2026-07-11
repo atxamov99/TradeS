@@ -97,6 +97,28 @@ app.use(errorMiddleware);
 
 const PORT = process.env.PORT || 5000;
 
+// Test User accounts are hard-deleted a grace period AFTER they expire (not
+// immediately at expiry) so an expiring user isn't surprised by data loss the
+// instant their trial ends. No queue/cron lib exists in this repo — a simple
+// interval on the persistent process matches the existing telegram-polling
+// pattern below, and is skipped entirely in the Vercel serverless path (since
+// it's only scheduled inside startServer(), which itself is skipped there).
+const TEST_USER_CLEANUP_GRACE_DAYS = 7;
+const TEST_USER_CLEANUP_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 hours
+
+const cleanupExpiredTestUsers = async () => {
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - TEST_USER_CLEANUP_GRACE_DAYS);
+  try {
+    const { count } = await prisma.user.deleteMany({
+      where: { isTestUser: true, testExpiresAt: { lt: cutoff } },
+    });
+    if (count > 0) logger.info(`Test User cleanup: removed ${count} expired account(s)`);
+  } catch (err) {
+    logger.error(`Test User cleanup failed: ${err.message}`);
+  }
+};
+
 const startServer = async () => {
   try {
     await prisma.$connect();
@@ -114,6 +136,9 @@ const startServer = async () => {
     if (process.env.NODE_ENV !== 'production') {
       telegramService.startPolling();
     }
+
+    setInterval(cleanupExpiredTestUsers, TEST_USER_CLEANUP_INTERVAL_MS);
+    cleanupExpiredTestUsers(); // also run once at boot
   } catch (err) {
     logger.error(`Database connection failed: ${err.message}`);
     process.exit(1);

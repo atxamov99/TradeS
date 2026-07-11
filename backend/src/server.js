@@ -1,5 +1,10 @@
 require('dotenv').config();
 
+// Node's fetch (undici) sometimes tries a flaky IPv6 route first on Windows
+// dual-stack networks and hangs until timeout before falling back — force
+// IPv4 first so outbound calls (e.g. Telegram long-polling) resolve fast.
+require('dns').setDefaultResultOrder('ipv4first');
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -12,6 +17,7 @@ const { apiLimiter } = require('./middlewares/rateLimiter.middleware');
 const ApiError = require('./utils/ApiError');
 const logger = require('./utils/logger');
 const prisma = require('./config/prisma');
+const telegramService = require('./services/telegram.service');
 
 // ── App Setup ──────────────────────────────────────────────────────────────
 
@@ -101,6 +107,13 @@ const startServer = async () => {
       logger.info(`API base: http://localhost:${PORT}/api/v1`);
       logger.info(`Health:   http://localhost:${PORT}/health`);
     });
+
+    // Local dev: pull Telegram updates via long-polling instead of a webhook,
+    // since there's no stable public URL to register here. Production points
+    // a webhook at the deployed Render URL instead (see render.yaml).
+    if (process.env.NODE_ENV !== 'production') {
+      telegramService.startPolling();
+    }
   } catch (err) {
     logger.error(`Database connection failed: ${err.message}`);
     process.exit(1);

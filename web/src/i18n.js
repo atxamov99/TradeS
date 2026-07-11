@@ -134,6 +134,9 @@ const resources = {
             // Settings
             "settings": "Sozlamalar",
             "profile": "Profil",
+            "appearance": "Ko'rinish",
+            "theme_light": "Kunduzgi",
+            "theme_dark": "Tungi",
             "about": "Dastur haqida",
             "app_name": "Dastur",
             "version": "Versiya",
@@ -286,6 +289,9 @@ const resources = {
             // Settings
             "settings": "Настройки",
             "profile": "Профиль",
+            "appearance": "Оформление",
+            "theme_light": "Светлая",
+            "theme_dark": "Тёмная",
             "about": "О приложении",
             "app_name": "Приложение",
             "version": "Версия",
@@ -438,6 +444,9 @@ const resources = {
             // Settings
             "settings": "Settings",
             "profile": "Profile",
+            "appearance": "Appearance",
+            "theme_light": "Light",
+            "theme_dark": "Dark",
             "about": "About",
             "app_name": "Application",
             "version": "Version",

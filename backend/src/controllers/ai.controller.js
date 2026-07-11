@@ -32,7 +32,7 @@ exports.askAI = asyncHandler(async (req, res) => {
         });
 
         const context = `
-      Siz "Savdo-E" do'kon boshqaruv tizimining aqlli yordamchisiz.
+      Siz "TradeS" do'kon boshqaruv tizimining aqlli yordamchisiz.
       Sizning asosiy vazifangiz foydalanuvchilarga do'kon ma'lumotlari asosida yordam berishdir.
 
       ### TIZIM CHEKLOVLARI:

@@ -31,7 +31,7 @@ export default function AdminOrders() {
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Orders</h1>
-        <span className="text-sm text-gray-500">{result.total || 0} total</span>
+        <span className="text-sm text-gray-500 dark:text-gray-400">{result.total || 0} total</span>
       </div>
 
       <div>
@@ -50,7 +50,7 @@ export default function AdminOrders() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 dark:bg-gray-800">
-                <tr className="text-left text-xs text-gray-500 uppercase tracking-wide">
+                <tr className="text-left text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                   <th className="px-4 py-3 font-medium">Order #</th>
                   <th className="px-4 py-3 font-medium">Customer</th>
                   <th className="px-4 py-3 font-medium">Date</th>
@@ -59,15 +59,15 @@ export default function AdminOrders() {
                   <th className="px-4 py-3 font-medium">Update Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y">
+              <tbody className="divide-y dark:divide-gray-700">
                 {orders.map((order) => (
                   <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
                     <td className="px-4 py-3 font-mono text-xs">{order.orderNumber}</td>
                     <td className="px-4 py-3">
                       <p className="font-medium">{order.user?.name}</p>
-                      <p className="text-xs text-gray-400">{order.user?.email}</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500">{order.user?.email}</p>
                     </td>
-                    <td className="px-4 py-3 text-gray-500">{new Date(order.createdAt).toLocaleDateString()}</td>
+                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{new Date(order.createdAt).toLocaleDateString()}</td>
                     <td className="px-4 py-3"><OrderStatusBadge status={order.orderStatus} /></td>
                     <td className="px-4 py-3 font-bold">${order.totalPrice?.toFixed(2)}</td>
                     <td className="px-4 py-3">

@@ -1,6 +1,6 @@
 export const ru = {
   app: {
-    name: "Savdo Control",
+    name: "TradeS Control",
     description: "Ролевая админ-панель и панель супер-админа для TradeS"
   },
   common: {

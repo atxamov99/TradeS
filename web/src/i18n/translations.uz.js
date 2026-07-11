@@ -1,6 +1,6 @@
 export const uz = {
   app: {
-    name: "Savdo Control",
+    name: "TradeS Control",
     description: "TradeS uchun role-based admin va super admin paneli"
   },
   common: {

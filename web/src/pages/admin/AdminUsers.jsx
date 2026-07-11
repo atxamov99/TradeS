@@ -42,11 +42,11 @@ export default function AdminUsers() {
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Users</h1>
-        <span className="text-sm text-gray-500">{result.total || 0} total</span>
+        <span className="text-sm text-gray-500 dark:text-gray-400">{result.total || 0} total</span>
       </div>
 
       <div className="relative max-w-xs">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
         <input
           className="input pl-10"
           placeholder="Search by name or email..."
@@ -62,7 +62,7 @@ export default function AdminUsers() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 dark:bg-gray-800">
-                <tr className="text-left text-xs text-gray-500 uppercase tracking-wide">
+                <tr className="text-left text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                   <th className="px-4 py-3 font-medium">User</th>
                   <th className="px-4 py-3 font-medium">Role</th>
                   <th className="px-4 py-3 font-medium">Status</th>
@@ -70,17 +70,17 @@ export default function AdminUsers() {
                   <th className="px-4 py-3 font-medium text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y">
+              <tbody className="divide-y dark:divide-gray-700">
                 {users.map((u) => (
                   <tr key={u.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-xs font-bold text-primary-700">
+                        <div className="h-8 w-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-xs font-bold text-primary-700 dark:text-primary-300">
                           {u.name?.[0]?.toUpperCase()}
                         </div>
                         <div>
                           <p className="font-medium">{u.name}</p>
-                          <p className="text-xs text-gray-400">{u.email}</p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500">{u.email}</p>
                         </div>
                       </div>
                     </td>
@@ -92,7 +92,7 @@ export default function AdminUsers() {
                         {u.isBlocked ? 'Blocked' : 'Active'}
                       </Badge>
                     </td>
-                    <td className="px-4 py-3 text-gray-500">
+                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
                       {new Date(u.createdAt).toLocaleDateString()}
                     </td>
                     <td className="px-4 py-3 text-right">

@@ -26,6 +26,43 @@ const sendMessage = (chatId, text, extra = {}) =>
 // Register the webhook so Telegram pushes updates to our backend.
 const setWebhook = (url) => callTelegram('setWebhook', { url, allowed_updates: ['message'] });
 
+// ── Long-polling (local dev) ────────────────────────────────────────────────
+// No public URL needed — the bot pulls updates itself. Used instead of a
+// webhook while developing locally, where there's no stable ngrok URL to
+// register. Production uses setWebhook() against the deployed Render URL.
+let pollingOffset = 0;
+let pollingActive = false;
+
+const startPolling = async () => {
+  if (pollingActive || !TOKEN) return;
+  pollingActive = true;
+
+  // A webhook and long-polling can't both be active — clear any stale webhook first.
+  await callTelegram('deleteWebhook', {}).catch(() => {});
+  logger.info('Telegram bot: long-polling started');
+
+  (async function loop() {
+    while (pollingActive) {
+      try {
+        // Short long-poll timeout — some local networks reset idle HTTPS
+        // connections before Telegram's default 30s window completes.
+        const updates = await callTelegram('getUpdates', { offset: pollingOffset, timeout: 8 });
+        for (const update of updates) {
+          pollingOffset = update.update_id + 1;
+          await handleUpdate(update);
+        }
+      } catch (err) {
+        logger.error(`Telegram polling error: ${err.message}${err.cause ? ` (${err.cause})` : ''}`);
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+      }
+    }
+  })();
+};
+
+const stopPolling = () => {
+  pollingActive = false;
+};
+
 const WELCOME =
   'Assalomu alaykum! <b>TradeS</b> ga xush kelibsiz.\n\n' +
   'Ro\'yxatdan o\'tish / kirish uchun tasdiqlash kodini shu yerga yuboramiz.\n' +
@@ -77,4 +114,4 @@ const handleUpdate = async (update) => {
   }
 };
 
-module.exports = { sendMessage, setWebhook, handleUpdate, normalizePhone, callTelegram };
+module.exports = { sendMessage, setWebhook, handleUpdate, normalizePhone, callTelegram, startPolling, stopPolling };

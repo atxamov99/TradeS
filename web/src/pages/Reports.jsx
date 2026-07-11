@@ -15,31 +15,31 @@ export default function Reports() {
 
   function StatCard({ label, value, icon: Icon, color }) {
     const colorMap = {
-      blue: 'bg-blue-50 text-blue-600',
-      green: 'bg-green-50 text-green-600',
-      amber: 'bg-amber-50 text-amber-600',
+      blue: 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-300',
+      green: 'bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-300',
+      amber: 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-300',
     };
     return (
-      <div className="bg-white rounded-2xl border border-[#E2E8F0] p-4 flex flex-col gap-2">
+      <div className="bg-white dark:bg-[#1E293B] rounded-2xl border border-[#E2E8F0] dark:border-[#334155] p-4 flex flex-col gap-2">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-[#64748B]">{label}</span>
+          <span className="text-xs font-medium text-[#64748B] dark:text-slate-400">{label}</span>
           <div className={`p-2 rounded-xl ${colorMap[color] || colorMap.green}`}>
             <Icon size={16} />
           </div>
         </div>
-        <p className="text-lg font-extrabold text-[#0F172A] leading-tight">{value}</p>
+        <p className="text-lg font-extrabold text-[#0F172A] dark:text-slate-100 leading-tight">{value}</p>
       </div>
     );
   }
 
   function SkeletonCard() {
     return (
-      <div className="bg-white rounded-2xl border border-[#E2E8F0] p-4 flex flex-col gap-2 animate-pulse">
+      <div className="bg-white dark:bg-[#1E293B] rounded-2xl border border-[#E2E8F0] dark:border-[#334155] p-4 flex flex-col gap-2 animate-pulse">
         <div className="flex justify-between">
-          <div className="h-3 w-24 bg-slate-200 rounded" />
-          <div className="h-7 w-7 bg-slate-200 rounded-xl" />
+          <div className="h-3 w-24 bg-slate-200 dark:bg-slate-700 rounded" />
+          <div className="h-7 w-7 bg-slate-200 dark:bg-slate-700 rounded-xl" />
         </div>
-        <div className="h-6 w-28 bg-slate-200 rounded" />
+        <div className="h-6 w-28 bg-slate-200 dark:bg-slate-700 rounded" />
       </div>
     );
   }
@@ -68,14 +68,14 @@ export default function Reports() {
           value={date}
           onChange={(e) => setDate(e.target.value)}
           max={new Date().toISOString().split('T')[0]}
-          className="h-12 rounded-xl border border-[#E2E8F0] bg-white px-4 text-base text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition w-full sm:w-auto"
+          className="h-12 rounded-xl border border-[#E2E8F0] dark:border-[#334155] bg-white dark:bg-[#0F172A] px-4 text-base text-[#0F172A] dark:text-slate-100 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition w-full sm:w-auto"
         />
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {reportLoading ? (
             [1, 2, 3].map((i) => <SkeletonCard key={i} />)
           ) : reportError ? (
-            <div className="col-span-3 bg-white rounded-2xl border border-red-100 p-5 flex flex-col items-center gap-2 text-center">
+            <div className="col-span-3 bg-white dark:bg-[#1E293B] rounded-2xl border border-red-100 dark:border-red-500/20 p-5 flex flex-col items-center gap-2 text-center">
               <AlertCircle size={28} className="text-red-400" />
               <p className="text-sm font-semibold text-red-500">{t('error_loading')}</p>
               <button onClick={() => refetchReport()} className="text-sm text-green-600 font-semibold hover:underline">{t('retry')}</button>
@@ -89,9 +89,9 @@ export default function Reports() {
           )}
         </div>
 
-        <div className="bg-white rounded-2xl border border-[#E2E8F0] overflow-hidden">
-          <div className="px-5 py-4 border-b border-[#E2E8F0]">
-            <h3 className="font-bold text-[#0F172A]">{t('sales_list')}</h3>
+        <div className="bg-white dark:bg-[#1E293B] rounded-2xl border border-[#E2E8F0] dark:border-[#334155] overflow-hidden">
+          <div className="px-5 py-4 border-b border-[#E2E8F0] dark:border-[#334155]">
+            <h3 className="font-bold text-[#0F172A] dark:text-slate-100">{t('sales_list')}</h3>
           </div>
           {salesError ? (
             <div className="px-5 py-10 text-center">
@@ -100,24 +100,24 @@ export default function Reports() {
               <button onClick={() => refetchSales()} className="mt-2 text-sm text-green-600 font-semibold hover:underline">{t('retry')}</button>
             </div>
           ) : salesLoading ? (
-            <div className="divide-y divide-[#E2E8F0]">
+            <div className="divide-y divide-[#E2E8F0] dark:divide-[#334155]">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="flex items-center justify-between px-5 py-4 animate-pulse">
                   <div className="flex flex-col gap-2">
-                    <div className="h-4 w-32 bg-slate-200 rounded" />
-                    <div className="h-3 w-20 bg-slate-100 rounded" />
+                    <div className="h-4 w-32 bg-slate-200 dark:bg-slate-700 rounded" />
+                    <div className="h-3 w-20 bg-slate-100 dark:bg-slate-800 rounded" />
                   </div>
-                  <div className="h-5 w-20 bg-slate-200 rounded" />
+                  <div className="h-5 w-20 bg-slate-200 dark:bg-slate-700 rounded" />
                 </div>
               ))}
             </div>
           ) : !Array.isArray(sales) || sales.length === 0 ? (
-            <div className="px-5 py-10 text-center text-[#64748B]">
+            <div className="px-5 py-10 text-center text-[#64748B] dark:text-slate-400">
               <ShoppingCart size={32} className="mx-auto mb-2 opacity-40" />
               <p className="text-sm">{t('no_sales_day')}</p>
             </div>
           ) : (
-            <div className="divide-y divide-[#E2E8F0]">
+            <div className="divide-y divide-[#E2E8F0] dark:divide-[#334155]">
               {sales.map((sale) => {
                 const timeStr = new Date(sale.createdAt).toLocaleTimeString(locale, {
                   hour: '2-digit',
@@ -126,14 +126,14 @@ export default function Reports() {
                 return (
                   <div key={sale.id} className="flex items-center justify-between px-5 py-3">
                     <div>
-                      <p className="text-sm font-semibold text-[#0F172A]">{sale.productName || 'Mahsulot'}</p>
-                      <p className="text-xs text-[#64748B] mt-0.5">
+                      <p className="text-sm font-semibold text-[#0F172A] dark:text-slate-100">{sale.productName || 'Mahsulot'}</p>
+                      <p className="text-xs text-[#64748B] dark:text-slate-400 mt-0.5">
                         {sale.quantity} {t(`unit_${sale.unit || 'pcs'}`)} · {timeStr}
                       </p>
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-bold text-green-600">+{Number(sale.profit || 0).toLocaleString(locale)} {t('currency')}</p>
-                      <p className="text-xs text-[#64748B]">{Number(sale.totalRevenue || 0).toLocaleString(locale)} {t('currency')}</p>
+                      <p className="text-xs text-[#64748B] dark:text-slate-400">{Number(sale.totalRevenue || 0).toLocaleString(locale)} {t('currency')}</p>
                     </div>
                   </div>
                 );
@@ -166,14 +166,14 @@ export default function Reports() {
           value={month}
           onChange={(e) => setMonth(e.target.value)}
           max={defaultMonth}
-          className="h-12 rounded-xl border border-[#E2E8F0] bg-white px-4 text-base text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition w-full sm:w-auto"
+          className="h-12 rounded-xl border border-[#E2E8F0] dark:border-[#334155] bg-white dark:bg-[#0F172A] px-4 text-base text-[#0F172A] dark:text-slate-100 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition w-full sm:w-auto"
         />
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {isLoading ? (
             [1, 2, 3].map((i) => <SkeletonCard key={i} />)
           ) : isError ? (
-            <div className="col-span-3 bg-white rounded-2xl border border-red-100 p-5 flex flex-col items-center gap-2 text-center">
+            <div className="col-span-3 bg-white dark:bg-[#1E293B] rounded-2xl border border-red-100 dark:border-red-500/20 p-5 flex flex-col items-center gap-2 text-center">
               <AlertCircle size={28} className="text-red-400" />
               <p className="text-sm font-semibold text-red-500">{t('error_loading')}</p>
               <button onClick={() => refetch()} className="text-sm text-green-600 font-semibold hover:underline">{t('retry')}</button>
@@ -202,38 +202,38 @@ export default function Reports() {
           )}
         </div>
 
-        <div className="bg-white rounded-2xl border border-[#E2E8F0] overflow-hidden">
-          <div className="px-5 py-4 border-b border-[#E2E8F0]">
-            <h3 className="font-bold text-[#0F172A]">{t('by_products')}</h3>
+        <div className="bg-white dark:bg-[#1E293B] rounded-2xl border border-[#E2E8F0] dark:border-[#334155] overflow-hidden">
+          <div className="px-5 py-4 border-b border-[#E2E8F0] dark:border-[#334155]">
+            <h3 className="font-bold text-[#0F172A] dark:text-slate-100">{t('by_products')}</h3>
           </div>
           {isLoading ? (
-            <div className="divide-y divide-[#E2E8F0]">
+            <div className="divide-y divide-[#E2E8F0] dark:divide-[#334155]">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="flex items-center justify-between px-5 py-4 animate-pulse">
                   <div className="flex flex-col gap-2">
-                    <div className="h-4 w-32 bg-slate-200 rounded" />
-                    <div className="h-3 w-20 bg-slate-100 rounded" />
+                    <div className="h-4 w-32 bg-slate-200 dark:bg-slate-700 rounded" />
+                    <div className="h-3 w-20 bg-slate-100 dark:bg-slate-800 rounded" />
                   </div>
-                  <div className="h-5 w-20 bg-slate-200 rounded" />
+                  <div className="h-5 w-20 bg-slate-200 dark:bg-slate-700 rounded" />
                 </div>
               ))}
             </div>
           ) : topProducts.length === 0 ? (
-            <div className="px-5 py-10 text-center text-[#64748B]">
+            <div className="px-5 py-10 text-center text-[#64748B] dark:text-slate-400">
               <BarChart2 size={32} className="mx-auto mb-2 opacity-40" />
               <p className="text-sm">{t('no_sales_month')}</p>
             </div>
           ) : (
-            <div className="divide-y divide-[#E2E8F0]">
+            <div className="divide-y divide-[#E2E8F0] dark:divide-[#334155]">
               {topProducts.map((item, i) => (
                 <div key={i} className="flex items-center justify-between px-5 py-3">
                   <div>
-                    <p className="text-sm font-semibold text-[#0F172A]">{item._id}</p>
-                    <p className="text-xs text-[#64748B] mt-0.5">{item.totalQty} {t('unit_pcs')} · {item.salesCount} {t('sale_unit')}</p>
+                    <p className="text-sm font-semibold text-[#0F172A] dark:text-slate-100">{item._id}</p>
+                    <p className="text-xs text-[#64748B] dark:text-slate-400 mt-0.5">{item.totalQty} {t('unit_pcs')} · {item.salesCount} {t('sale_unit')}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-bold text-green-600">+{Number(item.totalProfit || 0).toLocaleString(locale)} {t('currency')}</p>
-                    <p className="text-xs text-[#64748B]">{Number(item.totalRevenue || 0).toLocaleString(locale)} {t('currency')}</p>
+                    <p className="text-xs text-[#64748B] dark:text-slate-400">{Number(item.totalRevenue || 0).toLocaleString(locale)} {t('currency')}</p>
                   </div>
                 </div>
               ))}
@@ -247,15 +247,15 @@ export default function Reports() {
   const [tab, setTab] = useState('daily');
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
-      <div className="bg-white border-b border-[#E2E8F0] px-5 py-4 sticky top-0 z-10">
-        <h1 className="text-lg font-bold text-[#0F172A] mb-3">{t('reports')}</h1>
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0F172A]">
+      <div className="bg-white dark:bg-[#1E293B] border-b border-[#E2E8F0] dark:border-[#334155] px-5 py-4 sticky top-0 z-10">
+        <h1 className="text-lg font-bold text-[#0F172A] dark:text-slate-100 mb-3">{t('reports')}</h1>
         <div className="flex gap-2">
           <button
             onClick={() => setTab('daily')}
             className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${tab === 'daily'
                 ? 'bg-green-500 text-white'
-                : 'bg-slate-100 text-[#64748B] hover:bg-slate-200'
+                : 'bg-slate-100 dark:bg-slate-800 text-[#64748B] dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
               }`}
           >
             {t('daily')}
@@ -264,7 +264,7 @@ export default function Reports() {
             onClick={() => setTab('monthly')}
             className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${tab === 'monthly'
                 ? 'bg-green-500 text-white'
-                : 'bg-slate-100 text-[#64748B] hover:bg-slate-200'
+                : 'bg-slate-100 dark:bg-slate-800 text-[#64748B] dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
               }`}
           >
             {t('monthly')}

@@ -17,7 +17,7 @@ function StatCard({ icon: Icon, label, value, color }) {
         <Icon className="h-6 w-6" />
       </div>
       <div>
-        <p className="text-sm text-gray-500">{label}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
         <p className="text-2xl font-bold">{value}</p>
       </div>
     </div>
@@ -69,14 +69,14 @@ export default function AdminDashboard() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b text-left text-gray-500">
+                <tr className="border-b dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
                   <th className="pb-3 font-medium">Order #</th>
                   <th className="pb-3 font-medium">Customer</th>
                   <th className="pb-3 font-medium">Status</th>
                   <th className="pb-3 font-medium text-right">Total</th>
                 </tr>
               </thead>
-              <tbody className="divide-y">
+              <tbody className="divide-y dark:divide-gray-700">
                 {(stats.recentOrders || []).map((order) => (
                   <tr key={order.id}>
                     <td className="py-3 font-mono text-xs">{order.orderNumber}</td>

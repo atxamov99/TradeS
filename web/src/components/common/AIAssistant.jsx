@@ -60,9 +60,9 @@ export default function AIAssistant() {
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={() => setIsOpen(!isOpen)}
-                className="fixed md:bottom-6 bottom-[88px] right-6 z-[60] w-14 h-14 rounded-full bg-[#0B3D2E] text-white flex items-center justify-center shadow-2xl overflow-hidden group"
+                className="fixed md:bottom-6 bottom-[88px] right-6 z-[60] w-14 h-14 rounded-full bg-primary-600 text-white flex items-center justify-center shadow-lg overflow-hidden group"
             >
-                <div className="absolute inset-0 bg-green-500/20 scale-0 group-hover:scale-100 transition-transform duration-500 rounded-full" />
+                <div className="absolute inset-0 bg-white/10 scale-0 group-hover:scale-100 transition-transform duration-500 rounded-full" />
                 {isOpen ? <X size={26} /> : <MessageCircle size={26} />}
             </motion.button>
 
@@ -76,12 +76,12 @@ export default function AIAssistant() {
                         className="fixed bottom-24 right-6 z-[60] w-[350px] max-w-[calc(100vw-3rem)] h-[500px] max-h-[calc(100vh-8rem)] bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden border border-slate-100 dark:border-slate-800 flex flex-col"
                     >
                         {/* Header */}
-                        <div className="p-5 bg-gradient-to-br from-[#0B3D2E] to-[#2ECC71] text-white flex items-center gap-3">
+                        <div className="p-5 bg-primary-600 text-white flex items-center gap-3">
                             <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center">
                                 <Sparkles size={20} className="text-white fill-white" />
                             </div>
                             <div className="flex-1">
-                                <h3 className="font-bold text-lg leading-tight">Savdo AI</h3>
+                                <h3 className="font-bold text-lg leading-tight">TradeS AI</h3>
                                 <div className="flex items-center gap-1.5 opacity-80 decoration-0">
                                     <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                                     <span className="text-[10px] uppercase font-bold tracking-wider">Online</span>
@@ -107,7 +107,7 @@ export default function AIAssistant() {
                                 >
                                     <div
                                         className={`max-w-[85%] p-3.5 rounded-2xl text-sm shadow-sm ${msg.sender === 'user'
-                                            ? 'bg-[#0B3D2E] text-white rounded-tr-none'
+                                            ? 'bg-primary-600 text-white rounded-tr-none'
                                             : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-100 dark:border-slate-700 rounded-tl-none whitespace-pre-line'
                                             }`}
                                     >
@@ -152,12 +152,12 @@ export default function AIAssistant() {
                                     value={input}
                                     onChange={(e) => setInput(e.target.value)}
                                     placeholder={t('ai_send_placeholder')}
-                                    className="flex-1 h-11 bg-slate-50 dark:bg-slate-800 rounded-xl px-4 text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50 dark:text-white transition"
+                                    className="flex-1 h-11 bg-slate-50 dark:bg-slate-800 rounded-xl px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50 dark:text-white transition"
                                 />
                                 <button
                                     type="submit"
                                     disabled={!input.trim()}
-                                    className="w-11 h-11 rounded-xl bg-[#0B3D2E] text-white flex items-center justify-center hover:bg-[#0B3D2E]/90 disabled:opacity-50 transition shadow-lg"
+                                    className="w-11 h-11 rounded-xl bg-primary-600 text-white flex items-center justify-center hover:bg-primary-700 disabled:opacity-50 transition"
                                 >
                                     <Send size={18} />
                                 </button>

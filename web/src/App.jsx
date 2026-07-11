@@ -22,7 +22,6 @@ import PosReports from './pages/pos/PosReports';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage';
-import { ResetPasswordPage } from './pages/auth/ResetPasswordPage';
 import Dashboard from './pages/Dashboard';
 import Products from './pages/Products';
 import Sales from './pages/Sales';
@@ -87,7 +86,7 @@ export default function App() {
         <Route path="/forgot-password" element={
           <GuestRoute><ForgotPasswordPage /></GuestRoute>
         } />
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/reset-password" element={<Navigate to="/forgot-password" replace />} />
 
         {/* Public storefront (customer-facing shop) */}
         <Route element={<Layout />}>

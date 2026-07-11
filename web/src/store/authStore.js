@@ -98,6 +98,31 @@ const useAuthStore = create(
         }
       },
 
+      // Ask backend to send a reset OTP — only succeeds for phones with an existing account.
+      forgotPassword: async (phone) => {
+        set({ isLoading: true });
+        try {
+          const res = await authApi.forgotPassword({ phone });
+          return res.data;
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
+      // Verify OTP + set new password → logs the user in.
+      resetPassword: async (data) => {
+        set({ isLoading: true });
+        try {
+          const res = await authApi.resetPassword(data);
+          const { user } = res.data.data;
+          set({ user, isLoading: false });
+          return user;
+        } catch (err) {
+          set({ isLoading: false });
+          throw err;
+        }
+      },
+
       logout: async () => {
         try {
           await authApi.logout({});

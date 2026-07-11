@@ -4,8 +4,11 @@ import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { I18nProvider } from './i18n/index.jsx';
 import App from './App';
+import useThemeStore from './store/themeStore';
 import './index.css';
 import './i18n';
+
+useThemeStore.getState().applyTheme();
 
 const queryClient = new QueryClient({
   defaultOptions: {

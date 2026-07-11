@@ -48,3 +48,9 @@ coverage/
 # Local backups of pre-swap apps (history preserved in git)
 mobile_old_*/
 web_old_*/
+
+# Playwright MCP artifacts
+.playwright-mcp/
+
+# Stray Windows device-name file
+nul

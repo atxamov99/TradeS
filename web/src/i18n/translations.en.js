@@ -1,6 +1,6 @@
 export const en = {
   app: {
-    name: "Savdo Control",
+    name: "TradeS Control",
     description: "Role-based admin and super admin panel for TradeS"
   },
   common: {

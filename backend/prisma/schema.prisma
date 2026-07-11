@@ -26,6 +26,7 @@ model User {
   addresses       Address[]
   isBlocked       Boolean        @default(false)
   isEmailVerified Boolean        @default(false)
+  deletedAt       DateTime?      // soft delete: set when a user with linked history is "deleted"
   lastLogin       DateTime?
   passwordResetToken   String?
   passwordResetExpires DateTime?

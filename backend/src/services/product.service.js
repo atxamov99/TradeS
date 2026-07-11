@@ -6,8 +6,9 @@ const getProducts = async (userId, queryParams = {}, options = {}) => {
   const { search, page = 1, limit = 50, sortBy = 'createdAt', order = 'desc' } = queryParams;
 
   // Products are a shared global catalog: every authenticated user sees every
-  // product regardless of who created it. No ownerId filter on reads.
-  const where = {};
+  // product regardless of who created it. No ownerId filter on reads. Archived
+  // products (isActive=false, i.e. "deleted" but kept for history) are hidden.
+  const where = { isActive: true };
   if (search) {
     where.name = { contains: search, mode: 'insensitive' };
   }
@@ -131,13 +132,33 @@ const deleteProduct = async (id, userId, options = {}) => {
   const product = await prisma.product.findFirst({ where });
   if (!product) throw new ApiError(404, 'Product not found');
 
+  // OrderItem, CartItem and InventoryBatch reference a product with RESTRICT, so a
+  // hard delete would fail (and previously that FK error was masked as a misleading
+  // 404). When any such history exists, archive the product (isActive=false) instead:
+  // it disappears from catalogs but order/inventory history stays intact. Only a
+  // product with no references is removed outright.
+  const [orderItems, cartItems, inventoryBatches] = await Promise.all([
+    prisma.orderItem.count({ where: { productId: id } }),
+    prisma.cartItem.count({ where: { productId: id } }),
+    prisma.inventoryBatch.count({ where: { productId: id } }),
+  ]);
+
+  if (orderItems || cartItems || inventoryBatches) {
+    await prisma.product.update({ where: { id }, data: { isActive: false } });
+    return { message: "Mahsulot arxivlandi (unga bog'liq tarix mavjud)", archived: true };
+  }
+
   try {
-    await prisma.product.delete({
-      where: { id },
-    });
+    await prisma.product.delete({ where: { id } });
     return { message: "Mahsulot o'chirildi" };
   } catch (err) {
-    throw new ApiError(404, 'Product not found');
+    if (err.code === 'P2025') throw new ApiError(404, 'Product not found');
+    // Race: a referencing row appeared between the check and the delete → archive.
+    if (err.code === 'P2003' || /foreign key|violates|restrict|23503|23001/i.test(String(err.message))) {
+      await prisma.product.update({ where: { id }, data: { isActive: false } });
+      return { message: "Mahsulot arxivlandi (unga bog'liq tarix mavjud)", archived: true };
+    }
+    throw err;
   }
 };
 

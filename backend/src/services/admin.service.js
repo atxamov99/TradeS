@@ -37,7 +37,7 @@ const getDashboardStats = async () => {
     weeklyUsersRaw,
     monthlyOrdersRaw,
   ] = await Promise.all([
-    prisma.user.count({ where: { role: 'USER' } }),
+    prisma.user.count({ where: { role: 'USER', deletedAt: null } }),
     prisma.product.count({ where: { isActive: true } }),
     prisma.order.count(),
     prisma.order.aggregate({
@@ -55,7 +55,7 @@ const getDashboardStats = async () => {
     }),
     // Weekly user registrations (simplified for Prisma)
     prisma.user.findMany({
-      where: { createdAt: { gte: sevenDaysAgo }, role: 'USER' },
+      where: { createdAt: { gte: sevenDaysAgo }, role: 'USER', deletedAt: null },
       select: { createdAt: true },
     }),
     // Monthly orders + revenue (simplified for Prisma)
@@ -120,7 +120,7 @@ const getDashboardStats = async () => {
 const getAllUsers = async ({ page = 1, limit = 20, search, role } = {}) => {
   const skip = (Number(page) - 1) * Number(limit);
   const take = Number(limit);
-  const where = {};
+  const where = { deletedAt: null };
 
   if (search) {
     where.OR = [
@@ -145,7 +145,7 @@ const getAllUsers = async ({ page = 1, limit = 20, search, role } = {}) => {
 
 const getUserById = async (userId) => {
   const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user) throw new ApiError(404, 'User not found');
+  if (!user || user.deletedAt) throw new ApiError(404, 'User not found');
   return stripPassword(user);
 };
 
@@ -278,14 +278,47 @@ const isForeignKeyViolation = (err) => {
   return /foreign key constraint|violates .*constraint|restrict|23503|23001/i.test(msg);
 };
 
+// Soft-delete a user by tombstoning their identity: clears the account from active
+// lookups (deletedAt), blocks it, revokes sessions, and frees up the email/phone so
+// the same person can register a fresh account later. Linked financial history
+// (sales, orders, products, inventory) is preserved because the User row stays.
+const softDeleteUser = async (user) => {
+  if (user.deletedAt) return { message: 'User already deleted', softDeleted: true };
+  // Prefix originals so they no longer match active lookups but stay recoverable.
+  const tombstonedEmail = user.email ? `deleted_${user.id}_${user.email}` : null;
+  const tombstonedPhone = user.phone ? `deleted_${user.id}_${user.phone}` : null;
+
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id: user.id },
+      data: {
+        deletedAt: new Date(),
+        isBlocked: true,
+        email: tombstonedEmail,
+        phone: tombstonedPhone,
+      },
+    }),
+    prisma.refreshToken.updateMany({
+      where: { userId: user.id, isRevoked: false },
+      data: { isRevoked: true },
+    }),
+  ]);
+
+  return { message: 'User soft-deleted (linked history preserved)', softDeleted: true };
+};
+
 const deleteUser = async (userId, adminId, actorRole) => {
   if (userId === adminId) {
     throw new ApiError(400, 'You cannot delete yourself');
   }
   await assertCanActOn(userId, actorRole);
 
-  // Pre-check related records so we return a clear 409 instead of a raw DB error,
-  // and never destroy financial history via cascade. Admin should block instead.
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw new ApiError(404, 'User not found');
+  if (user.deletedAt) throw new ApiError(404, 'User not found');
+
+  // Does the user own records that a hard delete would either destroy or be blocked
+  // by (Sale/Order/InventoryBatch/SyncQueue are RESTRICT; Product would be orphaned)?
   const [salesCount, ordersCount, productsCount, inventoryCount, syncCount] = await Promise.all([
     prisma.sale.count({ where: { userId } }),
     prisma.order.count({ where: { userId } }),
@@ -293,41 +326,28 @@ const deleteUser = async (userId, adminId, actorRole) => {
     prisma.inventoryBatch.count({ where: { userId } }),
     prisma.syncQueue.count({ where: { userId } }),
   ]);
+  const hasHistory = salesCount || ordersCount || productsCount || inventoryCount || syncCount;
 
-  const blockers = [];
-  if (salesCount) blockers.push(`${salesCount} ta sotuv`);
-  if (ordersCount) blockers.push(`${ordersCount} ta buyurtma`);
-  if (productsCount) blockers.push(`${productsCount} ta mahsulot`);
-  if (inventoryCount) blockers.push(`${inventoryCount} ta ombor partiyasi`);
-  if (syncCount) blockers.push(`${syncCount} ta sinxronizatsiya yozuvi`);
-
-  if (blockers.length) {
-    throw new ApiError(
-      409,
-      `Bu foydalanuvchini o'chirib bo'lmaydi: unga ${blockers.join(', ')} bog'langan. Moliyaviy tarix saqlanishi uchun o'rniga uni bloklang.`
-    );
-  }
-
-  try {
-    await prisma.user.delete({ where: { id: userId } });
-    return { message: 'User deleted successfully' };
-  } catch (err) {
-    if (err.code === 'P2025') throw new ApiError(404, 'User not found');
-    // Race: related rows created between the pre-check and the delete.
-    if (isForeignKeyViolation(err)) {
-      throw new ApiError(
-        409,
-        'Bu foydalanuvchini o\'chirib bo\'lmaydi: unga bog\'langan yozuvlar mavjud. O\'rniga uni bloklang.'
-      );
+  if (!hasHistory) {
+    // Clean account — remove it outright.
+    try {
+      await prisma.user.delete({ where: { id: userId } });
+      return { message: 'User deleted successfully' };
+    } catch (err) {
+      if (err.code === 'P2025') throw new ApiError(404, 'User not found');
+      // Race: history appeared between the check and the delete → fall back to soft delete.
+      if (!isForeignKeyViolation(err)) throw err;
     }
-    throw err;
   }
+
+  // Has history (or lost a race) → preserve it via soft delete.
+  return softDeleteUser(user);
 };
 
 const getAllAdmins = async ({ page = 1, limit = 50 } = {}) => {
   const skip = (Number(page) - 1) * Number(limit);
   const take = Number(limit);
-  const where = { role: { in: ['ADMIN', 'SUPER_ADMIN'] } };
+  const where = { role: { in: ['ADMIN', 'SUPER_ADMIN'] }, deletedAt: null };
 
   const [users, total] = await Promise.all([
     prisma.user.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take }),

@@ -33,7 +33,7 @@ const protect = asyncHandler(async (req, res, next) => {
     where: { id: decoded.id },
   });
 
-  if (!user) {
+  if (!user || user.deletedAt) {
     throw new ApiError(401, 'User belonging to this token no longer exists');
   }
 

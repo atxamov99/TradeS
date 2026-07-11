@@ -71,9 +71,9 @@ const login = async ({ email, phone, password }, meta = {}) => {
   
   let user;
   if (email) {
-    user = await prisma.user.findUnique({ where: { email } });
+    user = await prisma.user.findFirst({ where: { email, deletedAt: null } });
   } else if (phone) {
-    user = await prisma.user.findFirst({ where: { phone } });
+    user = await prisma.user.findFirst({ where: { phone, deletedAt: null } });
   }
 
   if (!user) {
@@ -283,7 +283,7 @@ const requestOtp = async (rawPhone) => {
   // who will be rejected at the verify step anyway. (verifyOtp keeps its own 409
   // guard as defense in depth.)
   const canonicalPhone = `+${phone}`;
-  const existingUser = await prisma.user.findFirst({ where: { phone: canonicalPhone } });
+  const existingUser = await prisma.user.findFirst({ where: { phone: canonicalPhone, deletedAt: null } });
   if (existingUser) {
     throw new ApiError(409, 'Bu raqam allaqachon ro\'yxatdan o\'tgan. Kirish sahifasi orqali kiring.');
   }
@@ -340,8 +340,9 @@ const verifyOtp = async ({ phone: rawPhone, code, name, password }, meta = {}) =
   });
 
   // Find or create the user by phone. Store the phone in +<digits> canonical form.
+  // Soft-deleted accounts are ignored so the same number can register afresh.
   const canonicalPhone = `+${phone}`;
-  let user = await prisma.user.findFirst({ where: { phone: canonicalPhone } });
+  let user = await prisma.user.findFirst({ where: { phone: canonicalPhone, deletedAt: null } });
 
   if (!user) {
     if (!password) throw new ApiError(400, 'Ro\'yxatdan o\'tish uchun parol talab qilinadi');

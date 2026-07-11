@@ -170,18 +170,18 @@ const getAdminOverview = async ({ from, to } = {}) => {
   rangeStart.setHours(0, 0, 0, 0);
 
   const dailyActiveUsers = await prisma.user.count({
-    where: { lastLogin: { gte: rangeStart, lte: rangeEnd } },
+    where: { lastLogin: { gte: rangeStart, lte: rangeEnd }, deletedAt: null },
   });
 
   const weeklyRegistrations = await prisma.user.count({
-    where: { createdAt: { gte: rangeStart, lte: rangeEnd }, role: 'USER' },
+    where: { createdAt: { gte: rangeStart, lte: rangeEnd }, role: 'USER', deletedAt: null },
   });
 
   const failedLogins = await prisma.auditLog.count({
     where: { action: 'LOGIN_FAILED', createdAt: { gte: rangeStart, lte: rangeEnd } },
   });
 
-  const totalUsers = await prisma.user.count({ where: { role: 'USER' } });
+  const totalUsers = await prisma.user.count({ where: { role: 'USER', deletedAt: null } });
   const totalProducts = await prisma.product.count({ where: { isActive: true } });
   const totalOrders = await prisma.order.count();
 
@@ -212,7 +212,7 @@ const getAdminActivity = async ({ from, to } = {}) => {
   rangeStart.setHours(0, 0, 0, 0);
 
   const admins = await prisma.user.findMany({
-    where: { role: { in: ['ADMIN', 'SUPER_ADMIN'] } },
+    where: { role: { in: ['ADMIN', 'SUPER_ADMIN'] }, deletedAt: null },
     select: { id: true, name: true, email: true, lastLogin: true, createdAt: true, isBlocked: true },
   });
 
@@ -241,11 +241,11 @@ const getSecurityReport = async ({ from, to } = {}) => {
   rangeStart.setHours(0, 0, 0, 0);
 
   const blockedUsers = await prisma.user.count({
-    where: { isBlocked: true, updatedAt: { gte: rangeStart, lte: rangeEnd } },
+    where: { isBlocked: true, updatedAt: { gte: rangeStart, lte: rangeEnd }, deletedAt: null },
   });
 
-  const totalAccounts = await prisma.user.count();
-  const blockedAccounts = await prisma.user.count({ where: { isBlocked: true } });
+  const totalAccounts = await prisma.user.count({ where: { deletedAt: null } });
+  const blockedAccounts = await prisma.user.count({ where: { isBlocked: true, deletedAt: null } });
 
   const failedAttempts = await prisma.auditLog.count({
     where: { action: 'LOGIN_FAILED', createdAt: { gte: rangeStart, lte: rangeEnd } },
@@ -269,7 +269,7 @@ const exportReport = async ({ type, from, to } = {}) => {
 
   if (type === 'users') {
     const users = await prisma.user.findMany({
-      where: { createdAt: { gte: rangeStart, lte: rangeEnd } },
+      where: { createdAt: { gte: rangeStart, lte: rangeEnd }, deletedAt: null },
       orderBy: { createdAt: 'desc' },
     });
     const header = 'ID,Name,Email,Role,Status,CreatedAt\n';

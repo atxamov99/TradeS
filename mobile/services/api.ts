@@ -6,7 +6,10 @@ export const API_URL =
 
 export const api = axios.create({
   baseURL: API_URL,
-  timeout: 10000,
+  // Render bepul tarifi "sovuq boshlanish"da (uzoq harakatsizlikdan keyin birinchi so'rov)
+  // 20-30 soniyagacha vaqt olishi mumkin — 10s juda qisqa edi, ilova ishlamayotgandek
+  // ko'rinar edi. 40s'ga oshirdik.
+  timeout: 40000,
 });
 
 // Request interceptor — JWT token qo'shish
@@ -21,6 +24,13 @@ api.interceptors.response.use(
   (res) => res,
   async (error) => {
     const original = error.config;
+
+    // Timeout bo'lsa (masalan Render sovuq boshlanishi) — bitta marta avtomatik qayta urinib ko'ramiz.
+    if (error.code === "ECONNABORTED" && original && !original._timeoutRetry) {
+      original._timeoutRetry = true;
+      return api(original);
+    }
+
     if (error.response?.status === 401 && !original._retry) {
       const token = useAuthStore.getState().token;
       if (token === "demo-token") return Promise.reject(error);

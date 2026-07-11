@@ -26,6 +26,14 @@ async function deleteSale(sale: Sale) {
   });
 }
 
+// Backend sync API'da sotuvni o'chirish/yangilash imkoniyati yo'q (faqat yaratish bor) —
+// shuning uchun serverga allaqachon jo'natilgan sotuvni lokal o'chirish xavfli: keyingi
+// pull-sync'da u serverdan qaytadan qaytib keladi. Faqat hali sinxronlanmagan sotuvlarni
+// xavfsiz o'chirish mumkin.
+function canDeleteSale(sale: Sale): boolean {
+  return !sale.serverId;
+}
+
 export default function SalesScreen() {
   const [filter, setFilter] = useState<Filter>("today");
   const sales = useSales(filter);
@@ -42,6 +50,13 @@ export default function SalesScreen() {
   ];
 
   function handleSaleOptions(sale: Sale) {
+    if (!canDeleteSale(sale)) {
+      Alert.alert(
+        sale.productName,
+        "Bu sotuv serverga yuborilgan — hozircha uni ilova orqali o'chirib bo'lmaydi."
+      );
+      return;
+    }
     Alert.alert(sale.productName, `${sale.qty} × ${sale.sellPrice.toLocaleString()} so'm`, [
       {
         text: "O'chirish",

@@ -1,23 +1,24 @@
 /**
- * Oflayn sync engine — TradeS backend `/sync/push` + `/sync/pull` kontrakti bilan.
+ * Oflayn sync engine — TradeS backend bilan ikki xil pull manbasi ishlatiladi:
  *
- * Backend kontrakti (backend/src/controllers/sync.controller.js):
- *   POST /sync/push  { operations: [{ operation, entity, entityId, payload, clientUpdatedAt }] }
- *   → { data: { results: [{ entityId, status: 'synced'|'failed', serverEntityId }] } }
- *   GET  /sync/pull?lastSyncAt=<ISO>
- *   → { data: { products: RemoteProduct[], sales: RemoteSale[], serverTime: ISOString } }
+ *   POST /sync/push  { operations: [...] } → mahalliy push (products + sales)
+ *   GET  /sync/pull?lastSyncAt=<ISO>       → SALES pull (foydalanuvchi bo'yicha to'g'ri
+ *                                            cheklangan — backend/src/services/sale.service.js
+ *                                            ham xuddi shunday scoping ishlatadi, web bilan mos)
+ *   GET  /products?limit=1000              → PRODUCTS pull — bu GLOBAL KATALOG endpoint'i
+ *                                            (backend/src/services/product.service.js: "shared
+ *                                            global catalog... No ownerId filter on reads").
  *
- * Strategiya: local-first push, so'ng pull. Har bir sinxronlanmagan yozuv bitta
- * operatsiyaga aylantiriladi va batch qilib yuboriladi. Server "Last Write Wins"
- * (clientUpdatedAt vs updatedAt) bo'yicha product update'ni hal qiladi. Push
- * tugagandan keyin pull chaqiriladi — shu orqali admin panel/webda qilingan
- * o'zgarishlar (yangi/yangilangan tovar, boshqa qurilmadagi sotuv) mobilga qaytib
- * keladi. Pull faqat oxirgi pulldan keyingi o'zgarishlarni oladi (incremental,
- * `lastSyncAt` mahalliy saqlanadi).
+ * MUHIM: mahsulotlar uchun /sync/pull ISHLATILMAYDI — chunki
+ * backend/src/services/sync.service.js'dagi pullData() mahsulotlarni `createdById: userId`
+ * bo'yicha cheklaydi (faqat shu foydalanuvchi yaratgan tovarlar). Bu web'dagi global katalog
+ * bilan mos kelmaydi — boshqa foydalanuvchi (yoki admin panel) qo'shgan tovar hech qachon
+ * mobilga qaytmas edi. Shuning uchun tovar katalogi uchun alohida, cheklanmagan
+ * `GET /products` ishlatiladi (pullProductCatalog()).
  *
- * Konflikt qoidasi: agar mahalliy yozuv hali push qilinmagan bo'lsa (is_synced=false),
- * pull uni ustidan yozmaydi — mahalliy tahrir har doim ustun, keyingi sync push'da
- * serverga jo'natiladi.
+ * Konflikt qoidasi (ikkalasida ham): agar mahalliy yozuv hali push qilinmagan bo'lsa
+ * (is_synced=false), pull uni ustidan yozmaydi — mahalliy tahrir har doim ustun, keyingi
+ * sync push'da serverga jo'natiladi.
  *
  * runSync() — root layout da AppState "active" bo'lganda chaqiriladi.
  */
@@ -79,6 +80,7 @@ export async function runSync() {
     }
     // Pull har doim chaqiriladi — push uchun kutayotgan narsa bo'lmasa ham,
     // admin panel/webda qilingan o'zgarishlar bo'lishi mumkin.
+    await pullProductCatalog();
     await pullSync();
     useSyncStore.getState().setLastSynced();
     useSyncStore.getState().setPendingCount(await getPendingCount());
@@ -211,9 +213,59 @@ async function syncSales() {
 }
 
 /**
- * Server → Mobile: admin panel/webda qilingan o'zgarishlarni olib kelib,
- * mahalliy bazaga (serverId bo'yicha) upsert qiladi. Hali push qilinmagan
- * mahalliy yozuvlar (is_synced=false) ustidan yozilmaydi.
+ * Server → Mobile: global tovar katalogini (`GET /products`, cheklanmagan — hamma
+ * foydalanuvchining tovarlari) olib kelib, mahalliy bazaga (serverId bo'yicha) upsert
+ * qiladi. Hali push qilinmagan mahalliy yozuvlar (is_synced=false) ustidan yozilmaydi.
+ * Incremental emas — har safar to'liq katalog qayta olinadi (kichik-o'rta do'kon uchun
+ * bu yetarli va eng sodda yechim).
+ */
+async function pullProductCatalog() {
+  const { data: body } = await api.get("/products", { params: { limit: 1000 } });
+  const payload = body?.data ?? body ?? {};
+  const remoteProducts: RemoteProduct[] = payload.products ?? [];
+  if (remoteProducts.length === 0) return;
+
+  const localByServerId = new Map(
+    (await productsCollection.query(Q.where("server_id", Q.oneOf(remoteProducts.map((p) => p.id)))).fetch())
+      .map((p) => [p.serverId as string, p])
+  );
+
+  await database.write(async () => {
+    for (const rp of remoteProducts) {
+      const local = localByServerId.get(rp.id);
+      if (local) {
+        // Mahalliy tahrir hali serverga jo'natilmagan bo'lsa — pull uni bosib o'tmasin.
+        if (!local.isSynced) continue;
+        await local.update((p) => {
+          p.name = rp.name;
+          p.buyPrice = rp.buyPrice;
+          p.sellPrice = rp.sellPrice;
+          p.stockQty = rp.stock;
+          p.unit = rp.unit;
+          p.archivedAt = rp.isActive ? null : (p.archivedAt ?? Date.now());
+          p.isSynced = true;
+        });
+      } else {
+        await productsCollection.create((p) => {
+          p.name = rp.name;
+          p.buyPrice = rp.buyPrice;
+          p.sellPrice = rp.sellPrice;
+          p.stockQty = rp.stock;
+          p.unit = rp.unit;
+          p.barcode = null;
+          p.categoryId = null;
+          p.archivedAt = rp.isActive ? null : Date.now();
+          p.isSynced = true;
+          p.serverId = rp.id;
+        });
+      }
+    }
+  });
+}
+
+/**
+ * Server → Mobile: shu foydalanuvchining sotuvlarini (boshqa qurilmada yozilgan bo'lsa)
+ * olib kelib, mahalliy bazaga (serverId bo'yicha) qo'shadi.
  */
 async function pullSync() {
   const lastSyncAt = await mmkv.getString(LAST_PULL_KEY);
@@ -222,48 +274,8 @@ async function pullSync() {
     params: lastSyncAt ? { lastSyncAt } : undefined,
   });
   const payload = body?.data ?? body ?? {};
-  const remoteProducts: RemoteProduct[] = payload.products ?? [];
   const remoteSales: RemoteSale[] = payload.sales ?? [];
   const serverTime: string | undefined = payload.serverTime;
-
-  if (remoteProducts.length > 0) {
-    const localByServerId = new Map(
-      (await productsCollection.query(Q.where("server_id", Q.oneOf(remoteProducts.map((p) => p.id)))).fetch())
-        .map((p) => [p.serverId as string, p])
-    );
-
-    await database.write(async () => {
-      for (const rp of remoteProducts) {
-        const local = localByServerId.get(rp.id);
-        if (local) {
-          // Mahalliy tahrir hali serverga jo'natilmagan bo'lsa — pull uni bosib o'tmasin.
-          if (!local.isSynced) continue;
-          await local.update((p) => {
-            p.name = rp.name;
-            p.buyPrice = rp.buyPrice;
-            p.sellPrice = rp.sellPrice;
-            p.stockQty = rp.stock;
-            p.unit = rp.unit;
-            p.archivedAt = rp.isActive ? null : (p.archivedAt ?? Date.now());
-            p.isSynced = true;
-          });
-        } else {
-          await productsCollection.create((p) => {
-            p.name = rp.name;
-            p.buyPrice = rp.buyPrice;
-            p.sellPrice = rp.sellPrice;
-            p.stockQty = rp.stock;
-            p.unit = rp.unit;
-            p.barcode = null;
-            p.categoryId = null;
-            p.archivedAt = rp.isActive ? null : Date.now();
-            p.isSynced = true;
-            p.serverId = rp.id;
-          });
-        }
-      }
-    });
-  }
 
   if (remoteSales.length > 0) {
     const existingServerIds = new Set(

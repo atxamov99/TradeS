@@ -110,9 +110,24 @@ const cleanupExpiredTestUsers = async () => {
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - TEST_USER_CLEANUP_GRACE_DAYS);
   try {
-    const { count } = await prisma.user.deleteMany({
+    const expired = await prisma.user.findMany({
       where: { isTestUser: true, testExpiresAt: { lt: cutoff } },
+      select: { id: true },
     });
+    if (expired.length === 0) return;
+    const ids = expired.map((u) => u.id);
+
+    // Sale.userId and Product.ownerId/createdById have no onDelete: Cascade
+    // to User, so these throwaway rows must be deleted explicitly before the
+    // User row itself — otherwise the required Sale.userId FK would reject
+    // the whole batched User delete. All three deletes run in one
+    // transaction so we never end up with orphaned Sales/Products and a
+    // still-present User, or vice versa.
+    const [, , { count }] = await prisma.$transaction([
+      prisma.sale.deleteMany({ where: { userId: { in: ids } } }),
+      prisma.product.deleteMany({ where: { OR: [{ ownerId: { in: ids } }, { createdById: { in: ids } }] } }),
+      prisma.user.deleteMany({ where: { id: { in: ids } } }),
+    ]);
     if (count > 0) logger.info(`Test User cleanup: removed ${count} expired account(s)`);
   } catch (err) {
     logger.error(`Test User cleanup failed: ${err.message}`);

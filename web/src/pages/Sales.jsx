@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ShoppingCart, Plus, X, ChevronDown, AlertCircle } from 'lucide-react';
+import { ShoppingCart, Plus, X, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import * as salesApi from '../api/sales.api';
 import * as productsApi from '../api/products.api';
+import Dropdown from '../components/ui/Dropdown';
 
 export default function Sales() {
   const { t, i18n } = useTranslation();
@@ -17,6 +18,8 @@ export default function Sales() {
   function NewSaleModal({ onClose }) {
     const [productId, setProductId] = useState('');
     const [quantity, setQuantity] = useState('1');
+    const [bagCount, setBagCount] = useState('1');
+    const [extraKg, setExtraKg] = useState('0');
     const [errors, setErrors] = useState({});
     const qc = useQueryClient();
 
@@ -30,10 +33,15 @@ export default function Sales() {
     const inStock = Array.isArray(allProducts) ? allProducts.filter((p) => p.stock > 0) : [];
 
     const selected = inStock.find((p) => p.id === productId);
-    const profit = selected
-      ? (selected.sellPrice - selected.buyPrice) * Number(quantity || 0)
+    const isBag = selected?.unit === 'box' && selected?.bagWeightKg > 0;
+    const bagTotalKg = isBag
+      ? Number(bagCount || 0) * selected.bagWeightKg + Number(extraKg || 0)
       : 0;
-    const total = selected ? selected.sellPrice * Number(quantity || 0) : 0;
+    const effectiveQty = isBag ? bagTotalKg : Number(quantity || 0);
+    const profit = selected
+      ? (selected.sellPrice - selected.buyPrice) * effectiveQty
+      : 0;
+    const total = selected ? selected.sellPrice * effectiveQty : 0;
 
     const mutation = useMutation({
       mutationFn: salesApi.createSale,
@@ -56,10 +64,20 @@ export default function Sales() {
     const validate = () => {
       const e = {};
       if (!productId) e.product = t('enter_product');
-      const qty = Number(quantity);
-      if (!quantity || isNaN(qty) || qty <= 0) e.quantity = t('enter_quantity');
-      else if (selected && qty > selected.stock)
-        e.quantity = `${t('only_in_stock')} ${selected.stock} ${t(`unit_${selected.unit || 'pcs'}`)} ${t('available')}`;
+      if (isBag) {
+        const bc = Number(bagCount);
+        const ek = Number(extraKg);
+        if (bagCount === '' || isNaN(bc) || bc < 0) e.quantity = t('bag_count_label');
+        else if (extraKg === '' || isNaN(ek) || ek < 0) e.quantity = t('bag_extra_kg_label');
+        else if (bagTotalKg <= 0) e.quantity = t('enter_quantity');
+        else if (bagTotalKg > selected.stock)
+          e.quantity = `${t('only_in_stock')} ${selected.stock} kg ${t('available')}`;
+      } else {
+        const qty = Number(quantity);
+        if (!quantity || isNaN(qty) || qty <= 0) e.quantity = t('enter_quantity');
+        else if (selected && qty > selected.stock)
+          e.quantity = `${t('only_in_stock')} ${selected.stock} ${t(`unit_${selected.unit || 'pcs'}`)} ${t('available')}`;
+      }
       return e;
     };
 
@@ -70,10 +88,11 @@ export default function Sales() {
       mutation.mutate({
         product: selected.id,
         productName: selected.name,
-        quantity: Number(quantity),
+        quantity: isBag ? bagTotalKg : Number(quantity),
         sellPrice: Number(selected.sellPrice) || 0,
         buyPrice: Number(selected.buyPrice) || 0,
-        unit: selected.unit || 'pcs',
+        unit: isBag ? 'kg' : (selected.unit || 'pcs'),
+        note: isBag ? `${bagCount} ${t('unit_box')} (${selected.bagWeightKg}kg) + ${extraKg}kg` : undefined,
       });
     };
 
@@ -90,47 +109,86 @@ export default function Sales() {
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div>
               <label className="block text-sm font-semibold text-[#0F172A] dark:text-slate-100 mb-2">{t('products')}</label>
-              <div className="relative">
-                <select
-                  value={productId}
-                  onChange={(e) => {
-                    setProductId(e.target.value);
-                    if (errors.product) setErrors((p) => ({ ...p, product: '' }));
-                  }}
-                  className={`w-full h-12 rounded-xl border px-4 pr-10 text-base text-[#0F172A] dark:text-slate-100 bg-white dark:bg-[#0F172A] appearance-none focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition ${errors.product ? 'border-red-400 bg-red-50 dark:bg-red-500/10' : 'border-[#E2E8F0] dark:border-[#334155]'
-                    }`}
-                >
-                  <option value="">{t('select_product_placeholder')}</option>
-                  {inStock.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} — {p.stock} {t(`unit_${p.unit || 'pcs'}`)} {t('remains')}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94A3B8] dark:text-slate-400 pointer-events-none" />
-              </div>
-              {errors.product && <p className="text-red-500 text-sm mt-1">{errors.product}</p>}
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-[#0F172A] dark:text-slate-100 mb-2">
-                {t('quantity')} {selected ? `(${t(`unit_${selected.unit || 'pcs'}`)})` : ''}
-              </label>
-              <input
-                type="number"
-                value={quantity}
-                onChange={(e) => {
-                  setQuantity(e.target.value);
-                  if (errors.quantity) setErrors((p) => ({ ...p, quantity: '' }));
+              <Dropdown
+                value={productId}
+                onChange={(val) => {
+                  setProductId(val);
+                  setQuantity('1');
+                  setBagCount('1');
+                  setExtraKg('0');
+                  setErrors({});
                 }}
-                placeholder="1"
-                min="1"
-                className={`w-full h-12 rounded-xl border px-4 text-base text-[#0F172A] dark:text-slate-100 placeholder-[#94A3B8] dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition ${errors.quantity ? 'border-red-400 bg-red-50 dark:bg-red-500/10' : 'border-[#E2E8F0] dark:border-[#334155] bg-white dark:bg-[#0F172A]'}`}
+                placeholder={t('select_product_placeholder')}
+                searchPlaceholder={t('search')}
+                error={errors.product}
+                options={inStock.map((p) => ({
+                  value: p.id,
+                  label: `${p.name} — ${p.stock} ${p.unit === 'box' ? 'kg' : t(`unit_${p.unit || 'pcs'}`)} ${t('remains')}${p.unit === 'box' && p.bagWeightKg ? ` (${p.bagWeightKg}kg/${t('unit_box')})` : ''}`,
+                }))}
               />
-              {errors.quantity && <p className="text-red-500 text-sm mt-1">{errors.quantity}</p>}
             </div>
 
-            {selected && Number(quantity) > 0 && (
+            {isBag ? (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-semibold text-[#0F172A] dark:text-slate-100 mb-2">
+                    {t('bag_count_label')} ({selected.bagWeightKg}kg)
+                  </label>
+                  <input
+                    type="number"
+                    value={bagCount}
+                    onChange={(e) => {
+                      setBagCount(e.target.value);
+                      if (errors.quantity) setErrors((p) => ({ ...p, quantity: '' }));
+                    }}
+                    placeholder="0"
+                    min="0"
+                    className={`w-full h-12 rounded-xl border px-4 text-base text-[#0F172A] dark:text-slate-100 placeholder-[#94A3B8] dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition ${errors.quantity ? 'border-red-400 bg-red-50 dark:bg-red-500/10' : 'border-[#E2E8F0] dark:border-[#334155] bg-white dark:bg-[#0F172A]'}`}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-[#0F172A] dark:text-slate-100 mb-2">
+                    {t('bag_extra_kg_label')}
+                  </label>
+                  <input
+                    type="number"
+                    value={extraKg}
+                    onChange={(e) => {
+                      setExtraKg(e.target.value);
+                      if (errors.quantity) setErrors((p) => ({ ...p, quantity: '' }));
+                    }}
+                    placeholder="0"
+                    min="0"
+                    step="0.1"
+                    className={`w-full h-12 rounded-xl border px-4 text-base text-[#0F172A] dark:text-slate-100 placeholder-[#94A3B8] dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition ${errors.quantity ? 'border-red-400 bg-red-50 dark:bg-red-500/10' : 'border-[#E2E8F0] dark:border-[#334155] bg-white dark:bg-[#0F172A]'}`}
+                  />
+                </div>
+                {errors.quantity && <p className="col-span-2 text-red-500 text-sm -mt-2">{errors.quantity}</p>}
+                <p className="col-span-2 text-sm text-[#64748B] dark:text-slate-400 -mt-1">
+                  {t('bag_total_label')}: <span className="font-semibold text-[#0F172A] dark:text-slate-100">{bagTotalKg} kg</span>
+                </p>
+              </div>
+            ) : (
+              <div>
+                <label className="block text-sm font-semibold text-[#0F172A] dark:text-slate-100 mb-2">
+                  {t('quantity')} {selected ? `(${t(`unit_${selected.unit || 'pcs'}`)})` : ''}
+                </label>
+                <input
+                  type="number"
+                  value={quantity}
+                  onChange={(e) => {
+                    setQuantity(e.target.value);
+                    if (errors.quantity) setErrors((p) => ({ ...p, quantity: '' }));
+                  }}
+                  placeholder="1"
+                  min="1"
+                  className={`w-full h-12 rounded-xl border px-4 text-base text-[#0F172A] dark:text-slate-100 placeholder-[#94A3B8] dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition ${errors.quantity ? 'border-red-400 bg-red-50 dark:bg-red-500/10' : 'border-[#E2E8F0] dark:border-[#334155] bg-white dark:bg-[#0F172A]'}`}
+                />
+                {errors.quantity && <p className="text-red-500 text-sm mt-1">{errors.quantity}</p>}
+              </div>
+            )}
+
+            {selected && effectiveQty > 0 && (
               <div className="bg-slate-50 dark:bg-slate-800 border border-[#E2E8F0] dark:border-[#334155] rounded-xl px-4 py-3 flex flex-col gap-1.5 text-sm">
                 <div className="flex justify-between">
                   <span className="text-[#64748B] dark:text-slate-400">{t('sale_preview_revenue')}</span>
@@ -259,7 +317,7 @@ export default function Sales() {
                         {sale.productName || 'Mahsulot'}
                       </p>
                       <p className="text-xs text-[#64748B] dark:text-slate-400 mt-0.5">
-                        {sale.quantity} {t(`unit_${sale.unit || 'pcs'}`)} · {timeStr}
+                        {sale.note ? sale.note : `${sale.quantity} ${t(`unit_${sale.unit || 'pcs'}`)}`} · {timeStr}
                       </p>
                     </div>
                     <div className="text-right">

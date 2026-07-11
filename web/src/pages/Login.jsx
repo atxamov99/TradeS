@@ -365,10 +365,17 @@ export default function Login() {
           <button
             type="button"
             onClick={handleTryDemo}
-            className="w-full h-11 mt-3 rounded-xl border border-dashed border-slate-700 text-slate-400 text-sm font-semibold hover:bg-slate-800 transition-all"
+            disabled={isLoading}
+            className="w-full h-11 mt-3 rounded-xl border border-dashed border-slate-700 text-slate-400 text-sm font-semibold hover:bg-slate-800 transition-all disabled:opacity-60 flex items-center justify-center gap-2"
           >
-            {t('try_demo_cta')}
+            {isLoading
+              ? <span className="w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
+              : t('try_demo_cta')
+            }
           </button>
+          <p className="text-center text-xs text-slate-500 mt-1.5">
+            {t('try_demo_note')}
+          </p>
 
           <div className="mt-6 text-center text-sm text-slate-400">
             {tx.no_account}{' '}

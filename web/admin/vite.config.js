@@ -11,7 +11,8 @@ export default defineConfig(({ command }) => ({
     strictPort: false,
     proxy: {
       "/api": {
-        target: "http://localhost:5000",
+        // Backend runs on 5050 locally — macOS ControlCenter (AirPlay Receiver) occupies 5000
+        target: "http://localhost:5050",
         changeOrigin: true,
       },
     },

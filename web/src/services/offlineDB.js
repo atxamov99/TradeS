@@ -7,7 +7,7 @@
  */
 
 const DB_NAME = 'savdo_offline';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 let _db = null;
 
@@ -20,9 +20,12 @@ function openDB() {
     req.onupgradeneeded = (e) => {
       const db = e.target.result;
 
-      if (!db.objectStoreNames.contains('products')) {
-        db.createObjectStore('products', { keyPath: '_id' });
+      // v1 mistakenly used keyPath '_id' (Prisma uses 'id') — every product write
+      // silently threw a DataError. Recreate the store correctly on upgrade.
+      if (db.objectStoreNames.contains('products')) {
+        db.deleteObjectStore('products');
       }
+      db.createObjectStore('products', { keyPath: 'id' });
 
       if (!db.objectStoreNames.contains('pendingSales')) {
         const store = db.createObjectStore('pendingSales', {

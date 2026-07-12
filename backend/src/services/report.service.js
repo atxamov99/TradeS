@@ -151,7 +151,7 @@ const getSummary = async (userId) => {
     aggregateSales(userId, new Date(0), new Date()),
     prisma.product.findMany({
       where: { ownerId: userId, stock: { lte: 5 } },
-      select: { name: true, stock: true, unit: true },
+      select: { id: true, name: true, stock: true, unit: true },
       orderBy: { stock: 'asc' },
       take: 10,
     }),

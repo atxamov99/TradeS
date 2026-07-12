@@ -56,9 +56,13 @@ export default function Cart() {
             const image = product?.images?.[0]?.url || 'https://placehold.co/100x100';
             return (
               <div key={item.id || productId} className="card p-4 flex gap-4">
-                <img src={image} alt={product?.name} className="h-20 w-20 rounded-lg object-cover bg-gray-100" />
+                <Link to={`/products/${product?.slug || product?.id}`}>
+                  <img src={image} alt={product?.name} className="h-20 w-20 rounded-lg object-cover bg-gray-100" />
+                </Link>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm line-clamp-1">{product?.name}</p>
+                  <Link to={`/products/${product?.slug || product?.id}`} className="font-medium text-sm hover:text-primary-600 line-clamp-1">
+                    {product?.name}
+                  </Link>
                   <p className="text-primary-600 font-semibold mt-1">{formatPrice(item.price)}</p>
                   <div className="flex items-center gap-3 mt-2">
                     <div className="flex items-center border rounded-lg">

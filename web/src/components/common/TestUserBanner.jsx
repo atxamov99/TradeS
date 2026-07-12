@@ -16,6 +16,8 @@ export default function TestUserBanner({ user }) {
   const daysLeft = user.testExpiresAt
     ? Math.max(0, Math.ceil((new Date(user.testExpiresAt) - new Date()) / 86400000))
     : 0;
+  // 45 mirrors backend/src/utils/testUserLimits.js's TEST_USER_ACTION_CAP —
+  // only used if an older cached user object lacks testActionCap from the API.
   const actionCap = user.testActionCap || 45;
   const actionsLeft = Math.max(0, actionCap - (user.testActionCount || 0));
 

@@ -1,4 +1,4 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { Home, Package, ShoppingCart, BarChart2, Settings, User, ShieldCheck, LogOut } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import useAuthStore from '../../store/authStore';
@@ -51,6 +51,7 @@ function NavItem({ item, mobile = false }) {
 export default function AppLayout() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
 
@@ -138,7 +139,7 @@ export default function AppLayout() {
 
       {/* ── Main content ─────────────────────────── */}
       <main className="flex-1 md:ml-[220px] pb-20 md:pb-0">
-        <TestUserBanner user={user} />
+        <TestUserBanner key={location.pathname} user={user} />
         <Outlet />
       </main>
 

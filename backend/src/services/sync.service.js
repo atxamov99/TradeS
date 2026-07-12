@@ -78,6 +78,12 @@ const processSyncBatch = async (userId, operations) => {
             const product = await prisma.product.create({
               data: {
                 ...safe,
+                buyPrice: Number(safe.buyPrice) || 0,
+                sellPrice: Number(safe.sellPrice) || 0,
+                stock: Number(safe.stock) || 0,
+                bagWeightKg: safe.bagWeightKg != null ? Number(safe.bagWeightKg) : null,
+                price: basePrice,
+                finalPrice,
                 slug,
                 createdById: userId,
                 ownerId: userId,
@@ -110,7 +116,8 @@ const processSyncBatch = async (userId, operations) => {
               }
               if (payload.sellPrice !== undefined) {
                 updateData.price = Number(payload.sellPrice) || 0;
-                updateData.finalPrice = Number(payload.sellPrice) || 0;
+                const discount = product.discount || 0;
+                updateData.finalPrice = updateData.price - (updateData.price * discount) / 100;
               }
 
               const updated = await prisma.product.update({

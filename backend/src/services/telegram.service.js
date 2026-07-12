@@ -74,6 +74,27 @@ const CONTACT_KEYBOARD = {
   one_time_keyboard: true,
 };
 
+// ── Contact Support via direct bot message ──────────────────────────────────
+// Reached either via the app's "Contact Support" link
+// (https://t.me/trades_uz_bot?start=support, which Telegram delivers as the
+// text "/start support") or by a user messaging the bot on their own. Once a
+// chat is "awaiting" a support message, its next free-text message is
+// forwarded to ADMIN_SUPPORT_CHAT_ID instead of the normal onboarding nudge.
+// In-memory only (mirrors the module-level state already used for polling
+// above) — acceptable since this is a short-lived UX flag, not durable data.
+const awaitingSupportMessage = new Set();
+const lastSupportMessageAt = new Map(); // chatId -> timestamp, per-chat cooldown
+const SUPPORT_COOLDOWN_MS = 60 * 1000; // 1 forwarded message per minute per chat
+
+const ADMIN_SUPPORT_CHAT_ID = process.env.ADMIN_SUPPORT_CHAT_ID;
+
+const escapeHtml = (str) =>
+  String(str).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+
+const SUPPORT_PROMPT = 'Yordam kerakmi? Muammoingizni bitta xabar qilib yozing — jamoamiz ko\'rib chiqadi.';
+const SUPPORT_SENT_ACK = '✅ Xabaringiz qabul qilindi. Tez orada javob beramiz.';
+const SUPPORT_COOLDOWN_MSG = 'Iltimos, biroz kuting va keyin qayta yozing.';
+
 /**
  * Handle one Telegram update (called from the webhook).
  * - /start  → welcome + "share contact" button
@@ -102,8 +123,41 @@ const handleUpdate = async (update) => {
       return;
     }
 
+    if (msg.text && msg.text.startsWith('/start support')) {
+      awaitingSupportMessage.add(chatId);
+      await sendMessage(chatId, SUPPORT_PROMPT);
+      return;
+    }
+
     if (msg.text && msg.text.startsWith('/start')) {
       await sendMessage(chatId, WELCOME, { reply_markup: CONTACT_KEYBOARD });
+      return;
+    }
+
+    if (msg.text && awaitingSupportMessage.has(chatId)) {
+      const lastAt = lastSupportMessageAt.get(chatId);
+      if (lastAt && Date.now() - lastAt < SUPPORT_COOLDOWN_MS) {
+        await sendMessage(chatId, SUPPORT_COOLDOWN_MSG);
+        return;
+      }
+      awaitingSupportMessage.delete(chatId);
+      lastSupportMessageAt.set(chatId, Date.now());
+
+      if (ADMIN_SUPPORT_CHAT_ID) {
+        const from = msg.from || {};
+        const who = [from.first_name, from.last_name].filter(Boolean).join(' ') || 'Noma\'lum';
+        const username = from.username ? `@${from.username}` : '(username yo\'q)';
+        const text =
+          `🆘 <b>Yangi murojaat (Telegram bot)</b>\n\n` +
+          `<b>Ism:</b> ${escapeHtml(who)}\n` +
+          `<b>Username:</b> ${escapeHtml(username)}\n` +
+          `<b>Chat ID:</b> ${chatId}\n\n` +
+          `${escapeHtml(msg.text)}`;
+        await sendMessage(ADMIN_SUPPORT_CHAT_ID, text).catch((err) =>
+          logger.error(`Support forward (bot) failed: ${err.message}`)
+        );
+      }
+      await sendMessage(chatId, SUPPORT_SENT_ACK);
       return;
     }
 

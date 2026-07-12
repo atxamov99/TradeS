@@ -1,7 +1,7 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import {
-  View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator,
-  ScrollView, KeyboardAvoidingView, Platform, Linking, Pressable, AppState, Image,
+  View, Text, TouchableOpacity, Alert,
+  ScrollView, KeyboardAvoidingView, Platform, Linking, Image,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -10,122 +10,15 @@ import { useUserStore } from "@/store/userStore";
 import { api } from "@/services/api";
 import { light } from "@/theme/colors";
 import { formatPhone, cleanIdentifier } from "@/utils/phone";
+import { OtpBoxes, OTP_LEN } from "@/components/OtpBoxes";
+import { AuthBigButton as BigButton } from "@/components/AuthBigButton";
+import { AuthField as Field } from "@/components/AuthField";
 
 const BOT_URL = "https://t.me/trades_uz_bot?start=register";
 const TG_BLUE = "#229ED9";
-const OTP_LEN = 6;
 
 // Auth ekranlari eski ilovadagidek DOIM och (light) ko'rinadi — global dark tema majburlanmaydi.
 const c = light;
-
-/* ── Segmented OTP input (6 boxes, single hidden field) ── */
-function OtpBoxes({ value, onChange, c }: { value: string; onChange: (v: string) => void; c: typeof light }) {
-  const ref = useRef<TextInput>(null);
-  const digits = value.split("");
-
-  const focusInput = () => {
-    ref.current?.blur();
-    requestAnimationFrame(() => ref.current?.focus());
-  };
-
-  useEffect(() => {
-    const sub = AppState.addEventListener("change", (state) => {
-      if (state === "active") setTimeout(() => ref.current?.focus(), 350);
-    });
-    return () => sub.remove();
-  }, []);
-
-  return (
-    <Pressable style={{ position: "relative", height: 56, justifyContent: "center" }} onPress={focusInput}>
-      <View style={{ flexDirection: "row", justifyContent: "space-between" }} pointerEvents="none">
-        {Array.from({ length: OTP_LEN }).map((_, i) => {
-          const filled = i < digits.length;
-          const active = i === digits.length;
-          return (
-            <View
-              key={i}
-              style={{
-                width: 46, height: 56, borderRadius: 14, borderWidth: active ? 2 : 1.5,
-                alignItems: "center", justifyContent: "center",
-                backgroundColor: c.bgCard,
-                borderColor: active ? c.primary : filled ? c.primary + "66" : c.border,
-              }}
-            >
-              <Text style={{ fontSize: 24, fontWeight: "800", color: c.text }}>{digits[i] || ""}</Text>
-            </View>
-          );
-        })}
-      </View>
-      <TextInput
-        ref={ref}
-        value={value}
-        onChangeText={(v) => onChange(v.replace(/\D/g, "").slice(0, OTP_LEN))}
-        keyboardType="number-pad"
-        maxLength={OTP_LEN}
-        autoFocus
-        caretHidden
-        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, opacity: 0, color: "transparent" }}
-      />
-    </Pressable>
-  );
-}
-
-function BigButton({ title, onPress, loading, disabled, color, textColor = "#fff", icon }: {
-  title: string; onPress: () => void; loading?: boolean; disabled?: boolean;
-  color: string; textColor?: string; icon?: React.ComponentProps<typeof Ionicons>["name"];
-}) {
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      disabled={disabled || loading}
-      activeOpacity={0.85}
-      style={{ height: 54, borderRadius: 16, flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: color, opacity: disabled || loading ? 0.55 : 1 }}
-    >
-      {loading ? (
-        <ActivityIndicator color={textColor} />
-      ) : (
-        <>
-          {icon && <Ionicons name={icon} size={18} color={textColor} style={{ marginRight: 8 }} />}
-          <Text style={{ fontSize: 16, fontWeight: "800", color: textColor }}>{title}</Text>
-        </>
-      )}
-    </TouchableOpacity>
-  );
-}
-
-function Field({ label, icon, placeholder, value, onChangeText, secure, onToggleSecure, showSecure, keyboardType, c }: {
-  label?: string;
-  icon: React.ComponentProps<typeof Ionicons>["name"];
-  placeholder: string; value: string; onChangeText: (v: string) => void;
-  secure?: boolean; onToggleSecure?: () => void; showSecure?: boolean; keyboardType?: any; c: typeof light;
-}) {
-  return (
-    <View style={{ marginBottom: 16 }}>
-      {label ? (
-        <Text style={{ fontSize: 12, fontWeight: "600", color: c.textSub, marginBottom: 6 }}>{label}</Text>
-      ) : null}
-      <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: c.bg, borderRadius: 12, paddingHorizontal: 16, borderWidth: 1, borderColor: c.border, height: 50 }}>
-        <Ionicons name={icon} size={20} color={c.textMuted} style={{ marginRight: 10 }} />
-        <TextInput
-          style={{ flex: 1, fontSize: 16, color: c.text }}
-          placeholder={placeholder}
-          placeholderTextColor={c.textMuted}
-          value={value}
-          onChangeText={onChangeText}
-          secureTextEntry={secure && !showSecure}
-          keyboardType={keyboardType ?? "default"}
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-        {secure && (
-          <TouchableOpacity onPress={onToggleSecure} style={{ marginLeft: 8, padding: 2 }}>
-            <Ionicons name={showSecure ? "eye-off-outline" : "eye-outline"} size={20} color={c.textMuted} />
-          </TouchableOpacity>
-        )}
-      </View>
-    </View>
-  );
-}
 
 export default function RegisterScreen() {
   const { setToken } = useAuthStore();

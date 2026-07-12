@@ -1,4 +1,5 @@
-import { View, Text, TouchableOpacity, ScrollView, Alert, Switch } from "react-native";
+import { useState } from "react";
+import { View, Text, TouchableOpacity, ScrollView, Alert, Switch, Modal, TextInput } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuthStore } from "@/store/authStore";
@@ -8,6 +9,7 @@ import { useThemeStore } from "@/store/themeStore";
 import { useTheme } from "@/hooks/useTheme";
 import { useT } from "@/hooks/useT";
 import { useRoleStore } from "@/store/roleStore";
+import { api } from "@/services/api";
 import { Lang } from "@/i18n";
 
 const LANGS: { code: Lang; label: string; flag: string }[] = [
@@ -65,18 +67,47 @@ function Divider() {
 
 export default function ProfileScreen() {
   const clearToken = useAuthStore((s) => s.clearToken);
-  const { user, clearUser } = useUserStore();
+  const { user, setUser, clearUser } = useUserStore();
   const { lang, setLang } = useLangStore();
   const { isDark, toggleTheme } = useThemeStore();
   const { c } = useTheme();
   const t = useT();
   const { isAdmin } = useRoleStore();
 
+  const [emailModalVisible, setEmailModalVisible] = useState(false);
+  const [emailInput, setEmailInput] = useState("");
+  const [emailSaving, setEmailSaving] = useState(false);
+
   function handleLogout() {
     Alert.alert(t.settings.logout, t.settings.logoutConfirm, [
       { text: t.products.cancel, style: "cancel" },
       { text: t.settings.logout, style: "destructive", onPress: () => { clearUser(); clearToken(); } },
     ]);
+  }
+
+  function openEmailModal() {
+    setEmailInput(user?.email || "");
+    setEmailModalVisible(true);
+  }
+
+  async function handleSaveEmail() {
+    const trimmed = emailInput.trim().toLowerCase();
+    if (trimmed && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      Alert.alert(t.common.error, "To'g'ri email manzil kiriting");
+      return;
+    }
+    setEmailSaving(true);
+    try {
+      const res = await api.patch("/users/profile", { email: trimmed });
+      const data = res.data?.data ?? res.data;
+      const updated = data?.user ?? data;
+      await setUser({ ...user, email: updated?.email ?? trimmed });
+      setEmailModalVisible(false);
+    } catch (e: any) {
+      Alert.alert(t.common.error, e.response?.data?.message || "Email saqlashda xatolik");
+    } finally {
+      setEmailSaving(false);
+    }
   }
 
   return (
@@ -140,9 +171,13 @@ export default function ProfileScreen() {
           iconName="people"
           iconBg="#D1FAE5"
           label={t.employees.title}
-          sub={t.employees.add}
-          right={<Ionicons name="chevron-forward" size={18} color={c.textMuted} />}
-          onPress={() => router.push("/settings/employees")}
+          sub={t.common.comingSoon}
+          right={
+            <View style={{ backgroundColor: c.bgMuted, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
+              <Text style={{ color: c.textMuted, fontSize: 10, fontWeight: "700" }}>{t.common.comingSoon}</Text>
+            </View>
+          }
+          onPress={() => Alert.alert(t.common.comingSoon, t.common.comingSoonMsg)}
         />
       </Section>
 
@@ -167,6 +202,15 @@ export default function ProfileScreen() {
 
       {/* Account */}
       <Section title={t.settings.account}>
+        <Row
+          iconName="mail"
+          iconBg="#DBEAFE"
+          label="Email"
+          sub={user?.email || "Qo'shilmagan"}
+          right={<Ionicons name="chevron-forward" size={18} color={c.textMuted} />}
+          onPress={openEmailModal}
+        />
+        <Divider />
         <Row iconName="log-out" label={t.settings.logout} danger onPress={handleLogout} />
       </Section>
 
@@ -176,6 +220,36 @@ export default function ProfileScreen() {
       <Text style={{ color: c.textMuted, textAlign: "center", fontSize: 11, marginTop: 2, marginBottom: 40, opacity: 0.5 }}>
         Powered by KarvonEx
       </Text>
+
+      <Modal visible={emailModalVisible} transparent animationType="slide">
+        <View style={{ flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <View style={{ backgroundColor: c.bgCard, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 }}>
+            <Text style={{ color: c.text, fontSize: 18, fontWeight: "800", marginBottom: 6 }}>Email manzil</Text>
+            <Text style={{ color: c.textMuted, fontSize: 12, marginBottom: 16 }}>
+              Ixtiyoriy — parolni tiklash va bildirishnomalar uchun ishlatiladi.
+            </Text>
+            <TextInput
+              style={{ backgroundColor: c.bgMuted, borderRadius: 14, paddingHorizontal: 14, height: 50, fontSize: 15, color: c.text, marginBottom: 16, borderWidth: 1, borderColor: c.border }}
+              placeholder="email@gmail.com"
+              placeholderTextColor={c.textMuted}
+              value={emailInput}
+              onChangeText={setEmailInput}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoFocus
+            />
+            <View style={{ flexDirection: "row", gap: 10 }}>
+              <TouchableOpacity onPress={() => setEmailModalVisible(false)} style={{ flex: 1, height: 50, borderRadius: 14, backgroundColor: c.bgMuted, alignItems: "center", justifyContent: "center" }}>
+                <Text style={{ color: c.textSub, fontWeight: "700" }}>{t.customers.cancel}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleSaveEmail} disabled={emailSaving} style={{ flex: 2, height: 50, borderRadius: 14, backgroundColor: c.primary, alignItems: "center", justifyContent: "center" }}>
+                <Text style={{ color: "#fff", fontWeight: "800" }}>{emailSaving ? "..." : t.customers.save}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }

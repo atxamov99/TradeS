@@ -286,6 +286,8 @@ const en: Translations = {
     error: "Error",
     saveError: "Error saving",
     exportError: "Could not export",
+    comingSoon: "Coming soon",
+    comingSoonMsg: "This section is still in development. Coming soon.",
   },
 };
 

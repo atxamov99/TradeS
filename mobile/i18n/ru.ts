@@ -286,6 +286,8 @@ const ru: Translations = {
     error: "Ошибка",
     saveError: "Ошибка при сохранении",
     exportError: "Не удалось экспортировать",
+    comingSoon: "Скоро",
+    comingSoonMsg: "Этот раздел пока в разработке. Скоро появится.",
   },
 };
 

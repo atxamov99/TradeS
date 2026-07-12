@@ -1,256 +1,252 @@
 import { useState } from "react";
 import {
-  View, Text, TextInput, TouchableOpacity,
-  ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView,
+  View, Text, TouchableOpacity, Alert,
+  ScrollView, KeyboardAvoidingView, Platform, Linking,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "@/hooks/useTheme";
 import { api } from "@/services/api";
+import { light } from "@/theme/colors";
+import { formatPhone, cleanIdentifier } from "@/utils/phone";
+import { OtpBoxes, OTP_LEN } from "@/components/OtpBoxes";
+import { AuthBigButton as BigButton } from "@/components/AuthBigButton";
+import { AuthField as Field } from "@/components/AuthField";
 
-type Step = "input" | "sent";
+const BOT_URL = "https://t.me/trades_uz_bot?start=reset";
+const TG_BLUE = "#229ED9";
+
+// Auth ekranlari doim och (light) ko'rinadi — global dark tema majburlanmaydi.
+const c = light;
+
+type Method = "phone" | "email";
+type PhoneStep = "form" | "connect" | "otp";
 
 export default function ForgotPasswordScreen() {
-  const { c } = useTheme();
-  const [email, setEmail]     = useState("");
-  const [step, setStep]       = useState<Step>("input");
+  const [method, setMethod] = useState<Method>("phone");
+
+  // ── Telefon oqimi (asosiy) ──
+  const [phoneStep, setPhoneStep] = useState<PhoneStep>("form");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState("");
 
-  const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  // ── Email oqimi (ixtiyoriy) ──
+  const [email, setEmail] = useState("");
+  const [emailSent, setEmailSent] = useState(false);
+  const [emailLoading, setEmailLoading] = useState(false);
 
-  async function handleSubmit() {
-    if (!isValid || loading) return;
-    setError("");
+  const phoneDigits = phone.replace(/\D/g, "");
+
+  const sendPhoneCode = async () => {
     setLoading(true);
     try {
-      await api.post("/auth/forgot-password", { email: email.toLowerCase() });
-    } catch (e: any) {
-      // no internet or server error — still show success (don't leak user existence)
+      await api.post("/auth/forgot-password", { phone: cleanIdentifier(phone) });
+      setCode("");
+      setPhoneStep("otp");
+    } catch (error: any) {
+      if (error.response?.status === 428) setPhoneStep("connect");
+      else Alert.alert("Xatolik", error.response?.data?.message || "Kod yuborishda xatolik");
     } finally {
       setLoading(false);
     }
-    setStep("sent");
-  }
+  };
+
+  const handlePhoneStart = () => {
+    if (phoneDigits.length < 12 || password.trim().length < 6) {
+      Alert.alert("Xatolik", "Telefon raqam va kamida 6 belgili yangi parolni to'g'ri kiriting");
+      return;
+    }
+    sendPhoneCode();
+  };
+
+  const handlePhoneVerify = async () => {
+    if (code.length !== OTP_LEN) return;
+    setLoading(true);
+    try {
+      await api.post("/auth/reset-password", {
+        phone: cleanIdentifier(phone),
+        code,
+        password: password.trim(),
+      });
+      Alert.alert("Tayyor", "Parol muvaffaqiyatli yangilandi. Endi yangi parolingiz bilan kiring.", [
+        { text: "OK", onPress: () => router.replace("/login") },
+      ]);
+    } catch (error: any) {
+      Alert.alert("Xatolik", error.response?.data?.message || "Kodni tasdiqlashda xatolik");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEmailSubmit = async () => {
+    const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+    if (!isValid) {
+      Alert.alert("Xatolik", "To'g'ri email manzil kiriting");
+      return;
+    }
+    setEmailLoading(true);
+    try {
+      await api.post("/auth/forgot-password", { email: email.trim().toLowerCase() });
+    } catch {
+      // tarmoq/server xatosi bo'lsa ham xuddi shu generic xabar — akkaunt mavjudligini oshkor qilmaymiz
+    } finally {
+      setEmailLoading(false);
+    }
+    setEmailSent(true);
+  };
+
+  const goBack = () => {
+    if (method === "phone") {
+      if (phoneStep === "form") router.back();
+      else setPhoneStep("form");
+    } else {
+      if (emailSent) setEmailSent(false);
+      else router.back();
+    }
+  };
+
+  const showMethodSwitch = (method === "phone" && phoneStep === "form") || (method === "email" && !emailSent);
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: c.bg }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <ScrollView
-        contentContainerStyle={{ flexGrow: 1 }}
+        style={{ flex: 1, backgroundColor: c.bg }}
+        contentContainerStyle={{ flexGrow: 1, justifyContent: "center", paddingHorizontal: 22, paddingVertical: 36 }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* ── Header ── */}
-        <View style={{ paddingTop: 56, paddingHorizontal: 20, paddingBottom: 8 }}>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={{
-              width: 42, height: 42, borderRadius: 13,
-              backgroundColor: c.bgCard,
-              borderWidth: 1.5, borderColor: c.border,
-              alignItems: "center", justifyContent: "center",
-            }}
-          >
+        {/* Top bar: back */}
+        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 20 }}>
+          <TouchableOpacity onPress={goBack} activeOpacity={0.7} style={{ width: 42, height: 42, borderRadius: 14, borderWidth: 1, borderColor: c.border, alignItems: "center", justifyContent: "center" }}>
             <Ionicons name="arrow-back" size={20} color={c.text} />
           </TouchableOpacity>
         </View>
 
-        {/* ── Content ── */}
-        <View style={{ flex: 1, paddingHorizontal: 24, paddingTop: 28 }}>
-
-          {step === "input" ? (
-            <>
-              {/* Icon */}
-              <View style={{
-                width: 72, height: 72, borderRadius: 22,
-                backgroundColor: c.primary + "20",
-                alignItems: "center", justifyContent: "center",
-                marginBottom: 24,
-              }}>
-                <Ionicons name="lock-open-outline" size={34} color={c.primary} />
-              </View>
-
-              {/* Title */}
-              <Text style={{ color: c.text, fontSize: 28, fontWeight: "800", letterSpacing: -0.8, marginBottom: 8 }}>
-                Parolni tiklash
-              </Text>
-              <Text style={{ color: c.textMuted, fontSize: 14, lineHeight: 21, marginBottom: 32 }}>
-                Email manzilingizni kiriting — parolni tiklash havolasini yuboramiz.
-              </Text>
-
-              {/* Email input */}
-              <View style={{ marginBottom: 8 }}>
-                <Text style={{ color: c.primary, fontSize: 11, fontWeight: "700", marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                  Email manzil
-                </Text>
-                <View style={{
-                  flexDirection: "row", alignItems: "center",
-                  backgroundColor: c.bgCard,
-                  borderRadius: 14, paddingHorizontal: 16,
-                  borderWidth: 1.5,
-                  borderColor: error ? c.danger : email.length > 0 && !isValid ? c.warn : isValid ? c.primary : c.border,
-                  height: 56,
-                }}>
-                  <Ionicons
-                    name="mail-outline"
-                    size={18}
-                    color={isValid ? c.primary : c.textMuted}
-                    style={{ marginRight: 12 }}
-                  />
-                  <TextInput
-                    style={{ flex: 1, fontSize: 15, color: c.text }}
-                    placeholder="email@gmail.com"
-                    placeholderTextColor={c.textMuted}
-                    value={email}
-                    onChangeText={(v) => { setEmail(v); setError(""); }}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    autoFocus
-                  />
-                  {email.length > 0 && (
-                    <TouchableOpacity onPress={() => setEmail("")}>
-                      <Ionicons name="close-circle" size={18} color={c.textMuted} />
-                    </TouchableOpacity>
-                  )}
-                </View>
-                {error ? (
-                  <Text style={{ color: c.danger, fontSize: 12, marginTop: 6 }}>{error}</Text>
-                ) : email.length > 0 && !isValid ? (
-                  <Text style={{ color: c.warn, fontSize: 12, marginTop: 6 }}>To'g'ri email kiriting</Text>
-                ) : null}
-              </View>
-
-              {/* Submit */}
-              <TouchableOpacity
-                onPress={handleSubmit}
-                disabled={!isValid || loading}
-                style={{
-                  backgroundColor: isValid && !loading ? c.primary : c.bgMuted,
-                  borderRadius: 14, height: 56,
-                  alignItems: "center", justifyContent: "center",
-                  flexDirection: "row", gap: 10,
-                  marginTop: 20,
-                  shadowColor: c.primary,
-                  shadowOffset: { width: 0, height: 6 },
-                  shadowOpacity: isValid && !loading ? 0.35 : 0,
-                  shadowRadius: 10,
-                  elevation: isValid && !loading ? 6 : 0,
-                }}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#fff" size="small" />
-                ) : (
-                  <Ionicons
-                    name="send-outline"
-                    size={18}
-                    color={isValid ? "#fff" : c.textMuted}
-                  />
-                )}
-                <Text style={{
-                  color: isValid && !loading ? "#fff" : c.textMuted,
-                  fontWeight: "800", fontSize: 16,
-                }}>
-                  {loading ? "Yuborilmoqda..." : "Havola yuborish"}
-                </Text>
-              </TouchableOpacity>
-
-              {/* Back to login */}
-              <TouchableOpacity
-                onPress={() => router.back()}
-                style={{ alignItems: "center", marginTop: 20, paddingVertical: 12 }}
-              >
-                <Text style={{ color: c.textMuted, fontSize: 13 }}>
-                  Esladingizmi?{" "}
-                  <Text style={{ color: c.primary, fontWeight: "700" }}>Kirishga qaytish</Text>
-                </Text>
-              </TouchableOpacity>
-
-              {/* Info box */}
-              <View style={{
-                marginTop: 32, backgroundColor: c.bgCard,
-                borderRadius: 16, padding: 16,
-                borderWidth: 1.5, borderColor: c.border,
-                flexDirection: "row", gap: 12,
-              }}>
-                <Ionicons name="information-circle-outline" size={20} color={c.primary} style={{ marginTop: 1 }} />
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: c.text, fontSize: 13, fontWeight: "700", marginBottom: 4 }}>
-                    Email kelmasa nima qilish kerak?
-                  </Text>
-                  <Text style={{ color: c.textMuted, fontSize: 12, lineHeight: 18 }}>
-                    Spam papkasini tekshiring. Yoki{" "}
-                    <Text style={{ color: c.primary }}>support@savdo.uz</Text>
-                    {" "}ga murojaat qiling.
-                  </Text>
-                </View>
-              </View>
-            </>
-          ) : (
-            /* ── Sent state ── */
-            <View style={{ flex: 1, alignItems: "center", paddingTop: 40 }}>
-              {/* Success icon */}
-              <View style={{
-                width: 100, height: 100, borderRadius: 30,
-                backgroundColor: c.primary + "20",
-                alignItems: "center", justifyContent: "center",
-                marginBottom: 28,
-              }}>
-                <Ionicons name="checkmark-circle" size={52} color={c.primary} />
-              </View>
-
-              <Text style={{ color: c.text, fontSize: 26, fontWeight: "800", letterSpacing: -0.8, textAlign: "center", marginBottom: 12 }}>
-                Email yuborildi!
-              </Text>
-              <Text style={{ color: c.textMuted, fontSize: 14, lineHeight: 22, textAlign: "center", marginBottom: 8, paddingHorizontal: 8 }}>
-                <Text style={{ color: c.primary, fontWeight: "700" }}>{email}</Text>
-                {"\n"}manziliga parolni tiklash havolasi yuborildi.
-              </Text>
-              <Text style={{ color: c.textMuted, fontSize: 13, textAlign: "center", marginBottom: 40 }}>
-                Email 5 daqiqa ichida keladi.
-              </Text>
-
-              {/* Resend */}
-              <TouchableOpacity
-                onPress={() => setStep("input")}
-                style={{
-                  backgroundColor: c.bgCard, borderRadius: 14, height: 52,
-                  alignItems: "center", justifyContent: "center",
-                  flexDirection: "row", gap: 8,
-                  borderWidth: 1.5, borderColor: c.border,
-                  paddingHorizontal: 28, marginBottom: 14,
-                }}
-              >
-                <Ionicons name="refresh-outline" size={16} color={c.primary} />
-                <Text style={{ color: c.primary, fontWeight: "700", fontSize: 14 }}>
-                  Qayta yuborish
-                </Text>
-              </TouchableOpacity>
-
-              {/* Back to login */}
-              <TouchableOpacity
-                onPress={() => router.replace("/(auth)/login")}
-                style={{
-                  backgroundColor: c.primary, borderRadius: 14, height: 52,
-                  alignItems: "center", justifyContent: "center",
-                  flexDirection: "row", gap: 8,
-                  paddingHorizontal: 32,
-                  shadowColor: c.primary,
-                  shadowOffset: { width: 0, height: 6 },
-                  shadowOpacity: 0.35, shadowRadius: 10, elevation: 6,
-                }}
-              >
-                <Ionicons name="arrow-back-outline" size={16} color="#fff" />
-                <Text style={{ color: "#fff", fontWeight: "800", fontSize: 15 }}>
-                  Kirishga qaytish
-                </Text>
-              </TouchableOpacity>
-            </View>
-          )}
+        {/* Icon + Title */}
+        <View style={{ alignItems: "center", marginBottom: 20 }}>
+          <View style={{ width: 68, height: 68, borderRadius: 22, backgroundColor: c.primary + "20", alignItems: "center", justifyContent: "center", marginBottom: 14 }}>
+            <Ionicons name="lock-open-outline" size={32} color={c.primary} />
+          </View>
+          <Text style={{ fontSize: 24, fontWeight: "800", color: c.text }}>Parolni tiklash</Text>
         </View>
+
+        {/* Telefon / Email tanlovi — faqat boshlang'ich holatda ko'rinadi */}
+        {showMethodSwitch && (
+          <View style={{ flexDirection: "row", backgroundColor: c.bgMuted, borderRadius: 14, padding: 4, marginBottom: 20 }}>
+            <TouchableOpacity
+              onPress={() => setMethod("phone")}
+              style={{ flex: 1, paddingVertical: 10, borderRadius: 11, backgroundColor: method === "phone" ? c.primary : "transparent", alignItems: "center" }}
+            >
+              <Text style={{ color: method === "phone" ? "#fff" : c.textSub, fontWeight: "700", fontSize: 13 }}>Telefon</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setMethod("email")}
+              style={{ flex: 1, paddingVertical: 10, borderRadius: 11, backgroundColor: method === "email" ? c.primary : "transparent", alignItems: "center" }}
+            >
+              <Text style={{ color: method === "email" ? "#fff" : c.textSub, fontWeight: "700", fontSize: 13 }}>Email</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {method === "phone" ? (
+          <>
+            {/* ── FORM: telefon + yangi parol ── */}
+            {phoneStep === "form" && (
+              <View style={{ backgroundColor: c.bgCard, borderRadius: 24, borderWidth: 1, borderColor: c.border, padding: 24 }}>
+                <Text style={{ fontSize: 13, marginBottom: 20, lineHeight: 20, color: c.textMuted }}>
+                  Telefon raqamingiz va yangi parolni kiriting — tasdiqlash kodi Telegram orqali keladi.
+                </Text>
+                <Field
+                  label="Telefon" icon="call-outline" placeholder="+998 90 123 45 67"
+                  value={phone} onChangeText={(t) => setPhone(formatPhone(t))} keyboardType="phone-pad" c={c}
+                />
+                <Field
+                  label="Yangi parol" icon="lock-closed-outline" placeholder="Kamida 6 ta belgi"
+                  value={password} onChangeText={setPassword}
+                  secure showSecure={showPassword} onToggleSecure={() => setShowPassword(!showPassword)} c={c}
+                />
+                <View style={{ height: 8 }} />
+                <BigButton title="Kod olish" onPress={handlePhoneStart} loading={loading} color={c.primary} icon="arrow-forward" />
+              </View>
+            )}
+
+            {/* ── CONNECT: Telegram ulanmagan bo'lsa ── */}
+            {phoneStep === "connect" && (
+              <View style={{ backgroundColor: c.bgCard, borderRadius: 24, borderWidth: 1, borderColor: c.border, padding: 24 }}>
+                <View style={{ width: 80, height: 80, borderRadius: 26, alignSelf: "center", alignItems: "center", justifyContent: "center", marginBottom: 18, backgroundColor: TG_BLUE + "1F" }}>
+                  <Ionicons name="paper-plane" size={38} color={TG_BLUE} />
+                </View>
+                <Text style={{ fontSize: 20, fontWeight: "800", marginBottom: 6, color: c.text, textAlign: "center" }}>
+                  Telegram'ni ulang
+                </Text>
+                <Text style={{ fontSize: 13, marginBottom: 22, lineHeight: 20, color: c.textMuted, textAlign: "center" }}>
+                  Parol tiklash kodi bepul — Telegram orqali keladi. Avval raqamingizni botga ulang.
+                </Text>
+                <BigButton title="Telegram botni ochish" onPress={() => Linking.openURL(BOT_URL)} color={TG_BLUE} icon="paper-plane" />
+                <View style={{ height: 12 }} />
+                <BigButton title="Uladim — kod yuborish" onPress={sendPhoneCode} loading={loading} color={c.primary} icon="checkmark" />
+              </View>
+            )}
+
+            {/* ── OTP: kod tasdiqlash ── */}
+            {phoneStep === "otp" && (
+              <View style={{ backgroundColor: c.bgCard, borderRadius: 24, borderWidth: 1, borderColor: c.border, padding: 24 }}>
+                <View style={{ width: 80, height: 80, borderRadius: 26, alignSelf: "center", alignItems: "center", justifyContent: "center", marginBottom: 18, backgroundColor: c.primary + "1F" }}>
+                  <Ionicons name="shield-checkmark" size={38} color={c.primary} />
+                </View>
+                <Text style={{ fontSize: 20, fontWeight: "800", marginBottom: 6, color: c.text, textAlign: "center" }}>
+                  Tasdiqlash kodi
+                </Text>
+                <Text style={{ fontSize: 13, marginBottom: 6, lineHeight: 20, color: c.textMuted, textAlign: "center" }}>
+                  Telegram'ga yuborilgan 6 xonali kod
+                </Text>
+                <Text style={{ fontSize: 16, fontWeight: "800", textAlign: "center", marginBottom: 16, color: c.primary }}>{phone}</Text>
+
+                <OtpBoxes value={code} onChange={setCode} c={c} />
+
+                <View style={{ height: 24 }} />
+                <BigButton
+                  title="Parolni tiklash" onPress={handlePhoneVerify} loading={loading}
+                  disabled={code.length !== OTP_LEN} color={c.primary} icon="checkmark-circle"
+                />
+                <TouchableOpacity onPress={sendPhoneCode} disabled={loading} style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", marginTop: 18 }}>
+                  <Ionicons name="refresh" size={15} color={c.textMuted} />
+                  <Text style={{ color: c.textMuted, fontSize: 14, marginLeft: 6 }}>Kodni qayta yuborish</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </>
+        ) : (
+          /* ── EMAIL OQIMI ── */
+          <View style={{ backgroundColor: c.bgCard, borderRadius: 24, borderWidth: 1, borderColor: c.border, padding: 24 }}>
+            {!emailSent ? (
+              <>
+                <Text style={{ fontSize: 13, marginBottom: 20, lineHeight: 20, color: c.textMuted }}>
+                  Email manzilingizni kiriting — parolni tiklash havolasini yuboramiz.
+                </Text>
+                <Field
+                  label="Email" icon="mail-outline" placeholder="email@gmail.com"
+                  value={email} onChangeText={setEmail} keyboardType="email-address" c={c}
+                />
+                <View style={{ height: 8 }} />
+                <BigButton title="Havola yuborish" onPress={handleEmailSubmit} loading={emailLoading} color={c.primary} icon="send-outline" />
+              </>
+            ) : (
+              <View style={{ alignItems: "center" }}>
+                <Ionicons name="checkmark-circle" size={52} color={c.primary} style={{ marginBottom: 16 }} />
+                <Text style={{ fontSize: 18, fontWeight: "800", color: c.text, textAlign: "center", marginBottom: 8 }}>
+                  Email yuborildi
+                </Text>
+                <Text style={{ fontSize: 13, color: c.textMuted, textAlign: "center", marginBottom: 20, lineHeight: 20 }}>
+                  <Text style={{ color: c.primary, fontWeight: "700" }}>{email}</Text> manziliga tiklash havolasi yuborildi (5 daqiqa amal qiladi).
+                </Text>
+                <BigButton title="Kirishga qaytish" onPress={() => router.replace("/login")} color={c.primary} icon="arrow-back-outline" />
+              </View>
+            )}
+          </View>
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );

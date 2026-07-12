@@ -284,6 +284,8 @@ const uz = {
     error: "Xato",
     saveError: "Saqlashda xatolik",
     exportError: "Eksport qilib bo'lmadi",
+    comingSoon: "Tez kunda",
+    comingSoonMsg: "Bu bo'lim hozircha ishlab chiqilmoqda. Tez orada qo'shiladi.",
   },
 };
 

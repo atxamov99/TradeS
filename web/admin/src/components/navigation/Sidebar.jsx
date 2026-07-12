@@ -1,97 +1,87 @@
 import { NavLink } from "react-router-dom";
-import { getMenuForProfile } from "../../constants/menu";
+import { getMenuForProfile, settingsItem } from "../../constants/menu";
 import { useAuth } from "../../store";
-import { useI18n } from "../../i18n";
+import { Icon } from "../shared/Icon";
 
-// Simple icon map (text/emoji fallback until real icon lib added)
-const icons = {
-  home:     "⬜",
-  users:    "👥",
-  key:      "🔑",
-  document: "📄",
-  chart:    "📊",
-  orders:   "🛒",
-  products: "📦",
-  cog:      "⚙"
-};
+function NavItem({ item, onClose }) {
+  return (
+    <NavLink
+      to={item.path}
+      onClick={onClose}
+      end={item.path === "/dashboard"}
+      className={({ isActive }) =>
+        `flex items-center gap-3 mx-2 px-4 py-3 rounded-lg text-body-md transition-colors ${
+          isActive
+            ? "bg-primary-container text-on-primary-container font-semibold"
+            : "text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"
+        }`
+      }
+    >
+      {({ isActive }) => (
+        <>
+          <Icon name={item.icon} fill={isActive} />
+          <span>{item.label}</span>
+        </>
+      )}
+    </NavLink>
+  );
+}
 
 export function Sidebar({ open, onClose }) {
   const { profile } = useAuth();
-  const { t } = useI18n();
   const menu = getMenuForProfile(profile);
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop (mobile) */}
       <div
-        className={`fixed inset-0 bg-black/40 z-20 transition-opacity duration-200 lg:hidden
+        className={`fixed inset-0 bg-inverse-surface/40 z-20 transition-opacity duration-200 lg:hidden
           ${open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
         onClick={onClose}
       />
 
       {/* Sidebar panel */}
       <aside
-        className={`fixed top-0 left-0 h-full w-64 bg-[#0e2037] text-white z-30 flex flex-col
+        className={`fixed top-0 left-0 h-full w-[280px] bg-surface border-r border-outline-variant z-30 flex flex-col py-6
           sidebar-slide lg:relative lg:translate-x-0
           ${open ? "translate-x-0" : "-translate-x-full"}`}
       >
         {/* Brand */}
-        <div className="flex items-center gap-3 px-5 py-5 border-b border-white/10">
-          <img
-            src="/logo-dark.png"
-            alt="TradeS"
-            className="w-9 h-9 rounded-xl object-contain shrink-0"
-          />
+        <div className="px-6 mb-8 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-surface-container-lowest border border-outline-variant flex items-center justify-center overflow-hidden shrink-0">
+            <img src="/logo.png" alt="TradeS" className="w-full h-full object-contain" />
+          </div>
           <div className="min-w-0">
-            <p className="font-semibold text-sm leading-tight truncate">{t("app.name")}</p>
+            <h1 className="font-display-lg text-primary font-bold leading-tight text-xl truncate">TradeS</h1>
+            <p className="font-label-caps text-label-caps text-on-surface-variant">Savdo boshqaruvi</p>
           </div>
         </div>
 
         {/* Profile */}
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-white/10">
-          <div className="w-8 h-8 rounded-full bg-primary/60 flex items-center justify-center text-xs font-bold shrink-0">
-            {profile?.avatar || "A"}
-          </div>
-          <div className="min-w-0">
-            <p className="text-sm font-medium leading-tight truncate">{profile?.name}</p>
-            <p className="text-xs text-white/40 mt-0.5 truncate">
-              {profile?.isPrimary ? t("labels.roles.super_admin") : t("labels.roles.admin")}
-            </p>
+        <div className="px-4 mb-4">
+          <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-surface-container-low border border-outline-variant">
+            <div className="w-9 h-9 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center text-xs font-bold shrink-0">
+              {profile?.avatar || "A"}
+            </div>
+            <div className="min-w-0">
+              <p className="text-body-sm font-semibold text-on-surface leading-tight truncate">{profile?.name}</p>
+              <p className="text-xs text-on-surface-variant leading-tight truncate mt-0.5">
+                {profile?.isPrimary ? "SUPER ADMIN" : "ADMIN"}
+              </p>
+            </div>
           </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto py-3 px-3">
+        <nav className="flex-1 overflow-y-auto px-2 space-y-1">
           {menu.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              onClick={onClose}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-xl mb-1 text-sm transition-colors
-                ${isActive
-                  ? "bg-white/15 text-white font-medium"
-                  : "text-white/60 hover:bg-white/8 hover:text-white"
-                }`
-              }
-            >
-              <span className="text-base w-5 text-center opacity-80">{icons[item.icon] || "·"}</span>
-              <div className="min-w-0">
-                <span className="block leading-tight">{t(`navigation.menu.${item.key}.label`)}</span>
-                <span className="block text-xs opacity-50 leading-tight mt-0.5">{t(`navigation.menu.${item.key}.description`)}</span>
-              </div>
-            </NavLink>
+            <NavItem key={item.path} item={item} onClose={onClose} />
           ))}
         </nav>
 
-        {/* Bottom badge */}
-        <div className="px-5 py-4 border-t border-white/10">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-green-400 shrink-0" />
-            <span className="text-xs text-white/40">
-              {profile?.email}
-            </span>
-          </div>
+        {/* Settings pinned bottom */}
+        <div className="px-2 mt-4 pt-4 border-t border-outline-variant">
+          <NavItem item={settingsItem} onClose={onClose} />
         </div>
       </aside>
     </>

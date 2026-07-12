@@ -1,87 +1,75 @@
-import { useLocation } from "react-router-dom";
 import { useI18n } from "../../i18n";
 import { useAuth } from "../../store";
-import { useTheme } from "../../theme";
-
-const pathKeyMap = {
-  "/dashboard": "dashboard",
-  "/users": "users",
-  "/admins": "admins",
-  "/content": "content",
-  "/reports": "reports",
-  "/settings": "settings",
-  "/customers": "users",
-  "/orders": "orders",
-  "/products": "products"
-};
+import { Icon } from "../shared/Icon";
 
 export function Header({ onMenuToggle }) {
-  const location = useLocation();
   const { logout, profile } = useAuth();
   const { locale, setLocale, supportedLocales, t } = useI18n();
-  const { theme, toggleTheme } = useTheme();
-
-  const pathKey = "/" + location.pathname.split("/")[1];
-  const metaKey = pathKeyMap[pathKey] || "fallback";
-  const meta = {
-    title: t(`navigation.menu.${metaKey}.label`, {}, t("navigation.pageMeta.fallback.title")),
-    sub: t(`navigation.pageMeta.${metaKey}.eyebrow`, {}, "")
-  };
 
   return (
-    <header className="sticky top-0 z-10 bg-[#0f1a2d]/90 backdrop-blur border-b border-slate-700/70 text-white">
-      <div className="flex items-center justify-between gap-4 px-4 md:px-6 h-14">
-        <div className="flex items-center gap-3 min-w-0">
-          <button
-            type="button"
-            onClick={onMenuToggle}
-            className="lg:hidden p-2 rounded-lg text-white/70 hover:bg-white/10 transition-colors"
-            aria-label={t("common.menu")}
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
-          <div className="min-w-0">
-            <h1 className="text-base font-semibold text-white leading-tight truncate">{meta.title}</h1>
-            {meta.sub && <p className="text-xs text-gray-200 leading-tight hidden sm:block">{meta.sub}</p>}
-          </div>
+    <header className="h-16 sticky top-0 z-10 bg-surface/80 backdrop-blur-md border-b border-outline-variant flex justify-between items-center px-4 md:px-8">
+      {/* Left: menu (mobile) + search */}
+      <div className="flex items-center gap-3 min-w-0 flex-1">
+        <button
+          type="button"
+          onClick={onMenuToggle}
+          className="lg:hidden p-2 rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors"
+          aria-label={t("common.menu", {}, "Menyu")}
+        >
+          <Icon name="menu" />
+        </button>
+        <div className="relative w-full max-w-md hidden sm:block">
+          <Icon
+            name="search"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none text-[20px]"
+          />
+          <input
+            type="text"
+            placeholder={t("common.search", {}, "Qidiruv...")}
+            className="w-full pl-10 pr-4 py-2 bg-surface-container-low border border-outline-variant rounded-full text-body-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+          />
+        </div>
+      </div>
+
+      {/* Right: language, notifications, logout, profile */}
+      <div className="flex items-center gap-3 md:gap-5 shrink-0">
+        <div className="hidden sm:flex items-center gap-1 rounded-full bg-surface-container-low border border-outline-variant px-1 py-1 text-xs">
+          {supportedLocales.map((code) => (
+            <button
+              key={code}
+              type="button"
+              onClick={() => setLocale(code)}
+              className={`rounded-full px-2.5 py-1 font-semibold uppercase transition-colors ${
+                locale === code
+                  ? "bg-primary-container text-on-primary-container"
+                  : "text-on-surface-variant hover:text-on-surface"
+              }`}
+            >
+              {code}
+            </button>
+          ))}
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          {profile?.isPrimary && (
-            <span className="hidden sm:flex items-center gap-1.5 text-xs font-medium text-primary bg-primary/8 px-3 py-1 rounded-full">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-              {t("labels.roles.super_admin")}
-            </span>
-          )}
+        <button
+          type="button"
+          className="relative text-on-surface-variant hover:text-primary transition-colors"
+          aria-label="Bildirishnomalar"
+        >
+          <Icon name="notifications" />
+          <span className="absolute top-0 right-0 w-2 h-2 bg-error rounded-full" />
+        </button>
 
-          <div className="flex items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-2 py-1 text-xs">
-            <span className="hidden sm:inline text-white/70">{t("common.language")}:</span>
-            {supportedLocales.map((code) => (
-              <button
-                key={code}
-                type="button"
-                onClick={() => setLocale(code)}
-                className={`rounded-md px-2 py-1 transition-colors font-medium ${
-                  locale === code
-                    ? "bg-primary text-white"
-                    : "text-white/80 hover:bg-white/20 hover:text-white"
-                }`}
-                aria-label={`${t("common.language")}: ${t(`languages.${code}`)}`}
-              >
-                {t(`languages.${code}`)}
-              </button>
-            ))}
-          </div>
+        <button
+          type="button"
+          onClick={logout}
+          className="hidden sm:flex items-center gap-1.5 text-body-sm text-on-surface-variant hover:text-error transition-colors"
+        >
+          <Icon name="logout" className="text-[20px]" />
+          <span className="hidden md:inline">{t("common.signOut", {}, "Chiqish")}</span>
+        </button>
 
-          <button
-            type="button"
-            onClick={logout}
-            className="text-sm text-gray-500 hover:text-danger transition-colors px-2 py-1"
-          >
-            {t("common.signOut")}
-          </button>
+        <div className="w-9 h-9 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center text-xs font-bold border border-outline-variant shrink-0">
+          {profile?.avatar || "A"}
         </div>
       </div>
     </header>

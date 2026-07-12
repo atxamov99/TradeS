@@ -1,14 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { Modal } from "../../components/shared/Modal";
+import { Icon } from "../../components/shared/Icon";
 import { useAuth } from "../../store";
 import { useAdminData } from "../../store/adminData";
 import { useI18n } from "../../i18n";
 
 const statusStyle = {
-  active:  "bg-green-100 text-green-700",
-  pending: "bg-yellow-100 text-yellow-700",
-  blocked: "bg-red-100 text-red-700"
+  active:  "bg-primary-container/20 text-on-primary-container",
+  pending: "bg-[#fef3c7] text-[#92400e]",
+  blocked: "bg-error-container text-on-error-container"
+};
+
+const roleStyle = {
+  super_admin: "bg-secondary-fixed text-on-secondary-fixed",
+  admin: "bg-surface-variant text-on-surface",
+  user: "bg-[#E5E7EB] text-[#4B5563]"
 };
 
 const empty = { name: "", email: "", phone: "", role: "USER", status: "active", password: "" };
@@ -21,10 +28,6 @@ export function UsersPage() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
 
-  // Tab /admins route'i orqali yoki ?tab=admins query bilan aniqlanadi (sidebar
-  // to'g'ridan-to'g'ri /admins ga navigate qiladi, shuning uchun pathname aynan
-  // shu bo'yicha, na query orqali tekshiriladi — aks holda sidebar/header
-  // "Foydalanuvchilar" bo'lib qolib qolaverardi).
   const isAdminsRoute = location.pathname === "/admins" || searchParams.get("tab") === "admins";
   const [activeTab, setActiveTab] = useState(() => (isAdminsRoute ? "admins" : "users"));
 
@@ -41,16 +44,11 @@ export function UsersPage() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [grantTarget, setGrantTarget] = useState(null);
 
-  // Foydalanuvchilar — faqat role === "user" bo'lganlar (adminlar alohida tabda)
   const regularUsers = useMemo(
     () => users.filter((u) => u.role === "user" || (u.role !== "admin" && u.role !== "super_admin")),
     [users]
   );
-
-  // Adminlar — admins state dan (ADMIN, SUPER_ADMIN rollar)
-  const allAdmins = useMemo(() => {
-    return admins.filter((a) => !a.isPrimary);
-  }, [admins]);
+  const allAdmins = useMemo(() => admins.filter((a) => !a.isPrimary), [admins]);
 
   const filteredUsers = useMemo(
     () =>
@@ -65,11 +63,7 @@ export function UsersPage() {
   );
 
   const filteredAdmins = useMemo(
-    () =>
-      allAdmins.filter((a) => {
-        const q = search.toLowerCase();
-        return [a.name, a.phone].join(" ").toLowerCase().includes(q);
-      }),
+    () => allAdmins.filter((a) => [a.name, a.phone].join(" ").toLowerCase().includes(search.toLowerCase())),
     [allAdmins, search]
   );
 
@@ -84,285 +78,248 @@ export function UsersPage() {
   function handleSubmit(e) {
     e.preventDefault();
     const payload = { ...form };
-    // Bu forma faqat oddiy foydalanuvchilar (role=USER) uchun — admin huquqi
-    // "Admin qilish" tugmasi orqali alohida beriladi, shuning uchun rol har doim
-    // USER bo'lib qoladi (backend Role enum'ida viewer/editor/manager kabi
-    // qiymatlar yo'q, shuning uchun ularni yuborish xatoga olib kelardi).
     payload.role = "USER";
     if (!payload.email) delete payload.email;
     if (!payload.phone) delete payload.phone;
-    if (editId) {
-      updateUser(editId, payload);
-    } else {
-      createUser(payload);
-    }
+    if (editId) updateUser(editId, payload);
+    else createUser(payload);
     closeModal();
   }
 
+  const isAdminsTab = activeTab === "admins" && isPrimary;
+  const rows = isAdminsTab ? filteredAdmins : filteredUsers;
+
   return (
-    <div className="space-y-5">
-      <div className="bg-white rounded-2xl shadow-card overflow-hidden">
-        {/* Header + Tabs */}
-        <div className="px-5 py-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <h2 className="font-semibold text-gray-900">
-              {activeTab === "users" ? t("users.title") : t("navigation.menu.admins.label")}
-            </h2>
-            <p className="text-xs text-gray-400 mt-0.5">
-              {activeTab === "users"
-                ? t("navigation.pageMeta.users.eyebrow", {}, "Foydalanuvchilar va ularning huquqlari")
-                : "Tizim adminlari ro'yxati va boshqaruvi"}
-            </p>
-          </div>
+    <div className="space-y-section-gap">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+        <div>
+          <h2 className="font-headline-md text-headline-md text-on-surface">
+            {isAdminsTab ? "Adminlar" : "Foydalanuvchilar"}
+          </h2>
+          <p className="text-on-surface-variant mt-1 text-body-sm">
+            {isAdminsTab ? "Tizim adminlari ro'yxati va boshqaruvi" : "Tizimdagi barcha foydalanuvchilar ro'yxati va ularning huquqlari."}
+          </p>
+        </div>
+        {!isAdminsTab && (
           <button
             type="button"
             onClick={openCreate}
-            className="px-4 py-2 bg-primary hover:bg-primary-dark text-white text-sm font-medium rounded-xl transition-colors shrink-0"
+            className="flex items-center gap-2 bg-primary-container hover:bg-primary text-on-primary-container hover:text-on-primary transition-colors rounded-lg py-2.5 px-5 font-semibold shadow-sm shrink-0"
           >
-            + {t("users.createUser")}
+            <Icon name="add" className="text-[20px]" />
+            Yangi foydalanuvchi
           </button>
-        </div>
+        )}
+      </div>
 
-        {/* In-page tabs olib tashlandi — Foydalanuvchilar/Adminlar ko'rinishi endi faqat
-            yon menyu (sidebar) orqali boshqariladi. activeTab URL (?tab=admins) bilan
-            aniqlanadi, shuning uchun ikkala ko'rinish ham ishlaydi, lekin chalkash
-            takroriy tab paneli ko'rsatilmaydi. */}
-
-        {/* Filters */}
-        <div className="flex flex-wrap items-center gap-2 px-5 py-3 bg-gray-50 border-b border-gray-100">
+      {/* Filters */}
+      <div className="bg-surface-bright border border-outline-variant rounded-xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between">
+        <div className="relative w-full md:w-96">
+          <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]" />
           <input
             type="search"
-            placeholder={t("users.searchPlaceholder")}
+            placeholder={isAdminsTab ? "Admin qidirish..." : "Foydalanuvchini qidirish..."}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 min-w-[160px] px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white"
+            className="w-full pl-10 pr-3 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-on-surface text-body-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
           />
-          {activeTab === "users" && (
-            <>
-              <select
-                value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value)}
-                className="px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-primary/20 bg-white"
-              >
-                <option value="all">{t("users.allRoles")}</option>
-                <option value="manager">{t("labels.roles.manager")}</option>
-                <option value="editor">{t("labels.roles.editor")}</option>
-                <option value="viewer">{t("labels.roles.viewer")}</option>
-                <option value="customer_support">{t("labels.roles.customer_support")}</option>
-              </select>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-primary/20 bg-white"
-              >
-                <option value="all">{t("users.allStatuses")}</option>
-                <option value="active">{t("labels.statuses.active")}</option>
-                <option value="pending">{t("labels.statuses.pending")}</option>
-                <option value="blocked">{t("labels.statuses.blocked")}</option>
-              </select>
-            </>
-          )}
-          <button
-            type="button"
-            onClick={() => { setSearch(""); setRoleFilter("all"); setStatusFilter("all"); }}
-            className="px-3 py-2 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-white transition-colors"
-          >
-            {t("common.clearFilters")}
-          </button>
         </div>
-
-        {/* Table — Users tab */}
-        {activeTab === "users" && (
-          <div className="table-scroll">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100">
-                  {[t("users.tableUser"), t("users.tableRole"), t("users.tableStatus"), t("users.tableCreated"), t("users.tableLastLogin"),
-                    ...(isPrimary ? [t("labels.roles.admin")] : []),
-                    t("common.actions")
-                  ].map((h) => (
-                    <th key={h} className="text-left text-xs font-medium text-gray-400 px-4 py-3 whitespace-nowrap">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filteredUsers.map((u) => (
-                  <tr key={u.id} className="border-b border-gray-50 transition-colors">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 text-primary font-semibold text-xs flex items-center justify-center shrink-0">
-                          {u.name.slice(0, 2).toUpperCase()}
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900">{u.name}</p>
-                          <p className="text-xs text-gray-400">{u.email}</p>
-                          <p className="text-xs text-gray-300">{u.phone}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">
-                        {t(`labels.roles.${u.role}`, {}, u.role)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${statusStyle[u.status] || "bg-gray-100 text-gray-600"}`}>
-                        {t(`labels.statuses.${u.status}`, {}, u.status)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">{u.createdAt}</td>
-                    <td className="px-4 py-3 text-xs text-gray-400 whitespace-nowrap">
-                      {u.lastLogin || t("time.never")}
-                    </td>
-
-                    {isPrimary && (
-                      <td className="px-4 py-3">
-                        <button
-                          type="button"
-                          onClick={() => setGrantTarget({ user: u, action: "grant" })}
-                          className="text-xs text-primary hover:text-primary-dark font-medium transition-colors"
-                        >
-                          + Admin qilish
-                        </button>
-                      </td>
-                    )}
-
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <Link to={`/users/${u.id}`} className="text-xs text-primary hover:underline">{t("common.view")}</Link>
-                        <button type="button" onClick={() => openEdit(u)} className="text-xs text-gray-500 hover:text-gray-800">{t("common.edit")}</button>
-                        <button
-                          type="button"
-                          onClick={() => toggleUserStatus(u.id)}
-                          className={`text-xs ${u.status === "blocked" ? "text-green-600 hover:text-green-800" : "text-orange-500 hover:text-orange-700"}`}
-                        >
-                          {u.status === "blocked" ? t("users.unblock") : t("users.block")}
-                        </button>
-                        <button type="button" onClick={() => setDeleteTarget(u)} className="text-xs text-danger hover:text-red-700">{t("common.delete")}</button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {!filteredUsers.length && (
-              <div className="py-16 text-center">
-                <p className="text-gray-400 text-sm">{t("users.noUsers")}</p>
-                <p className="text-gray-300 text-xs mt-1">{t("users.noUsersDescription")}</p>
-              </div>
-            )}
-            <div className="px-5 py-3 border-t border-gray-100 text-xs text-gray-400">
-              {filteredUsers.length} foydalanuvchi
-            </div>
+        {!isAdminsTab && (
+          <div className="w-full md:w-auto flex items-center gap-3">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full md:w-48 px-4 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-on-surface text-body-sm focus:outline-none focus:border-primary cursor-pointer"
+            >
+              <option value="all">Barcha holatlar</option>
+              <option value="active">Faol</option>
+              <option value="pending">Kutilmoqda</option>
+              <option value="blocked">Bloklangan</option>
+            </select>
           </div>
         )}
+      </div>
 
-        {/* Table — Admins tab */}
-        {activeTab === "admins" && isPrimary && (
-          <div className="table-scroll">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100">
-                  {["Admin", "Telefon", "Status", "Oxirgi kirish", "Yaratilgan", "Amallar"].map((h) => (
-                    <th key={h} className="text-left text-xs font-medium text-gray-400 px-4 py-3 whitespace-nowrap">{h}</th>
-                  ))}
+      {/* Table */}
+      <div className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-outline-variant">
+            <thead className="bg-surface-bright">
+              <tr>
+                {(isAdminsTab
+                  ? ["Admin", "Telefon", "Holat", "Yaratilgan", "Amallar"]
+                  : ["Foydalanuvchi", "Telefon", "Rol", "Holat", "Ro'yxatdan o'tgan", "Amallar"]
+                ).map((h, i, arr) => (
+                  <th
+                    key={h}
+                    className={`px-6 py-4 font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider ${i === arr.length - 1 ? "text-right" : "text-left"}`}
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-outline-variant">
+              {rows.length === 0 ? (
+                <tr>
+                  <td colSpan={isAdminsTab ? 5 : 6} className="py-16 text-center">
+                    <p className="text-on-surface-variant text-body-sm">{isAdminsTab ? "Hozircha boshqa adminlar yo'q" : "Foydalanuvchi topilmadi"}</p>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {filteredAdmins.map((admin) => (
-                  <tr key={admin.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 text-primary font-semibold text-xs flex items-center justify-center shrink-0">
+              ) : isAdminsTab ? (
+                filteredAdmins.map((admin) => (
+                  <tr key={admin.id} className="hover:bg-surface-container-lowest transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full bg-primary-container/20 text-on-primary-container flex items-center justify-center font-bold text-xs shrink-0">
                           {admin.name.slice(0, 2).toUpperCase()}
                         </div>
-                        <p className="font-medium text-gray-900">{admin.name}</p>
+                        <span className="text-body-sm font-semibold text-on-surface">{admin.name}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-xs text-gray-500">{admin.phone || "—"}</td>
-                    <td className="px-4 py-3">
-                      <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${statusStyle[admin.status] || "bg-gray-100 text-gray-600"}`}>
-                        {t(`labels.statuses.${admin.status}`, {}, admin.status)}
+                    <td className="px-6 py-4 text-body-sm text-on-surface">{admin.phone || "—"}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2.5 inline-flex text-xs leading-5 font-semibold rounded-full ${statusStyle[admin.status] || "bg-surface-variant text-on-surface"}`}>
+                        {admin.status === "blocked" ? "Bloklangan" : "Faol"}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">{admin.lastLogin || "—"}</td>
-                    <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">{admin.createdAt || "—"}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
+                    <td className="px-6 py-4 text-body-sm text-on-surface-variant whitespace-nowrap">{admin.createdAt || "—"}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                      <div className="flex items-center justify-end gap-3">
                         <button
                           type="button"
                           onClick={() => toggleAdminStatus(admin.id)}
-                          className={`text-xs font-medium ${admin.status === "blocked" ? "text-green-600 hover:text-green-800" : "text-orange-500 hover:text-orange-700"}`}
+                          className={`p-1 transition-colors ${admin.status === "blocked" ? "text-primary hover:text-primary/70" : "text-on-surface-variant hover:text-error"}`}
+                          title={admin.status === "blocked" ? "Faollashtirish" : "Bloklash"}
                         >
-                          {admin.status === "blocked" ? "Faollashtirish" : "Bloklash"}
+                          <Icon name={admin.status === "blocked" ? "lock_open" : "block"} className="text-xl" />
                         </button>
                         <button
                           type="button"
                           onClick={() => setGrantTarget({ user: admin, action: "revoke" })}
-                          className="text-xs text-danger hover:text-red-700"
+                          className="p-1 text-on-surface-variant hover:text-error transition-colors"
+                          title="Adminlikdan olish"
                         >
-                          Adminlikdan olish
+                          <Icon name="person_remove" className="text-xl" />
                         </button>
                       </div>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-            {!filteredAdmins.length && (
-              <div className="py-16 text-center">
-                <p className="text-gray-400 text-sm">Hozircha boshqa adminlar yo'q</p>
-                <p className="text-gray-300 text-xs mt-1">Foydalanuvchilar tabida "Admin qilish" orqali yangi admin qo'shing</p>
-              </div>
-            )}
-            <div className="px-5 py-3 border-t border-gray-100 text-xs text-gray-400">
-              {filteredAdmins.length} admin
-            </div>
-          </div>
-        )}
+                ))
+              ) : (
+                filteredUsers.map((u) => (
+                  <tr key={u.id} className="hover:bg-surface-container-lowest transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full bg-surface-container text-on-surface-variant flex items-center justify-center font-bold text-xs shrink-0">
+                          {u.name.slice(0, 2).toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-body-sm font-semibold text-on-surface">{u.name}</div>
+                          <div className="text-body-sm text-on-surface-variant">{u.email || "—"}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-body-sm text-on-surface whitespace-nowrap">{u.phone || "—"}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2.5 inline-flex text-xs leading-5 font-semibold rounded-full ${roleStyle[u.role] || "bg-surface-variant text-on-surface"}`}>
+                        {(u.role || "user").toUpperCase()}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2.5 inline-flex text-xs leading-5 font-semibold rounded-full ${statusStyle[u.status] || "bg-surface-variant text-on-surface"}`}>
+                        {t(`labels.statuses.${u.status}`, {}, u.status === "blocked" ? "Bloklangan" : "Faol")}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-body-sm text-on-surface-variant whitespace-nowrap">{u.createdAt || "—"}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Link to={`/users/${u.id}`} className="p-1 text-on-surface-variant hover:text-primary transition-colors" title="Ko'rish">
+                          <Icon name="visibility" className="text-xl" />
+                        </Link>
+                        <button type="button" onClick={() => openEdit(u)} className="p-1 text-on-surface-variant hover:text-secondary transition-colors" title="Tahrirlash">
+                          <Icon name="edit" className="text-xl" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => toggleUserStatus(u.id)}
+                          className={`p-1 transition-colors ${u.status === "blocked" ? "text-primary hover:text-primary/70" : "text-on-surface-variant hover:text-error"}`}
+                          title={u.status === "blocked" ? "Blokdan chiqarish" : "Bloklash"}
+                        >
+                          <Icon name={u.status === "blocked" ? "lock_open" : "block"} className="text-xl" />
+                        </button>
+                        {isPrimary && (
+                          <button
+                            type="button"
+                            onClick={() => setGrantTarget({ user: u, action: "grant" })}
+                            className="p-1 text-on-surface-variant hover:text-primary transition-colors"
+                            title="Admin qilish"
+                          >
+                            <Icon name="admin_panel_settings" className="text-xl" />
+                          </button>
+                        )}
+                        <button type="button" onClick={() => setDeleteTarget(u)} className="p-1 text-on-surface-variant hover:text-error transition-colors" title="O'chirish">
+                          <Icon name="delete" className="text-xl" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+        <div className="bg-surface-container-lowest px-6 py-3 border-t border-outline-variant text-body-sm text-on-surface-variant">
+          Jami <span className="font-medium text-on-surface">{rows.length}</span> ta
+        </div>
       </div>
 
       {/* Create / Edit modal */}
       <Modal
         open={modalOpen}
-        title={editId ? t("users.editUser") : t("users.createUserModal")}
+        title={editId ? "Foydalanuvchini tahrirlash" : "Yangi foydalanuvchi"}
         onClose={closeModal}
         footer={
           <>
-            <button type="button" onClick={closeModal} className="px-4 py-2 text-sm border border-gray-200 rounded-xl hover:bg-gray-50">{t("common.cancel")}</button>
-            <button type="submit" form="user-form" className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-xl hover:bg-primary-dark">
-              {editId ? t("common.saveChanges") : t("common.create")}
+            <button type="button" onClick={closeModal} className="px-5 py-2.5 text-body-sm border border-outline-variant rounded-lg hover:bg-surface-container-low text-on-surface">Bekor qilish</button>
+            <button type="submit" form="user-form" className="px-5 py-2.5 bg-primary-container text-on-primary-container text-body-sm font-medium rounded-lg hover:bg-primary hover:text-on-primary transition-colors">
+              {editId ? "Saqlash" : "Yaratish"}
             </button>
           </>
         }
       >
-        <form id="user-form" onSubmit={handleSubmit} className="space-y-3">
+        <form id="user-form" onSubmit={handleSubmit} className="space-y-4">
           {[
-            { label: t("users.fullName"), name: "name", type: "text", required: true },
-            { label: t("common.email") + " (ixtiyoriy)", name: "email", type: "email", required: false },
-            { label: t("common.phone") + " (ixtiyoriy)", name: "phone", type: "text", required: false },
-            { label: editId ? t("common.password") + " (bo'sh qoldirsangiz o'zgarmaydi)" : t("common.password") + " *", name: "password", type: "password", required: !editId }
+            { label: "To'liq ism", name: "name", type: "text", required: true },
+            { label: "Email (ixtiyoriy)", name: "email", type: "email", required: false },
+            { label: "Telefon (ixtiyoriy)", name: "phone", type: "text", required: false },
+            { label: editId ? "Parol (bo'sh — o'zgarmaydi)" : "Parol *", name: "password", type: "password", required: !editId }
           ].map((f) => (
-            <div key={f.name}>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{f.label}</label>
+            <div key={f.name} className="flex flex-col gap-1.5">
+              <label className="text-body-sm font-medium text-on-surface">{f.label}</label>
               <input
                 type={f.type}
                 name={f.name}
                 value={form[f.name] || ""}
                 onChange={(e) => setForm((c) => ({ ...c, [e.target.name]: e.target.value }))}
                 required={f.required}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                className="w-full px-4 py-2.5 bg-surface border border-outline-variant rounded-lg text-on-surface font-body-md focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
               />
             </div>
           ))}
-          <p className="text-xs text-gray-400">* Email yoki telefon raqamdan kamida bittasi to'ldirilishi shart</p>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t("common.status")}</label>
-            <select name="status" value={form.status} onChange={(e) => setForm((c) => ({ ...c, status: e.target.value }))}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 bg-white">
-              <option value="active">{t("labels.statuses.active")}</option>
-              <option value="pending">{t("labels.statuses.pending")}</option>
-              <option value="blocked">{t("labels.statuses.blocked")}</option>
+          <p className="text-xs text-on-surface-variant">* Email yoki telefondan kamida bittasi to'ldirilishi shart</p>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-body-sm font-medium text-on-surface">Holat</label>
+            <select
+              name="status"
+              value={form.status}
+              onChange={(e) => setForm((c) => ({ ...c, status: e.target.value }))}
+              className="w-full px-4 py-2.5 bg-surface border border-outline-variant rounded-lg text-on-surface font-body-md focus:outline-none focus:border-primary cursor-pointer"
+            >
+              <option value="active">Faol</option>
+              <option value="pending">Kutilmoqda</option>
+              <option value="blocked">Bloklangan</option>
             </select>
           </div>
         </form>
@@ -371,26 +328,26 @@ export function UsersPage() {
       {/* Delete confirm */}
       <Modal
         open={Boolean(deleteTarget)}
-        title={t("users.deleteUser")}
-        description={deleteTarget ? t("users.deleteUserConfirm", { name: deleteTarget.name }) : ""}
+        title="Foydalanuvchini o'chirish"
+        description={deleteTarget ? `"${deleteTarget.name}"` : ""}
         onClose={() => setDeleteTarget(null)}
         footer={
           <>
-            <button type="button" onClick={() => setDeleteTarget(null)} className="px-4 py-2 text-sm border border-gray-200 rounded-xl hover:bg-gray-50">{t("common.cancel")}</button>
+            <button type="button" onClick={() => setDeleteTarget(null)} className="px-5 py-2.5 text-body-sm border border-outline-variant rounded-lg hover:bg-surface-container-low text-on-surface">Bekor qilish</button>
             <button
               type="button"
               onClick={() => { deleteUser(deleteTarget.id); setDeleteTarget(null); }}
-              className="px-4 py-2 bg-danger text-white text-sm font-medium rounded-xl hover:bg-red-700"
+              className="px-5 py-2.5 bg-error text-on-error text-body-sm font-medium rounded-lg hover:bg-error/90"
             >
-              {t("common.delete")}
+              O'chirish
             </button>
           </>
         }
       >
-        <p className="text-sm text-gray-500">{t("users.deleteUserDescription")}</p>
+        <p className="text-body-sm text-on-surface-variant">Bu amalni qaytarib bo'lmaydi. Foydalanuvchi tarixi saqlanishi mumkin.</p>
       </Modal>
 
-      {/* Grant / Revoke admin confirm */}
+      {/* Grant / Revoke admin */}
       <Modal
         open={Boolean(grantTarget)}
         title={grantTarget?.action === "grant" ? "Admin huquqini berish" : "Admin huquqini olish"}
@@ -398,28 +355,24 @@ export function UsersPage() {
         onClose={() => setGrantTarget(null)}
         footer={
           <>
-            <button type="button" onClick={() => setGrantTarget(null)} className="px-4 py-2 text-sm border border-gray-200 rounded-xl hover:bg-gray-50">{t("common.cancel")}</button>
+            <button type="button" onClick={() => setGrantTarget(null)} className="px-5 py-2.5 text-body-sm border border-outline-variant rounded-lg hover:bg-surface-container-low text-on-surface">Bekor qilish</button>
             <button
               type="button"
               onClick={async () => {
-                if (grantTarget.action === "grant") {
-                  await grantAdminToUser(grantTarget.user.id);
-                } else {
-                  await revokeAdminFromUser(grantTarget.user.id);
-                }
+                if (grantTarget.action === "grant") await grantAdminToUser(grantTarget.user.id);
+                else await revokeAdminFromUser(grantTarget.user.id);
                 setGrantTarget(null);
               }}
-              className={`px-4 py-2 text-white text-sm font-medium rounded-xl transition-colors
-                ${grantTarget?.action === "grant" ? "bg-primary hover:bg-primary-dark" : "bg-orange-500 hover:bg-orange-600"}`}
+              className={`px-5 py-2.5 text-body-sm font-medium rounded-lg transition-colors ${grantTarget?.action === "grant" ? "bg-primary-container text-on-primary-container hover:bg-primary hover:text-on-primary" : "bg-error text-on-error hover:bg-error/90"}`}
             >
               {grantTarget?.action === "grant" ? "Admin qilish" : "Adminlikdan olish"}
             </button>
           </>
         }
       >
-        <p className="text-sm text-gray-500">
+        <p className="text-body-sm text-on-surface-variant">
           {grantTarget?.action === "grant"
-            ? "Ushbu foydalanuvchiga admin huquqi beriladi. U endi admin panelda barcha funksiyalardan foydalana oladi."
+            ? "Ushbu foydalanuvchiga admin huquqi beriladi va u admin panelidan foydalana oladi."
             : "Ushbu foydalanuvchidan admin huquqi olib tashlanadi va u oddiy foydalanuvchiga aylanadi."}
         </p>
       </Modal>

@@ -1,16 +1,11 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
 const THEME_STORAGE_KEY = "savdo-admin-theme";
-const supportedThemes = ["dark"];
+const supportedThemes = ["light"];
 const ThemeContext = createContext(null);
 
 function getStoredTheme() {
-  if (typeof window === "undefined") {
-    return "dark";
-  }
-
-  const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
-  return supportedThemes.includes(storedTheme) ? storedTheme : "dark";
+  return "light";
 }
 
 export function ThemeProvider({ children }) {
@@ -21,17 +16,17 @@ export function ThemeProvider({ children }) {
       return;
     }
 
-    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
-    document.documentElement.classList.toggle("theme-dark", theme === "dark");
-    document.documentElement.classList.toggle("theme-light", false);
-    document.documentElement.style.colorScheme = "dark";
+    window.localStorage.setItem(THEME_STORAGE_KEY, "light");
+    document.documentElement.classList.toggle("theme-dark", false);
+    document.documentElement.classList.toggle("theme-light", true);
+    document.documentElement.style.colorScheme = "light";
   }, [theme]);
 
   const value = useMemo(
     () => ({
       theme,
       setTheme,
-      toggleTheme: () => setTheme("dark")
+      toggleTheme: () => setTheme("light")
     }),
     [theme]
   );

@@ -2,52 +2,46 @@ import { useEffect, useState } from "react";
 import { useI18n } from "../../i18n";
 import { useAuth } from "../../store";
 import { useAdminData } from "../../store/adminData";
-import { useTheme } from "../../theme";
+import { Icon } from "../../components/shared/Icon";
 
-const tabs = (t) => [
-  { id: "profile",    label: t("settings.profileSettings") },
-  { id: "security",   label: t("settings.securitySettings") },
-  { id: "preference", label: t("settings.notificationSettings") }
+const NAV = [
+  { id: "profile", label: "Profil", icon: "person" },
+  { id: "security", label: "Xavfsizlik", icon: "security" },
+  { id: "preference", label: "Tizim", icon: "build" }
 ];
+
+const inputCls =
+  "w-full px-4 py-2.5 bg-surface border border-outline-variant rounded-lg text-on-surface font-body-md focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all";
+const labelCls = "block font-label-caps text-label-caps text-on-surface-variant mb-2 uppercase tracking-wider";
+const saveBtnCls =
+  "bg-primary-container text-on-primary-container font-title-sm text-title-sm px-6 py-2.5 rounded-lg hover:bg-primary hover:text-on-primary transition-colors";
 
 export function SettingsPage() {
   const { locale, setLocale, supportedLocales, t } = useI18n();
   const { profile, updateProfile, changePassword } = useAuth();
   const { pushToast } = useAdminData();
-  const { theme, setTheme } = useTheme();
 
   const [activeTab, setActiveTab] = useState("profile");
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({
-    name: profile?.name || "",
-    email: profile?.email || ""
-  });
+  const [form, setForm] = useState({ name: profile?.name || "", email: profile?.email || "" });
   const [pw, setPw] = useState({ current: "", next: "", confirm: "" });
   const [pwMessage, setPwMessage] = useState("");
   const [pwError, setPwError] = useState("");
 
-  // Profile form ni profile ga sinxronlash
   useEffect(() => {
-    setForm({
-      name: profile?.name || "",
-      email: profile?.email || ""
-    });
+    setForm({ name: profile?.name || "", email: profile?.email || "" });
   }, [profile?.name, profile?.email]);
 
   async function handleSaveProfile() {
     setSaving(true);
     try {
       await updateProfile({ name: form.name, email: form.email });
-      pushToast(t("common.saveChanges"));
+      pushToast("O'zgarishlar saqlandi");
     } catch (err) {
       pushToast(err?.message || "Xatolik yuz berdi", "danger");
     } finally {
       setSaving(false);
     }
-  }
-
-  function handleApplyLanguage(code) {
-    setLocale(code);
   }
 
   async function handleChangePassword() {
@@ -67,150 +61,138 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="max-w-4xl space-y-5">
-      <div className="bg-white rounded-2xl shadow-card">
-        <div className="px-5 py-4 border-b border-gray-100">
-          <h2 className="font-semibold text-gray-900">{t("settings.pageTitle")}</h2>
-          <p className="text-xs text-gray-400 mt-0.5">{t("settings.description")}</p>
-        </div>
+    <div className="space-y-section-gap">
+      <div>
+        <h2 className="font-headline-md text-headline-md text-on-surface">Sozlamalar</h2>
+        <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">Profil, xavfsizlik va tizim sozlamalarini boshqaring.</p>
+      </div>
 
-        <div className="flex gap-1 px-5 pt-4 border-b border-gray-100 overflow-x-auto">
-          {tabs(t).map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2 text-sm rounded-t-xl transition-colors whitespace-nowrap ${
-                activeTab === tab.id
-                  ? "bg-primary text-white font-medium"
-                  : "text-gray-500 hover:text-gray-800 hover:bg-gray-100"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="p-5">
-          {activeTab === "profile" && (
-            <div className="space-y-4 max-w-md">
-              {[
-                { l: t("settings.displayName"), n: "name", tp: "text" },
-                { l: t("common.email"), n: "email", tp: "email" }
-              ].map((f) => (
-                <div key={f.n}>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{f.l}</label>
-                  <input
-                    type={f.tp}
-                    value={form[f.n]}
-                    onChange={(e) => setForm((c) => ({ ...c, [f.n]: e.target.value }))}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                  />
-                </div>
+      <div className="flex flex-col lg:flex-row gap-8">
+        {/* Inner nav */}
+        <aside className="w-full lg:w-64 shrink-0">
+          <div className="bg-surface-bright rounded-xl border border-outline-variant p-2 sticky top-24">
+            <nav className="flex flex-col space-y-1">
+              {NAV.map((n) => (
+                <button
+                  key={n.id}
+                  type="button"
+                  onClick={() => setActiveTab(n.id)}
+                  className={`w-full text-left px-4 py-3 rounded-lg font-title-sm text-title-sm transition-colors flex items-center gap-3 ${
+                    activeTab === n.id
+                      ? "bg-surface-container-highest text-primary font-semibold"
+                      : "text-on-surface-variant hover:bg-surface-container-low"
+                  }`}
+                >
+                  <Icon name={n.icon} />
+                  {n.label}
+                </button>
               ))}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Rol</label>
-                <div className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl bg-gray-50 text-gray-700">
-                  {profile?.isPrimary ? t("labels.roles.super_admin") : t("labels.roles.admin")}
+            </nav>
+          </div>
+        </aside>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          {activeTab === "profile" && (
+            <div className="bg-surface-bright border border-outline-variant rounded-xl p-6">
+              <div className="mb-6 pb-4 border-b border-outline-variant">
+                <h3 className="font-headline-md text-headline-md text-on-surface mb-2">Shaxsiy ma'lumotlar</h3>
+                <p className="font-body-md text-body-md text-on-surface-variant">Hisobingizga oid asosiy ma'lumotlarni tahrirlang.</p>
+              </div>
+              <div className="space-y-6 max-w-2xl">
+                <div>
+                  <label className={labelCls}>Ism</label>
+                  <input type="text" className={inputCls} value={form.name} onChange={(e) => setForm((c) => ({ ...c, name: e.target.value }))} />
+                </div>
+                <div>
+                  <label className={labelCls}>Email manzili</label>
+                  <input type="email" className={inputCls} value={form.email} onChange={(e) => setForm((c) => ({ ...c, email: e.target.value }))} />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className={labelCls}>Rol</label>
+                    <div className="w-full px-4 py-2.5 border border-outline-variant rounded-lg bg-surface-container-low text-on-surface-variant font-body-md">
+                      {profile?.isPrimary ? "SUPER ADMIN" : "ADMIN"}
+                    </div>
+                  </div>
+                  <div>
+                    <label className={labelCls}>Ruxsatlar soni</label>
+                    <div className="w-full px-4 py-2.5 border border-outline-variant rounded-lg bg-surface-container-low text-on-surface-variant font-body-md">
+                      {profile?.permissions?.length || 0} ta ruxsat
+                    </div>
+                  </div>
+                </div>
+                <div className="pt-4 flex justify-end">
+                  <button type="button" onClick={handleSaveProfile} disabled={saving} className={`${saveBtnCls} disabled:opacity-60`}>
+                    {saving ? "Saqlanmoqda..." : "Saqlash"}
+                  </button>
                 </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Ruxsatlar soni</label>
-                <div className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl bg-gray-50 text-gray-700">
-                  {profile?.permissions?.length || 0} ta ruxsat
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={handleSaveProfile}
-                disabled={saving}
-                className="px-5 py-2.5 bg-primary hover:bg-primary-dark text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-60"
-              >
-                {saving ? "Saqlanmoqda..." : t("common.saveChanges")}
-              </button>
             </div>
           )}
 
           {activeTab === "security" && (
-            <div className="space-y-4 max-w-md">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Joriy parol</label>
-                <input
-                  type="password"
-                  value={pw.current}
-                  onChange={(e) => setPw((c) => ({ ...c, current: e.target.value }))}
-                  placeholder="********"
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                />
+            <div className="bg-surface-bright border border-outline-variant rounded-xl p-6">
+              <div className="mb-6 pb-4 border-b border-outline-variant">
+                <h3 className="font-headline-md text-headline-md text-on-surface mb-2">Parolni o'zgartirish</h3>
+                <p className="font-body-md text-body-md text-on-surface-variant">Hisobingiz xavfsizligi uchun kuchli paroldan foydalaning.</p>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("auth.newPassword")}</label>
-                <input
-                  type="password"
-                  value={pw.next}
-                  onChange={(e) => setPw((c) => ({ ...c, next: e.target.value }))}
-                  placeholder="********"
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                />
+              <div className="space-y-6 max-w-xl">
+                <div>
+                  <label className={labelCls}>Joriy parol</label>
+                  <input type="password" className={inputCls} value={pw.current} onChange={(e) => setPw((c) => ({ ...c, current: e.target.value }))} placeholder="••••••••" />
+                </div>
+                <div>
+                  <label className={labelCls}>Yangi parol</label>
+                  <input type="password" className={inputCls} value={pw.next} onChange={(e) => setPw((c) => ({ ...c, next: e.target.value }))} placeholder="••••••••" />
+                  <p className="font-body-sm text-body-sm text-on-surface-variant mt-2">Parol kamida 8 ta belgidan iborat bo'lishi kerak.</p>
+                </div>
+                <div>
+                  <label className={labelCls}>Yangi parolni tasdiqlang</label>
+                  <input type="password" className={inputCls} value={pw.confirm} onChange={(e) => setPw((c) => ({ ...c, confirm: e.target.value }))} placeholder="••••••••" />
+                </div>
+                {pwError && <p className="text-body-sm text-error">{pwError}</p>}
+                {pwMessage && <p className="text-body-sm text-primary">{pwMessage}</p>}
+                <div className="pt-4 flex justify-end">
+                  <button type="button" onClick={handleChangePassword} className={saveBtnCls}>Parolni yangilash</button>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("auth.confirmPassword")}</label>
-                <input
-                  type="password"
-                  value={pw.confirm}
-                  onChange={(e) => setPw((c) => ({ ...c, confirm: e.target.value }))}
-                  placeholder="********"
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                />
-              </div>
-              {pwError && <p className="text-xs text-red-600">{pwError}</p>}
-              {pwMessage && <p className="text-xs text-green-600">{pwMessage}</p>}
-              <div className="flex items-start gap-3 p-4 bg-yellow-50 border border-yellow-100 rounded-xl">
-                <span className="text-yellow-500 mt-0.5">!</span>
-                <p className="text-xs text-yellow-700">{t("settings.securityNote")}</p>
-              </div>
-              <button
-                type="button"
-                onClick={handleChangePassword}
-                className="px-5 py-2.5 bg-primary hover:bg-primary-dark text-white text-sm font-medium rounded-xl transition-colors"
-              >
-                {t("auth.saveNewPassword")}
-              </button>
             </div>
           )}
 
           {activeTab === "preference" && (
-            <div className="space-y-4 max-w-md">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("settings.languagePreference")}</label>
-                <div className="flex flex-wrap gap-2">
-                  {supportedLocales.map((code) => (
-                    <button
-                      key={code}
-                      type="button"
-                      onClick={() => handleApplyLanguage(code)}
-                      className={`px-4 py-2 text-sm rounded-xl transition-colors ${
-                        locale === code
-                          ? "bg-primary text-white font-medium"
-                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                      }`}
-                    >
-                      {t(`languages.${code}`)}
-                    </button>
-                  ))}
-                </div>
-                <p className="text-xs text-gray-400 mt-2">
-                  Hozirgi til: <span className="font-medium text-gray-700">{t(`languages.${locale}`)}</span>
-                </p>
+            <div className="bg-surface-bright border border-outline-variant rounded-xl p-6">
+              <div className="mb-6 pb-4 border-b border-outline-variant">
+                <h3 className="font-headline-md text-headline-md text-on-surface mb-2">Tizim sozlamalari</h3>
+                <p className="font-body-md text-body-md text-on-surface-variant">Interfeys tili va ko'rinish sozlamalari.</p>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tema</label>
-                <div className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl bg-gray-50 text-gray-700">
-                  {theme === "dark" ? "Qora (Dark)" : "Yorug' (Light)"}
+              <div className="space-y-6 max-w-xl">
+                <div>
+                  <label className={labelCls}>Interfeys tili</label>
+                  <div className="flex flex-wrap gap-2">
+                    {supportedLocales.map((code) => (
+                      <button
+                        key={code}
+                        type="button"
+                        onClick={() => setLocale(code)}
+                        className={`px-4 py-2 text-body-sm rounded-lg transition-colors ${
+                          locale === code
+                            ? "bg-primary-container text-on-primary-container font-medium"
+                            : "bg-surface-container-low text-on-surface hover:bg-surface-container"
+                        }`}
+                      >
+                        {t(`languages.${code}`, {}, code.toUpperCase())}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <p className="text-xs text-gray-400 mt-2">
-                  Hozircha faqat qora tema qo'llab quvvatlanadi.
-                </p>
+                <div className="flex items-center justify-between py-4 border-t border-outline-variant">
+                  <div>
+                    <p className="font-title-sm text-title-sm text-on-surface">Ko'rinish</p>
+                    <p className="font-body-sm text-body-sm text-on-surface-variant">Hozircha faqat yorug' (light) tema qo'llab-quvvatlanadi.</p>
+                  </div>
+                  <span className="px-3 py-1.5 rounded-full bg-primary-container/20 text-on-primary-container text-body-sm font-medium">Yorug'</span>
+                </div>
               </div>
             </div>
           )}

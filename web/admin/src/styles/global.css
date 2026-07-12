@@ -3,22 +3,12 @@
 @tailwind utilities;
 
 :root {
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  color: #102033;
+  font-family: "Inter", "Segoe UI", Tahoma, sans-serif;
+  color: #151c27;
   line-height: 1.5;
   color-scheme: light;
-  --app-bg: #eef4f9;
-  --app-text: #102033;
-  --surface-strong: #ffffff;
-  --surface-soft: #f8fafc;
-  --surface-muted: #f1f5f9;
-  --border-soft: #e5e7eb;
-  --text-strong: #111827;
-  --text-body: #4b5563;
-  --text-muted: #9ca3af;
-  --text-faint: #cbd5e1;
-  --shadow-card: 0 4px 24px rgba(16, 32, 51, 0.08);
-  --shadow-modal: 0 24px 64px rgba(16, 32, 51, 0.18);
+  --app-bg: #f9f9ff;
+  --app-text: #151c27;
 }
 
 html,
@@ -35,41 +25,33 @@ body {
   margin: 0;
   background: var(--app-bg);
   color: var(--app-text);
-  transition: background-color 0.2s ease, color 0.2s ease;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-.theme-dark {
-  color-scheme: dark;
-  --app-bg: #08111f;
-  --app-text: #e5edf7;
-  --surface-strong: #101c2f;
-  --surface-soft: #162338;
-  --surface-muted: #1b2a41;
-  --border-soft: #243246;
-  --text-strong: #f3f7fc;
-  --text-body: #c0cad8;
-  --text-muted: #90a0b7;
-  --text-faint: #6d7f97;
-  --shadow-card: 0 10px 32px rgba(2, 8, 20, 0.45);
-  --shadow-modal: 0 24px 80px rgba(2, 8, 20, 0.62);
+/* Material Symbols default weight/fill */
+.material-symbols-outlined {
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+  user-select: none;
+}
+.material-symbols-outlined.fill,
+.material-symbols-outlined[data-fill="1"] {
+  font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
 }
 
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
-
 ::-webkit-scrollbar-track {
   background: transparent;
 }
-
 ::-webkit-scrollbar-thumb {
-  background: rgba(16, 32, 51, 0.15);
+  background: #dce2f3;
   border-radius: 8px;
 }
-
-.theme-dark ::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.32);
+::-webkit-scrollbar-thumb:hover {
+  background: #bbcabf;
 }
 
 .table-scroll {
@@ -78,116 +60,5 @@ body {
 }
 
 .sidebar-slide {
-  transition: transform 0.22s cubic-bezier(.4, 0, .2, 1);
-}
-
-.theme-dark [class~="bg-[#eef4f9]"] {
-  background-color: var(--app-bg);
-}
-
-.theme-dark [class~="bg-white"] {
-  background-color: var(--surface-strong);
-}
-
-.theme-dark [class~="bg-white/80"] {
-  background-color: rgba(16, 28, 47, 0.84);
-}
-
-.theme-dark [class~="bg-gray-50"] {
-  background-color: var(--surface-soft);
-}
-
-.theme-dark [class~="bg-gray-100"] {
-  background-color: var(--surface-muted);
-}
-
-.theme-dark [class~="bg-gray-200"] {
-  background-color: #314156;
-}
-
-.theme-dark [class~="text-gray-900"] {
-  color: var(--text-strong);
-}
-
-.theme-dark [class~="text-gray-800"] {
-  color: #dde7f3;
-}
-
-.theme-dark [class~="text-gray-700"] {
-  color: #d0dae7;
-}
-
-.theme-dark [class~="text-gray-600"] {
-  color: var(--text-body);
-}
-
-.theme-dark [class~="text-gray-500"] {
-  color: var(--text-body);
-}
-
-.theme-dark [class~="text-gray-400"] {
-  color: var(--text-muted);
-}
-
-.theme-dark [class~="text-gray-300"] {
-  color: var(--text-faint);
-}
-
-.theme-dark [class~="text-gray-200"] {
-  color: #5f7088;
-}
-
-.theme-dark [class~="border-gray-50"] {
-  border-color: rgba(36, 50, 70, 0.55);
-}
-
-.theme-dark [class~="border-gray-100"] {
-  border-color: var(--border-soft);
-}
-
-.theme-dark [class~="border-gray-200"] {
-  border-color: #314156;
-}
-
-.theme-dark [class~="shadow-card"] {
-  box-shadow: var(--shadow-card);
-}
-
-.theme-dark [class~="shadow-modal"] {
-  box-shadow: var(--shadow-modal);
-}
-
-.theme-dark [class~="bg-[#0e2037]"] {
-  background-color: #0d1829;
-}
-
-.theme-dark .hover\:bg-gray-50:hover {
-  background-color: var(--surface-soft);
-}
-
-.theme-dark .hover\:bg-gray-100:hover {
-  background-color: var(--surface-muted);
-}
-
-.theme-dark .hover\:bg-white:hover {
-  background-color: var(--surface-strong);
-}
-
-.theme-dark .hover\:text-gray-600:hover {
-  color: #d0dae7;
-}
-
-.theme-dark .hover\:text-gray-800:hover {
-  color: #f3f7fc;
-}
-
-.theme-dark input,
-.theme-dark select,
-.theme-dark textarea {
-  color: var(--text-strong);
-}
-
-.theme-dark option {
-  background: var(--surface-strong);
-  color: var(--text-strong);
+  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }

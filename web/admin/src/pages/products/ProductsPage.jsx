@@ -1,18 +1,35 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Modal } from "../../components/shared/Modal";
+import { Icon } from "../../components/shared/Icon";
 import { usePageTitle } from "../../hooks/usePageTitle";
 import { useAdminData } from "../../store/adminData";
 import { useI18n } from "../../i18n";
 
 const emptyProduct = { name: "", category: "", price: "", stock: "", sku: "" };
 
-const STATUS_STYLES = {
-  active: "bg-green-500/10 text-green-400",
-  inactive: "bg-gray-500/10 text-gray-400"
-};
-
 function formatPrice(p) {
-  return Number(p).toLocaleString("uz-UZ") + " so'm";
+  return Number(p).toLocaleString("uz-UZ") + " UZS";
+}
+
+function stockBadge(p) {
+  if (p.status === "inactive") return { label: "Nofaol", cls: "bg-surface-variant text-on-surface-variant" };
+  if (p.stock === 0) return { label: "Tugagan", cls: "bg-[#fee2e2] text-[#991b1b]" };
+  if (p.stock <= 10) return { label: "Kam qolgan", cls: "bg-[#fef3c7] text-[#92400e]" };
+  return { label: "Sotuvda", cls: "bg-[#ecfdf5] text-[#065f46]" };
+}
+
+function StatCard({ label, value, icon, wrap, valueCls = "text-on-surface" }) {
+  return (
+    <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-padding-card flex items-center justify-between">
+      <div>
+        <p className="font-body-sm text-on-surface-variant mb-1">{label}</p>
+        <h3 className={`font-headline-md text-headline-md ${valueCls}`}>{value}</h3>
+      </div>
+      <div className={`w-12 h-12 rounded-full flex items-center justify-center ${wrap}`}>
+        <Icon name={icon} className="text-2xl" />
+      </div>
+    </div>
+  );
 }
 
 export function ProductsPage() {
@@ -21,6 +38,7 @@ export function ProductsPage() {
   const { products, createProduct, updateProduct, deleteProduct, toggleProductStatus } = useAdminData();
 
   const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
@@ -28,27 +46,34 @@ export function ProductsPage() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
+  const categories = useMemo(
+    () => [...new Set(products.map((p) => p.category).filter(Boolean))],
+    [products]
+  );
+
   const filtered = products.filter((p) => {
     const matchSearch = !search ||
       p.name.toLowerCase().includes(search.toLowerCase()) ||
       p.sku?.toLowerCase().includes(search.toLowerCase()) ||
       p.category?.toLowerCase().includes(search.toLowerCase());
+    const matchCategory = categoryFilter === "all" || p.category === categoryFilter;
     const matchStatus = statusFilter === "all" || p.status === statusFilter;
-    return matchSearch && matchStatus;
+    return matchSearch && matchCategory && matchStatus;
   });
+
+  const activeCount = products.filter((p) => p.status === "active").length;
+  const lowCount = products.filter((p) => typeof p.stock === "number" && p.stock <= 10).length;
 
   function openCreate() {
     setEditTarget(null);
     setForm(emptyProduct);
     setModalOpen(true);
   }
-
   function openEdit(product) {
     setEditTarget(product);
     setForm({ name: product.name, category: product.category, price: product.price, stock: product.stock, sku: product.sku || "" });
     setModalOpen(true);
   }
-
   function closeModal() {
     setModalOpen(false);
     setEditTarget(null);
@@ -64,8 +89,6 @@ export function ProductsPage() {
       if (editTarget) {
         await updateProduct(editTarget.id, { ...form, price: priceNum, stock: stockNum });
       } else {
-        // Backend requires buyPrice + sellPrice (POS fields). The admin catalog form
-        // only captures the retail price, so map it to sellPrice; cost is unknown → 0.
         await createProduct({ ...form, price: priceNum, stock: stockNum, sellPrice: priceNum, buyPrice: 0 });
       }
       closeModal();
@@ -80,177 +103,195 @@ export function ProductsPage() {
   }
 
   return (
-    <div className="space-y-5">
-      <div className="bg-[#0e2037] rounded-2xl shadow-card border border-white/10">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-4 border-b border-white/10">
-          <div>
-            <h2 className="font-semibold text-white">{t("products.title", {}, "Mahsulotlar")} ({filtered.length})</h2>
-            <p className="text-xs text-white/60 mt-0.5">{t("products.description", {}, "Mahsulotlar katalogi va ombor boshqaruvi")}</p>
-          </div>
-          <button
-            type="button"
-            onClick={openCreate}
-            className="px-4 py-2 bg-primary hover:bg-primary-dark text-white text-sm font-medium rounded-xl transition-colors shrink-0"
-          >
-            + {t("products.createProduct", {}, "Mahsulot qo'shish")}
-          </button>
+    <div className="space-y-section-gap">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+        <div>
+          <h2 className="font-headline-md text-headline-md text-on-surface">Mahsulotlar</h2>
+          <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">Mahsulotlar katalogi va ombor boshqaruvi</p>
         </div>
+        <button
+          type="button"
+          onClick={openCreate}
+          className="flex items-center gap-2 bg-primary-container text-on-primary-container font-semibold py-2.5 px-5 rounded-lg hover:bg-primary hover:text-on-primary transition-colors shadow-sm shrink-0"
+        >
+          <Icon name="add" />
+          <span>Yangi mahsulot</span>
+        </button>
+      </div>
 
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-element-gap">
+        <StatCard label="Jami mahsulotlar" value={products.length} icon="inventory_2" wrap="bg-surface-container text-primary" />
+        <StatCard label="Faol mahsulotlar" value={activeCount} icon="check_circle" wrap="bg-surface-container text-primary" />
+        <StatCard label="Kam qolgan" value={lowCount} icon="warning" wrap="bg-error-container text-error" valueCls="text-error" />
+      </div>
+
+      {/* Table */}
+      <div className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden flex flex-col">
         {/* Filters */}
-        <div className="flex flex-wrap gap-2 px-5 py-3 border-b border-white/10">
-          <input
-            type="text"
-            placeholder={t("products.searchPlaceholder", {}, "Nom, SKU yoki kategoriya...")}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 min-w-[180px] px-3 py-1.5 text-sm border border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-primary/20 bg-white/10 text-white placeholder-white/30"
-          />
+        <div className="p-4 border-b border-outline-variant bg-surface-bright flex flex-wrap gap-3 items-center">
+          <div className="relative flex-1 min-w-[220px]">
+            <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]" />
+            <input
+              type="text"
+              placeholder="Mahsulot nomi yoki SKU..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full bg-surface border border-outline-variant text-on-surface font-body-sm rounded-lg pl-9 pr-4 py-2 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+            />
+          </div>
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="bg-surface border border-outline-variant text-on-surface font-body-sm rounded-lg px-4 py-2 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary cursor-pointer"
+          >
+            <option value="all">Barcha kategoriyalar</option>
+            {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-1.5 text-sm border border-white/10 rounded-lg bg-white/10 text-white outline-none"
+            className="bg-surface border border-outline-variant text-on-surface font-body-sm rounded-lg px-4 py-2 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary cursor-pointer"
           >
-            <option value="all">{t("products.allStatuses", {}, "Barcha holat")}</option>
-            <option value="active">{t("labels.statuses.active", {}, "Aktiv")}</option>
-            <option value="inactive">{t("labels.statuses.inactive", {}, "Nofaol")}</option>
+            <option value="all">Barcha holatlar</option>
+            <option value="active">Sotuvda</option>
+            <option value="inactive">Nofaol</option>
           </select>
         </div>
 
-        {/* Table */}
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-white/10">
-                {[t("products.product", {}, "Mahsulot"), t("products.sku", {}, "SKU"), t("products.category", {}, "Kategoriya"),
-                 t("products.price", {}, "Narx"), t("products.stock", {}, "Qoldiq"), t("common.status"), t("common.actions")].map((h) => (
-                  <th key={h} className="text-left px-5 py-3 text-xs font-medium text-white/50 uppercase tracking-wide whitespace-nowrap">{h}</th>
-                ))}
+              <tr className="bg-surface-bright font-label-caps text-label-caps text-on-surface-variant border-b border-outline-variant">
+                <th className="py-3 px-6 w-16">Rasm</th>
+                <th className="py-3 px-6">Nomi</th>
+                <th className="py-3 px-6">Kategoriya</th>
+                <th className="py-3 px-6 text-right">Narxi</th>
+                <th className="py-3 px-6 text-center">Miqdori</th>
+                <th className="py-3 px-6">Holati</th>
+                <th className="py-3 px-6 text-right">Amallar</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="font-body-sm text-body-sm divide-y divide-outline-variant">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-5 py-10 text-center text-white/40 text-sm">
-                    {t("products.noProducts", {}, "Mahsulot topilmadi")}
-                  </td>
+                  <td colSpan={7} className="py-12 text-center text-on-surface-variant">Mahsulot topilmadi</td>
                 </tr>
               ) : (
-                filtered.map((p) => (
-                  <tr key={p.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                    <td className="px-5 py-3">
-                      <p className="font-medium text-white">{p.name}</p>
-                      <p className="text-xs text-white/40">{p.id}</p>
-                    </td>
-                    <td className="px-5 py-3 text-white/60 font-mono text-xs">{p.sku || "—"}</td>
-                    <td className="px-5 py-3 text-white/70">{p.category}</td>
-                    <td className="px-5 py-3 text-white font-medium">{formatPrice(p.price)}</td>
-                    <td className="px-5 py-3">
-                      <span className={`font-medium ${p.stock === 0 ? "text-red-400" : "text-white/80"}`}>
-                        {p.stock}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3">
-                      <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_STYLES[p.status] || "bg-gray-100 text-gray-600"}`}>
-                        {p.status === "active" ? t("labels.statuses.active", {}, "Aktiv") : t("labels.statuses.inactive", {}, "Nofaol")}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3">
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => openEdit(p)}
-                          className="text-xs text-primary hover:underline"
-                        >
-                          {t("common.edit")}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => toggleProductStatus(p.id)}
-                          className="text-xs text-white/50 hover:text-white/80"
-                        >
-                          {p.status === "active" ? t("products.deactivate", {}, "Nofaol qilish") : t("products.activate", {}, "Yoqish")}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setDeleteTarget(p)}
-                          className="text-xs text-red-400 hover:text-red-300"
-                        >
-                          {t("common.delete")}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                filtered.map((p) => {
+                  const badge = stockBadge(p);
+                  return (
+                    <tr key={p.id} className="hover:bg-surface-container-low transition-colors group">
+                      <td className="py-3 px-6">
+                        <div className="w-10 h-10 rounded-lg bg-surface-variant border border-outline-variant flex items-center justify-center text-on-surface-variant">
+                          <Icon name="image" className="text-lg" />
+                        </div>
+                      </td>
+                      <td className="py-3 px-6 font-medium text-on-surface">
+                        {p.name}
+                        {p.sku && <span className="block text-xs text-on-surface-variant font-normal">{p.sku}</span>}
+                      </td>
+                      <td className="py-3 px-6 text-on-surface-variant">{p.category || "—"}</td>
+                      <td className="py-3 px-6 text-right font-medium text-on-surface whitespace-nowrap">{formatPrice(p.price)}</td>
+                      <td className={`py-3 px-6 text-center ${p.stock === 0 ? "text-error font-semibold" : "text-on-surface-variant"}`}>{p.stock}</td>
+                      <td className="py-3 px-6">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badge.cls}`}>{badge.label}</span>
+                      </td>
+                      <td className="py-3 px-6 text-right">
+                        <div className="flex justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button type="button" onClick={() => openEdit(p)} className="text-on-surface-variant hover:text-primary" title="Tahrirlash">
+                            <Icon name="edit" className="text-[20px]" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => toggleProductStatus(p.id)}
+                            className="text-on-surface-variant hover:text-secondary"
+                            title={p.status === "active" ? "Nofaol qilish" : "Yoqish"}
+                          >
+                            <Icon name={p.status === "active" ? "visibility_off" : "visibility"} className="text-[20px]" />
+                          </button>
+                          <button type="button" onClick={() => setDeleteTarget(p)} className="text-on-surface-variant hover:text-error" title="O'chirish">
+                            <Icon name="delete" className="text-[20px]" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
+        </div>
+
+        <div className="p-4 border-t border-outline-variant bg-surface-bright flex items-center justify-between">
+          <p className="font-body-sm text-on-surface-variant">{filtered.length} ta mahsulot ko'rsatilmoqda</p>
         </div>
       </div>
 
       {/* Create / Edit modal */}
       <Modal
         open={modalOpen}
-        title={editTarget ? t("products.editProduct", {}, "Mahsulotni tahrirlash") : t("products.newProduct", {}, "Yangi mahsulot")}
-        description={t("products.formDescription", {}, "Mahsulot ma'lumotlarini kiriting")}
+        title={editTarget ? "Mahsulotni tahrirlash" : "Yangi mahsulot"}
+        description="Mahsulot ma'lumotlarini kiriting"
         onClose={closeModal}
         footer={
           <>
-            <button type="button" className="px-4 py-2 text-sm border border-gray-200 rounded-xl hover:bg-gray-50" onClick={closeModal}>
-              {t("common.cancel")}
+            <button type="button" className="px-5 py-2.5 text-body-sm border border-outline-variant rounded-lg hover:bg-surface-container-low text-on-surface" onClick={closeModal}>
+              Bekor qilish
             </button>
-            <button type="submit" form="product-form" disabled={submitting} className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-xl hover:bg-primary-dark disabled:opacity-60">
-              {submitting ? t("common.saving", {}, "Saqlanmoqda...") : (editTarget ? t("common.save") : t("common.add", {}, "Qo'shish"))}
+            <button type="submit" form="product-form" disabled={submitting} className="px-5 py-2.5 bg-primary-container text-on-primary-container text-body-sm font-medium rounded-lg hover:bg-primary hover:text-on-primary transition-colors disabled:opacity-60">
+              {submitting ? "Saqlanmoqda..." : (editTarget ? "Saqlash" : "Qo'shish")}
             </button>
           </>
         }
       >
-        <form id="product-form" className="space-y-3" onSubmit={handleSubmit}>
+        <form id="product-form" className="space-y-4" onSubmit={handleSubmit}>
           {[
-            { l: t("products.name", {}, "Mahsulot nomi"), n: "name", t: "text", r: true },
-            { l: t("products.category", {}, "Kategoriya"), n: "category", t: "text", r: true },
-            { l: t("products.sku", {}, "SKU"), n: "sku", t: "text", r: false },
-            { l: t("products.priceUzs", {}, "Narx (so'm)"), n: "price", t: "number", r: true },
-            { l: t("products.stockCount", {}, "Ombor qoldig'i"), n: "stock", t: "number", r: true }
+            { l: "Mahsulot nomi", n: "name", tp: "text", r: true },
+            { l: "Kategoriya", n: "category", tp: "text", r: true },
+            { l: "SKU", n: "sku", tp: "text", r: false },
+            { l: "Narx (UZS)", n: "price", tp: "number", r: true },
+            { l: "Ombor qoldig'i", n: "stock", tp: "number", r: true }
           ].map((f) => (
-            <div key={f.n}>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{f.l}</label>
+            <div key={f.n} className="flex flex-col gap-1.5">
+              <label className="font-body-sm text-body-sm font-medium text-on-surface">{f.l}</label>
               <input
                 name={f.n}
-                type={f.t}
+                type={f.tp}
                 value={form[f.n]}
                 onChange={handleChange}
                 required={f.r}
-                min={f.t === "number" ? 0 : undefined}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                min={f.tp === "number" ? 0 : undefined}
+                className="w-full px-4 py-2.5 bg-surface border border-outline-variant rounded-lg text-on-surface font-body-md focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
               />
             </div>
           ))}
         </form>
       </Modal>
 
-      {/* Delete confirm modal */}
+      {/* Delete confirm */}
       <Modal
         open={!!deleteTarget}
-        title={t("products.deleteTitle", {}, "Mahsulotni o'chirish")}
-        description={deleteTarget ? `"${deleteTarget.name}" ${t("products.deleteDescription", {}, "mahsulotini o'chirishni tasdiqlaysizmi?")}` : ""}
+        title="Mahsulotni o'chirish"
+        description={deleteTarget ? `"${deleteTarget.name}" mahsulotini o'chirasizmi?` : ""}
         onClose={() => setDeleteTarget(null)}
         footer={
           <>
-            <button type="button" className="px-4 py-2 text-sm border border-gray-200 rounded-xl hover:bg-gray-50" onClick={() => setDeleteTarget(null)}>
-              {t("common.cancel")}
+            <button type="button" className="px-5 py-2.5 text-body-sm border border-outline-variant rounded-lg hover:bg-surface-container-low text-on-surface" onClick={() => setDeleteTarget(null)}>
+              Bekor qilish
             </button>
             <button
               type="button"
-              className="px-4 py-2 bg-danger text-white text-sm font-medium rounded-xl hover:bg-red-700"
+              className="px-5 py-2.5 bg-error text-on-error text-body-sm font-medium rounded-lg hover:bg-error/90"
               onClick={() => { deleteProduct(deleteTarget.id); setDeleteTarget(null); }}
             >
-              {t("common.delete")}
+              O'chirish
             </button>
           </>
         }
       >
-        <p className="text-sm text-gray-500">{t("products.deleteWarning", {}, "Bu amalni qaytarib bo'lmaydi.")}</p>
+        <p className="text-body-sm text-on-surface-variant">Bu amalni qaytarib bo'lmaydi. Mahsulot arxivlanishi mumkin.</p>
       </Modal>
     </div>
   );

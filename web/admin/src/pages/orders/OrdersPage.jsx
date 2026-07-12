@@ -1,27 +1,20 @@
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { usePageTitle } from "../../hooks/usePageTitle";
 import { useI18n } from "../../i18n";
 import { useAdminData } from "../../store/adminData";
-import { ordersApi } from "../../services/api/orders.api";
+import { Icon } from "../../components/shared/Icon";
 
-const STATUS_COLORS = {
-  pending: "bg-yellow-500/10 text-yellow-500",
-  processing: "bg-blue-500/10 text-blue-500",
-  shipped: "bg-purple-500/10 text-purple-400",
-  delivered: "bg-green-500/10 text-green-500",
-  cancelled: "bg-red-500/10 text-red-500"
-};
-
-const PAYMENT_COLORS = {
-  pending: "text-yellow-500",
-  paid: "text-green-500",
-  failed: "text-red-500",
-  refunded: "text-blue-400"
+const STATUS_BADGE = {
+  pending:    "bg-[#FEF3C7] text-[#92400E]",
+  processing: "bg-[#DBEAFE] text-[#1E40AF]",
+  shipped:    "bg-[#F3E8FD] text-[#7B1FA2]",
+  delivered:  "bg-[#D1FAE5] text-[#065F46]",
+  cancelled:  "bg-[#FEE2E2] text-[#991B1B]"
 };
 
 const STATUS_LABELS = {
   pending: "Kutilmoqda",
-  processing: "Tayyorlanmoqda",
+  processing: "Jarayonda",
   shipped: "Yo'lda",
   delivered: "Yetkazildi",
   cancelled: "Bekor qilindi"
@@ -34,6 +27,21 @@ const PAYMENT_LABELS = {
   refunded: "Qaytarilgan"
 };
 
+const PAYMENT_DOT = {
+  pending: "bg-outline-variant",
+  paid: "bg-primary-container",
+  failed: "bg-error",
+  refunded: "bg-secondary"
+};
+
+const TABS = [
+  { key: "all", label: "Hammasi" },
+  { key: "pending", label: "Kutilmoqda" },
+  { key: "processing", label: "Jarayonda" },
+  { key: "delivered", label: "Yetkazildi" },
+  { key: "cancelled", label: "Bekor qilindi" }
+];
+
 export function OrdersPage() {
   const { t } = useI18n();
   usePageTitle(t("orders.title", {}, "Buyurtmalar"));
@@ -41,15 +49,31 @@ export function OrdersPage() {
 
   const [error, setError] = useState("");
   const [statusUpdating, setStatusUpdating] = useState(null);
+  const [tab, setTab] = useState("all");
+  const [search, setSearch] = useState("");
+
+  const counts = useMemo(() => {
+    const c = { all: orders.length };
+    for (const o of orders) c[o.orderStatus] = (c[o.orderStatus] || 0) + 1;
+    return c;
+  }, [orders]);
+
+  const filtered = useMemo(() => {
+    return orders.filter((o) => {
+      const matchTab = tab === "all" || o.orderStatus === tab;
+      const q = search.toLowerCase();
+      const matchSearch = !q ||
+        (o.orderNumber || "").toLowerCase().includes(q) ||
+        (o.user?.name || "").toLowerCase().includes(q);
+      return matchTab && matchSearch;
+    });
+  }, [orders, tab, search]);
 
   async function handleStatusChange(id, newStatus) {
     setStatusUpdating(id);
-    const order = orders.find(o => o.id === id);
+    const order = orders.find((o) => o.id === id);
     try {
-      await updateOrderStatus(id, {
-        orderStatus: newStatus,
-        paymentStatus: order ? order.paymentStatus : undefined
-      });
+      await updateOrderStatus(id, { orderStatus: newStatus, paymentStatus: order ? order.paymentStatus : undefined });
     } catch (err) {
       setError("Statusni yangilashda xatolik: " + err.message);
     } finally {
@@ -59,12 +83,9 @@ export function OrdersPage() {
 
   async function handlePaymentStatusChange(id, newPaymentStatus) {
     setStatusUpdating(id);
-    const order = orders.find(o => o.id === id);
+    const order = orders.find((o) => o.id === id);
     try {
-      await updateOrderStatus(id, {
-        orderStatus: order ? order.orderStatus : "pending",
-        paymentStatus: newPaymentStatus
-      });
+      await updateOrderStatus(id, { orderStatus: order ? order.orderStatus : "pending", paymentStatus: newPaymentStatus });
     } catch (err) {
       setError("To'lov holatini yangilashda xatolik: " + err.message);
     } finally {
@@ -73,81 +94,129 @@ export function OrdersPage() {
   }
 
   return (
-    <div className="space-y-5">
-      <div className="bg-[#0e2037] rounded-2xl shadow-card border border-white/10 overflow-hidden">
-        <div className="px-5 py-4 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <h2 className="font-semibold text-white">{t("orders.title", {}, "Buyurtmalar")} ({orders.length})</h2>
-            <p className="text-xs text-white/60 mt-0.5">{t("orders.description", {}, "Barcha mijozlar buyurtmalari boshqaruvi")}</p>
-          </div>
-          {error && <p className="text-xs text-red-400">{error}</p>}
+    <div className="space-y-section-gap">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="font-headline-md text-headline-md font-bold text-on-surface">Buyurtmalar</h2>
+          <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">Barcha mijozlar buyurtmalarini boshqarish va kuzatish</p>
         </div>
+        <div className="relative w-full md:w-72">
+          <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]" />
+          <input
+            type="text"
+            placeholder="ID yoki mijoz..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-sm text-on-surface focus:outline-none focus:border-primary transition-all"
+          />
+        </div>
+      </div>
 
+      {error && <div className="px-4 py-3 rounded-lg bg-error-container text-on-error-container text-body-sm">{error}</div>}
+
+      {/* Status tabs */}
+      <div className="border-b border-outline-variant overflow-x-auto">
+        <ul className="flex gap-6 min-w-max px-1">
+          {TABS.map((tb) => (
+            <li key={tb.key}>
+              <button
+                type="button"
+                onClick={() => setTab(tb.key)}
+                className={`pb-3 px-1 font-body-sm transition-colors ${
+                  tab === tb.key ? "text-primary font-bold border-b-2 border-primary" : "text-on-surface-variant hover:text-primary"
+                }`}
+              >
+                {tb.label} ({counts[tb.key] || 0})
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Table */}
+      <div className="bg-surface-bright border border-outline-variant rounded-xl overflow-hidden shadow-sm">
         {loading ? (
-          <div className="p-10 text-center text-white/50">{t("common.loading", {}, "Yuklanmoqda...")}</div>
+          <div className="p-12 text-center text-on-surface-variant">Yuklanmoqda...</div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-white/10 bg-white/5">
-                  <th className="text-left px-5 py-3 text-xs font-medium text-white/50 uppercase">{t("orders.orderNumber", {}, "Buyurtma №")}</th>
-                  <th className="text-left px-5 py-3 text-xs font-medium text-white/50 uppercase">{t("orders.customer", {}, "Mijoz")}</th>
-                  <th className="text-left px-5 py-3 text-xs font-medium text-white/50 uppercase">{t("orders.date", {}, "Sana")}</th>
-                  <th className="text-left px-5 py-3 text-xs font-medium text-white/50 uppercase">{t("orders.paymentStatus", {}, "To'lov holati")}</th>
-                  <th className="text-left px-5 py-3 text-xs font-medium text-white/50 uppercase">{t("orders.amount", {}, "Summa")}</th>
-                  <th className="text-left px-5 py-3 text-xs font-medium text-white/50 uppercase">{t("orders.orderStatus", {}, "Buyurtma holati")}</th>
+                <tr className="bg-surface-bright border-b border-outline-variant font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">
+                  <th className="py-4 px-6">ID</th>
+                  <th className="py-4 px-6">Mijoz</th>
+                  <th className="py-4 px-6">Sana</th>
+                  <th className="py-4 px-6 text-right">Summa</th>
+                  <th className="py-4 px-6">To'lov holati</th>
+                  <th className="py-4 px-6">Buyurtma holati</th>
                 </tr>
               </thead>
-              <tbody>
-                {orders.length === 0 ? (
+              <tbody className="divide-y divide-outline-variant bg-surface-container-lowest">
+                {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-5 py-10 text-center text-white/40">{t("orders.noOrders", {}, "Buyurtmalar topilmadi")}</td>
+                    <td colSpan={6} className="py-12 text-center text-on-surface-variant">Buyurtmalar topilmadi</td>
                   </tr>
                 ) : (
-                  orders.map((o) => (
-                    <tr key={o.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                      <td className="px-5 py-3 font-medium text-white">{o.orderNumber}</td>
-                      <td className="px-5 py-3">
-                        <p className="text-white">{o.user?.name || "Noma'lum"}</p>
-                        <p className="text-xs text-white/50">{o.user?.phone || o.user?.email || ""}</p>
-                      </td>
-                      <td className="px-5 py-3 text-white/70">
-                        {new Date(o.createdAt).toLocaleString("uz-UZ")}
-                      </td>
-                      <td className="px-5 py-3">
-                        <select
-                          disabled={statusUpdating === o.id}
-                          value={o.paymentStatus}
-                          onChange={(e) => handlePaymentStatusChange(o.id, e.target.value)}
-                          className={`text-xs font-semibold px-2 py-1 rounded-md outline-none bg-slate-800/80 border border-white/10 cursor-pointer transition-colors ${PAYMENT_COLORS[o.paymentStatus] || "text-white/60"}`}
-                        >
-                          {Object.entries(PAYMENT_LABELS).map(([val, label]) => (
-                            <option key={val} value={val} className="bg-[#0e2037]">{label}</option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className="px-5 py-3 font-bold text-white">
-                        {Number(o.totalPrice).toLocaleString("uz-UZ")} so'm
-                      </td>
-                      <td className="px-5 py-3">
-                        <select
-                          disabled={statusUpdating === o.id}
-                          value={o.orderStatus}
-                          onChange={(e) => handleStatusChange(o.id, e.target.value)}
-                          className={`text-xs font-medium px-2.5 py-1 rounded-full outline-none appearance-none cursor-pointer border border-transparent hover:border-white/20 transition-colors ${STATUS_COLORS[o.orderStatus] || "bg-gray-100 text-gray-600"}`}
-                        >
-                          {Object.entries(STATUS_LABELS).map(([val, label]) => (
-                            <option key={val} value={val} className="bg-[#0e2037] text-white">{label}</option>
-                          ))}
-                        </select>
-                      </td>
-                    </tr>
-                  ))
+                  filtered.map((o) => {
+                    const name = o.user?.name || "Noma'lum";
+                    return (
+                      <tr key={o.id} className="hover:bg-surface-container-low transition-colors">
+                        <td className="py-4 px-6 font-body-sm font-semibold text-on-surface whitespace-nowrap">{o.orderNumber}</td>
+                        <td className="py-4 px-6">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-bold text-xs shrink-0">
+                              {name.slice(0, 2).toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <span className="font-body-sm text-on-surface font-medium block">{name}</span>
+                              <span className="text-xs text-on-surface-variant">{o.user?.phone || o.user?.email || ""}</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-4 px-6 font-body-sm text-on-surface-variant whitespace-nowrap">
+                          {o.createdAt ? new Date(o.createdAt).toLocaleString("uz-UZ") : "—"}
+                        </td>
+                        <td className="py-4 px-6 font-body-sm font-semibold text-on-surface text-right whitespace-nowrap">
+                          {Number(o.totalPrice).toLocaleString("uz-UZ")} UZS
+                        </td>
+                        <td className="py-4 px-6">
+                          <div className="flex items-center gap-2">
+                            <span className={`w-2 h-2 rounded-full ${PAYMENT_DOT[o.paymentStatus] || "bg-outline-variant"}`} />
+                            <select
+                              disabled={statusUpdating === o.id}
+                              value={o.paymentStatus}
+                              onChange={(e) => handlePaymentStatusChange(o.id, e.target.value)}
+                              className="font-body-sm text-on-surface bg-transparent border-none focus:outline-none cursor-pointer"
+                            >
+                              {Object.entries(PAYMENT_LABELS).map(([val, label]) => (
+                                <option key={val} value={val}>{label}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </td>
+                        <td className="py-4 px-6">
+                          <select
+                            disabled={statusUpdating === o.id}
+                            value={o.orderStatus}
+                            onChange={(e) => handleStatusChange(o.id, e.target.value)}
+                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border-none focus:outline-none cursor-pointer ${STATUS_BADGE[o.orderStatus] || "bg-surface-variant text-on-surface-variant"}`}
+                          >
+                            {Object.entries(STATUS_LABELS).map(([val, label]) => (
+                              <option key={val} value={val}>{label}</option>
+                            ))}
+                          </select>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
           </div>
         )}
+        <div className="bg-surface-bright px-6 py-4 border-t border-outline-variant">
+          <span className="font-body-sm text-on-surface-variant">{filtered.length} ta buyurtma ko'rsatilmoqda</span>
+        </div>
       </div>
     </div>
   );

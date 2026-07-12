@@ -79,17 +79,32 @@ const CONTACT_KEYBOARD = {
 // (https://t.me/trades_uz_bot?start=support, which Telegram delivers as the
 // text "/start support") or by a user messaging the bot on their own. Once a
 // chat is "awaiting" a support message, its next free-text message is
-// forwarded to ADMIN_SUPPORT_CHAT_ID instead of the normal onboarding nudge.
+// forwarded to ADMIN_SUPPORT_CHAT_IDS instead of the normal onboarding nudge.
 // In-memory only (mirrors the module-level state already used for polling
 // above) — acceptable since this is a short-lived UX flag, not durable data.
 const awaitingSupportMessage = new Set();
 const lastSupportMessageAt = new Map(); // chatId -> timestamp, per-chat cooldown
 const SUPPORT_COOLDOWN_MS = 60 * 1000; // 1 forwarded message per minute per chat
 
-const ADMIN_SUPPORT_CHAT_ID = process.env.ADMIN_SUPPORT_CHAT_ID;
+const ADMIN_SUPPORT_CHAT_IDS = (process.env.ADMIN_SUPPORT_CHAT_IDS || '')
+  .split(',')
+  .map((id) => id.trim())
+  .filter(Boolean);
 
 const escapeHtml = (str) =>
   String(str).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+
+// Send one message to every configured support admin. Best-effort per
+// recipient — one admin's delivery failing shouldn't block the others.
+// Shared by the bot's own direct-message flow and the app's Contact Support
+// HTTP endpoint (support.service.js), so there's one place that knows about
+// the (possibly multiple) admin chat ids.
+const sendToSupportAdmins = (text) =>
+  Promise.all(
+    ADMIN_SUPPORT_CHAT_IDS.map((chatId) =>
+      sendMessage(chatId, text).catch((err) => logger.error(`Support forward to ${chatId} failed: ${err.message}`))
+    )
+  );
 
 const SUPPORT_PROMPT = 'Yordam kerakmi? Muammoingizni bitta xabar qilib yozing — jamoamiz ko\'rib chiqadi.';
 const SUPPORT_SENT_ACK = '✅ Xabaringiz qabul qilindi. Tez orada javob beramiz.';
@@ -143,7 +158,7 @@ const handleUpdate = async (update) => {
       awaitingSupportMessage.delete(chatId);
       lastSupportMessageAt.set(chatId, Date.now());
 
-      if (ADMIN_SUPPORT_CHAT_ID) {
+      if (ADMIN_SUPPORT_CHAT_IDS.length) {
         const from = msg.from || {};
         const who = [from.first_name, from.last_name].filter(Boolean).join(' ') || 'Noma\'lum';
         const username = from.username ? `@${from.username}` : '(username yo\'q)';
@@ -153,9 +168,7 @@ const handleUpdate = async (update) => {
           `<b>Username:</b> ${escapeHtml(username)}\n` +
           `<b>Chat ID:</b> ${chatId}\n\n` +
           `${escapeHtml(msg.text)}`;
-        await sendMessage(ADMIN_SUPPORT_CHAT_ID, text).catch((err) =>
-          logger.error(`Support forward (bot) failed: ${err.message}`)
-        );
+        await sendToSupportAdmins(text);
       }
       await sendMessage(chatId, SUPPORT_SENT_ACK);
       return;
@@ -168,4 +181,4 @@ const handleUpdate = async (update) => {
   }
 };
 
-module.exports = { sendMessage, setWebhook, handleUpdate, normalizePhone, callTelegram, startPolling, stopPolling };
+module.exports = { sendMessage, setWebhook, handleUpdate, normalizePhone, callTelegram, startPolling, stopPolling, sendToSupportAdmins };

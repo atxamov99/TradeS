@@ -4,8 +4,9 @@ const createProductSchema = Joi.object({
   name: Joi.string().trim().max(200).required(),
   buyPrice: Joi.number().min(0).required(),
   sellPrice: Joi.number().min(0).required(),
-  stock: Joi.number().integer().min(0).default(0),
+  stock: Joi.number().min(0).default(0),
   unit: Joi.string().trim().default('dona'),
+  bagWeightKg: Joi.number().min(0),
   // Optional legacy e-commerce fields
   description: Joi.string().trim().max(5000).allow('').default(''),
   price: Joi.number().min(0).default(0),
@@ -38,10 +39,11 @@ const updateProductSchema = Joi.object({
       alt: Joi.string().allow('').default(''),
     })
   ),
-  stock: Joi.number().integer().min(0),
+  stock: Joi.number().min(0),
   brand: Joi.string().trim().allow(''),
   tags: Joi.array().items(Joi.string().trim().lowercase()),
   isActive: Joi.boolean(),
+  bagWeightKg: Joi.number().min(0),
 });
 
 const reviewSchema = Joi.object({
@@ -49,4 +51,8 @@ const reviewSchema = Joi.object({
   comment: Joi.string().trim().max(1000).required(),
 });
 
-module.exports = { createProductSchema, updateProductSchema, reviewSchema };
+const restockSchema = Joi.object({
+  quantity: Joi.number().greater(0).required(),
+});
+
+module.exports = { createProductSchema, updateProductSchema, reviewSchema, restockSchema };

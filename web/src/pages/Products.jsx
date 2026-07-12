@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Search, Plus, X, Pencil, Trash2, Package, AlertCircle } from 'lucide-react';
+import { Search, Plus, X, Pencil, Trash2, Package, AlertCircle, PackagePlus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import * as productsApi from '../api/products.api';
@@ -37,6 +37,7 @@ export default function Products() {
   const [search, setSearch] = useState('');
   const [modal, setModal] = useState(null); // null | 'add' | { product }
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [restockTarget, setRestockTarget] = useState(null);
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['products'],
@@ -137,6 +138,13 @@ export default function Products() {
                 {canManage(product) && (
                   <div className="flex items-center gap-2">
                     <button
+                      onClick={() => setRestockTarget(product)}
+                      className="p-2.5 rounded-xl hover:bg-green-50 dark:hover:bg-green-500/10 text-[#64748B] dark:text-slate-400 hover:text-green-600 dark:hover:text-green-400 transition"
+                      title={t('restock_action')}
+                    >
+                      <PackagePlus size={18} />
+                    </button>
+                    <button
                       onClick={() => setModal(product)}
                       className="p-2.5 rounded-xl hover:bg-slate-100 text-[#64748B] hover:text-[#0F172A] transition"
                       title={t('edit_product')}
@@ -172,6 +180,13 @@ export default function Products() {
         <DeleteConfirm
           product={deleteTarget}
           onClose={() => setDeleteTarget(null)}
+          t={t}
+        />
+      )}
+      {restockTarget && (
+        <RestockModal
+          product={restockTarget}
+          onClose={() => setRestockTarget(null)}
           t={t}
         />
       )}
@@ -385,6 +400,80 @@ function DeleteConfirm({ product, onClose, t }) {
             ) : t('delete')}
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function RestockModal({ product, onClose, t }) {
+  const [quantity, setQuantity] = useState('');
+  const [error, setError] = useState('');
+  const qc = useQueryClient();
+
+  const restockMutation = useMutation({
+    mutationFn: (qty) => productsApi.restockProduct(product.id, qty),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['products'] });
+      toast.success(t('restock_success'));
+      onClose();
+    },
+  });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const qty = Number(quantity);
+    if (!quantity || isNaN(qty) || qty <= 0) {
+      setError(t('enter_restock_quantity'));
+      return;
+    }
+    restockMutation.mutate(qty);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
+      <div
+        className="bg-white dark:bg-[#1E293B] w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-lg font-bold text-[#0F172A] dark:text-slate-100">{t('restock_modal_title')}</h2>
+          <button onClick={onClose} className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+            <X size={20} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div>
+            <p className="font-bold text-[#0F172A] dark:text-slate-100 mb-3 truncate">{product.name}</p>
+            <label className="block text-sm font-semibold text-[#0F172A] dark:text-slate-100 mb-2">{t('restock_quantity_label')}</label>
+            <input
+              type="number"
+              value={quantity}
+              onChange={(e) => { setQuantity(e.target.value); if (error) setError(''); }}
+              placeholder="0"
+              min="0"
+              autoFocus
+              className={`w-full h-12 rounded-xl border px-4 text-base text-[#0F172A] placeholder-[#94A3B8] dark:text-slate-100 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition ${error ? 'border-red-400 bg-red-50 dark:bg-red-500/10' : 'border-[#E2E8F0] bg-white dark:border-[#334155] dark:bg-[#0F172A]'
+                }`}
+            />
+            {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+          </div>
+
+          <div className="flex gap-3 mt-2">
+            <button type="button" onClick={onClose} className="flex-1 h-12 rounded-xl border border-[#E2E8F0] text-[#64748B] font-semibold hover:bg-slate-50 transition dark:border-[#334155] dark:text-slate-400 dark:hover:bg-slate-800">
+              {t('cancel')}
+            </button>
+            <button
+              type="submit"
+              disabled={restockMutation.isPending}
+              className="flex-1 h-12 rounded-xl bg-green-500 hover:bg-green-600 text-white font-bold transition flex items-center justify-center gap-2 disabled:opacity-60"
+            >
+              {restockMutation.isPending ? (
+                <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : t('restock_action')}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

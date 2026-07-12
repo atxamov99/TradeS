@@ -29,6 +29,11 @@ const updateProduct = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, { product }, 'Product updated'));
 });
 
+const restockProduct = asyncHandler(async (req, res) => {
+  const product = await productService.restockProduct(req.params.id, req.user.id, req.body.quantity, { isAdmin: isAdmin(req) });
+  res.status(200).json(new ApiResponse(200, { product }, 'Product restocked'));
+});
+
 const deleteProduct = asyncHandler(async (req, res) => {
   const result = await productService.deleteProduct(req.params.id, req.user.id, { isAdmin: isAdmin(req) });
   res.status(200).json(new ApiResponse(200, result, result.message));
@@ -55,6 +60,7 @@ module.exports = {
   getProductBySlug,
   createProduct,
   updateProduct,
+  restockProduct,
   deleteProduct,
   addReview,
   getCategories,

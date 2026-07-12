@@ -8,6 +8,7 @@ const {
   createProductSchema,
   updateProductSchema,
   reviewSchema,
+  restockSchema,
 } = require('../validators/product.validator');
 
 // All product routes require authentication (user-scoped)
@@ -21,6 +22,7 @@ router.get('/:id', productController.getProductById);
 router.post('/', validate(createProductSchema), productController.createProduct);
 router.post('/:id/reviews', validate(reviewSchema), productController.addReview);
 router.patch('/:id', validate(updateProductSchema), productController.updateProduct);
+router.patch('/:id/restock', validate(restockSchema), productController.restockProduct);
 router.delete('/:id', productController.deleteProduct);
 
 module.exports = router;

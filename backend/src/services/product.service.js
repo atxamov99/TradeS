@@ -143,6 +143,30 @@ const updateProduct = async (id, userId, updateData, options = {}) => {
   return updatedProduct;
 };
 
+const restockProduct = async (id, userId, quantity, options = {}) => {
+  const { isAdmin = false } = options;
+  const where = { id };
+  if (!isAdmin && userId) {
+    where.ownerId = userId;
+  }
+
+  const product = await prisma.product.findFirst({ where });
+  if (!product) throw new ApiError(404, 'Product not found');
+
+  const qty = Number(quantity);
+  if (!(qty > 0)) {
+    throw new ApiError(400, 'Restock quantity must be greater than 0', [], '', 'INVALID_RESTOCK_QUANTITY');
+  }
+
+  const updated = await prisma.product.update({
+    where: { id },
+    data: { stock: { increment: qty } },
+    include: { images: true },
+  });
+
+  return updated;
+};
+
 const deleteProduct = async (id, userId, options = {}) => {
   const { isAdmin = false } = options;
   const where = { id };
@@ -229,6 +253,7 @@ module.exports = {
   getProductBySlug,
   createProduct,
   updateProduct,
+  restockProduct,
   deleteProduct,
   addReview,
   getCategories,

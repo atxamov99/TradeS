@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Users, Package, ShoppingBag, DollarSign } from 'lucide-react';
 import { OrderStatusBadge } from '../../components/ui/Badge';
 import { TableSkeleton } from '../../components/ui/Skeleton';
@@ -25,6 +26,7 @@ function StatCard({ icon: Icon, label, value, color }) {
 }
 
 export default function AdminDashboard() {
+  const { t } = useTranslation();
   const { data, isLoading } = useQuery({
     queryKey: ['admin-stats'],
     queryFn: adminApi.getDashboardStats,
@@ -35,20 +37,20 @@ export default function AdminDashboard() {
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold">Dashboard</h1>
+      <h1 className="text-2xl font-bold">{t('admin_dashboard_title')}</h1>
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard icon={Users} label="Total Users" value={stats.totalUsers ?? '—'} color="blue" />
-        <StatCard icon={Package} label="Total Products" value={stats.totalProducts ?? '—'} color="purple" />
-        <StatCard icon={ShoppingBag} label="Total Orders" value={stats.totalOrders ?? '—'} color="yellow" />
-        <StatCard icon={DollarSign} label="Revenue" value={`$${(stats.totalRevenue || 0).toFixed(2)}`} color="green" />
+        <StatCard icon={Users} label={t('admin_total_users')} value={stats.totalUsers ?? '—'} color="blue" />
+        <StatCard icon={Package} label={t('admin_total_products')} value={stats.totalProducts ?? '—'} color="purple" />
+        <StatCard icon={ShoppingBag} label={t('admin_total_orders')} value={stats.totalOrders ?? '—'} color="yellow" />
+        <StatCard icon={DollarSign} label={t('admin_revenue')} value={`$${(stats.totalRevenue || 0).toFixed(2)}`} color="green" />
       </div>
 
       {/* Orders by status */}
       {stats.ordersByStatus && (
         <div className="card p-6">
-          <h2 className="font-bold mb-4">Orders by Status</h2>
+          <h2 className="font-bold mb-4">{t('admin_orders_by_status')}</h2>
           <div className="flex flex-wrap gap-3">
             {stats.ordersByStatus.map(({ _id, count }) => (
               <div key={_id} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-50 dark:bg-gray-800">
@@ -62,7 +64,7 @@ export default function AdminDashboard() {
 
       {/* Recent orders */}
       <div className="card p-6">
-        <h2 className="font-bold mb-4">Recent Orders</h2>
+        <h2 className="font-bold mb-4">{t('admin_recent_orders')}</h2>
         {isLoading ? (
           <TableSkeleton rows={5} cols={4} />
         ) : (
@@ -70,10 +72,10 @@ export default function AdminDashboard() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
-                  <th className="pb-3 font-medium">Order #</th>
-                  <th className="pb-3 font-medium">Customer</th>
-                  <th className="pb-3 font-medium">Status</th>
-                  <th className="pb-3 font-medium text-right">Total</th>
+                  <th className="pb-3 font-medium">{t('admin_order_number')}</th>
+                  <th className="pb-3 font-medium">{t('admin_customer')}</th>
+                  <th className="pb-3 font-medium">{t('admin_col_status')}</th>
+                  <th className="pb-3 font-medium text-right">{t('admin_col_total')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y dark:divide-gray-700">

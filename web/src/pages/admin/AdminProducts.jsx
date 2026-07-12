@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Plus, Pencil, Trash2, Search } from 'lucide-react';
 import Pagination from '../../components/ui/Pagination';
 import { TableSkeleton } from '../../components/ui/Skeleton';
@@ -17,6 +18,7 @@ const EMPTY_FORM = {
 };
 
 export default function AdminProducts() {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
@@ -36,7 +38,7 @@ export default function AdminProducts() {
 
   const deleteMutation = useMutation({
     mutationFn: (id) => productsApi.deleteProduct(id),
-    onSuccess: () => { qc.invalidateQueries(['admin-products']); toast.success('Product deleted'); },
+    onSuccess: () => { qc.invalidateQueries(['admin-products']); toast.success(t('admin_product_deleted')); },
   });
 
   const openCreate = () => { setEditing(null); setForm(EMPTY_FORM); setModalOpen(true); };
@@ -71,10 +73,10 @@ export default function AdminProducts() {
       };
       if (editing) {
         await productsApi.updateProduct(editing.id, payload);
-        toast.success('Product updated');
+        toast.success(t('admin_product_updated'));
       } else {
         await productsApi.createProduct(payload);
-        toast.success('Product created');
+        toast.success(t('admin_product_created'));
       }
       qc.invalidateQueries(['admin-products']);
       setModalOpen(false);
@@ -87,15 +89,15 @@ export default function AdminProducts() {
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Products</h1>
+        <h1 className="text-2xl font-bold">{t('products')}</h1>
         <Button onClick={openCreate}>
-          <Plus className="h-4 w-4" /> Add Product
+          <Plus className="h-4 w-4" /> {t('add_product')}
         </Button>
       </div>
 
       <div className="relative max-w-xs">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-        <input className="input pl-10" placeholder="Search products..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
+        <input className="input pl-10" placeholder={t('admin_search_products_ph')} value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
       </div>
 
       <div className="card overflow-hidden">
@@ -105,12 +107,12 @@ export default function AdminProducts() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 dark:bg-gray-800">
-                <tr className="text-left text-xs text-gray-500 uppercase tracking-wide">
-                  <th className="px-4 py-3 font-medium">Product</th>
-                  <th className="px-4 py-3 font-medium">Category</th>
-                  <th className="px-4 py-3 font-medium">Price</th>
-                  <th className="px-4 py-3 font-medium">Stock</th>
-                  <th className="px-4 py-3 font-medium text-right">Actions</th>
+                <tr className="text-left text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                  <th className="px-4 py-3 font-medium">{t('admin_col_product')}</th>
+                  <th className="px-4 py-3 font-medium">{t('admin_col_category')}</th>
+                  <th className="px-4 py-3 font-medium">{t('admin_col_price')}</th>
+                  <th className="px-4 py-3 font-medium">{t('admin_col_stock')}</th>
+                  <th className="px-4 py-3 font-medium text-right">{t('admin_col_actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
@@ -136,8 +138,8 @@ export default function AdminProducts() {
                           <Pencil className="h-4 w-4" />
                         </button>
                         <button
-                          onClick={() => { if (confirm(`Delete ${p.name}?`)) deleteMutation.mutate(p.id); }}
-                          className="p-1.5 rounded-lg text-red-500 hover:bg-red-50"
+                          onClick={() => { if (confirm(t('admin_confirm_delete_product', { name: p.name }))) deleteMutation.mutate(p.id); }}
+                          className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -156,25 +158,25 @@ export default function AdminProducts() {
       </div>
 
       {/* Create/Edit Modal */}
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Edit Product' : 'New Product'} size="lg">
+      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? t('admin_edit_product_title') : t('admin_new_product_title')} size="lg">
         <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <Input label="Product Name *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+              <Input label={t('admin_product_name_label')} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
             </div>
             <div className="sm:col-span-2">
-              <label className="label">Description *</label>
+              <label className="label">{t('admin_description_label')}</label>
               <textarea className="input min-h-[80px] resize-y" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} required />
             </div>
-            <Input label="Price ($) *" type="number" min="0" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} required />
-            <Input label="Discount (%)" type="number" min="0" max="100" value={form.discount} onChange={(e) => setForm({ ...form, discount: e.target.value })} />
-            <Input label="Category *" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} required placeholder="e.g. electronics" />
-            <Input label="Stock *" type="number" min="0" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} required />
+            <Input label={t('admin_price_label')} type="number" min="0" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} required />
+            <Input label={t('admin_discount_label')} type="number" min="0" max="100" value={form.discount} onChange={(e) => setForm({ ...form, discount: e.target.value })} />
+            <Input label={t('admin_category_label')} value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} required placeholder={t('admin_category_ph')} />
+            <Input label={t('admin_stock_label')} type="number" min="0" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} required />
             <div className="sm:col-span-2">
-              <Input label="Brand" value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value })} placeholder="Optional" />
+              <Input label={t('admin_brand_label')} value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value })} placeholder={t('admin_optional_ph')} />
             </div>
             <div className="sm:col-span-2">
-              <label className="label">Image URL</label>
+              <label className="label">{t('admin_image_url_label')}</label>
               <Input
                 value={form.images[0]?.url || ''}
                 onChange={(e) => {
@@ -187,8 +189,8 @@ export default function AdminProducts() {
             </div>
           </div>
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="secondary" type="button" onClick={() => setModalOpen(false)}>Cancel</Button>
-            <Button type="submit" isLoading={saving}>{editing ? 'Update' : 'Create'}</Button>
+            <Button variant="secondary" type="button" onClick={() => setModalOpen(false)}>{t('cancel')}</Button>
+            <Button type="submit" isLoading={saving}>{editing ? t('admin_update_label') : t('admin_create_label')}</Button>
           </div>
         </form>
       </Modal>

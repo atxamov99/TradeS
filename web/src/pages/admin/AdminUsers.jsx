@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Search, ShieldOff, ShieldCheck, Trash2 } from 'lucide-react';
 import Badge from '../../components/ui/Badge';
 import Pagination from '../../components/ui/Pagination';
@@ -8,6 +9,7 @@ import * as adminApi from '../../api/admin.api';
 import toast from 'react-hot-toast';
 
 export default function AdminUsers() {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
@@ -23,17 +25,17 @@ export default function AdminUsers() {
 
   const blockMutation = useMutation({
     mutationFn: (id) => adminApi.blockUser(id),
-    onSuccess: () => { qc.invalidateQueries(['admin-users']); toast.success('User blocked'); },
+    onSuccess: () => { qc.invalidateQueries(['admin-users']); toast.success(t('admin_user_blocked')); },
   });
 
   const unblockMutation = useMutation({
     mutationFn: (id) => adminApi.unblockUser(id),
-    onSuccess: () => { qc.invalidateQueries(['admin-users']); toast.success('User unblocked'); },
+    onSuccess: () => { qc.invalidateQueries(['admin-users']); toast.success(t('admin_user_unblocked')); },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => adminApi.deleteUser(id),
-    onSuccess: () => { qc.invalidateQueries(['admin-users']); toast.success('User deleted'); },
+    onSuccess: () => { qc.invalidateQueries(['admin-users']); toast.success(t('admin_user_deleted')); },
   });
 
   const roleColors = { USER: 'gray', ADMIN: 'blue', SUPER_ADMIN: 'purple' };
@@ -41,15 +43,15 @@ export default function AdminUsers() {
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Users</h1>
-        <span className="text-sm text-gray-500 dark:text-gray-400">{result.total || 0} total</span>
+        <h1 className="text-2xl font-bold">{t('admin_users_title')}</h1>
+        <span className="text-sm text-gray-500 dark:text-gray-400">{result.total || 0} {t('admin_total_suffix')}</span>
       </div>
 
       <div className="relative max-w-xs">
         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
         <input
           className="input pl-10"
-          placeholder="Search by name or email..."
+          placeholder={t('admin_search_users_ph')}
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(1); }}
         />
@@ -63,11 +65,11 @@ export default function AdminUsers() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr className="text-left text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                  <th className="px-4 py-3 font-medium">User</th>
-                  <th className="px-4 py-3 font-medium">Role</th>
-                  <th className="px-4 py-3 font-medium">Status</th>
-                  <th className="px-4 py-3 font-medium">Joined</th>
-                  <th className="px-4 py-3 font-medium text-right">Actions</th>
+                  <th className="px-4 py-3 font-medium">{t('admin_col_user')}</th>
+                  <th className="px-4 py-3 font-medium">{t('admin_col_role')}</th>
+                  <th className="px-4 py-3 font-medium">{t('admin_col_status')}</th>
+                  <th className="px-4 py-3 font-medium">{t('admin_col_joined')}</th>
+                  <th className="px-4 py-3 font-medium text-right">{t('admin_col_actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y dark:divide-gray-700">
@@ -87,12 +89,12 @@ export default function AdminUsers() {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1.5">
                         <Badge color={roleColors[u.role] || 'gray'}>{u.role}</Badge>
-                        {u.isTestUser && <Badge color="yellow">Test</Badge>}
+                        {u.isTestUser && <Badge color="yellow">{t('admin_test_badge')}</Badge>}
                       </div>
                     </td>
                     <td className="px-4 py-3">
                       <Badge color={u.isBlocked ? 'red' : 'green'}>
-                        {u.isBlocked ? 'Blocked' : 'Active'}
+                        {u.isBlocked ? t('admin_blocked') : t('admin_active')}
                       </Badge>
                     </td>
                     <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
@@ -104,7 +106,7 @@ export default function AdminUsers() {
                           <button
                             onClick={() => unblockMutation.mutate(u.id)}
                             className="p-1.5 rounded-lg text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
-                            title="Unblock"
+                            title={t('admin_unblock')}
                           >
                             <ShieldCheck className="h-4 w-4" />
                           </button>
@@ -112,17 +114,17 @@ export default function AdminUsers() {
                           <button
                             onClick={() => blockMutation.mutate(u.id)}
                             className="p-1.5 rounded-lg text-yellow-600 hover:bg-yellow-50 dark:hover:bg-yellow-900/20"
-                            title="Block"
+                            title={t('admin_block')}
                           >
                             <ShieldOff className="h-4 w-4" />
                           </button>
                         )}
                         <button
                           onClick={() => {
-                            if (confirm(`Delete ${u.name}?`)) deleteMutation.mutate(u.id);
+                            if (confirm(t('admin_confirm_delete_user', { name: u.name }))) deleteMutation.mutate(u.id);
                           }}
                           className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
-                          title="Delete"
+                          title={t('admin_delete_action')}
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>

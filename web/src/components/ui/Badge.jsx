@@ -1,4 +1,5 @@
 import { clsx } from 'clsx';
+import { useTranslation } from 'react-i18next';
 
 const colors = {
   gray:    'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
@@ -24,10 +25,11 @@ export default function Badge({ children, color = 'gray', className }) {
 }
 
 export function OrderStatusBadge({ status }) {
+  const { t } = useTranslation();
   const color = ORDER_COLORS[status] || 'gray';
   return (
     <Badge color={color} className="capitalize">
-      {status}
+      {t(`order_status_${status}`, status)}
     </Badge>
   );
 }

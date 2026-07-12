@@ -98,7 +98,12 @@ api.interceptors.response.use(
     }
 
     const status = error.response?.status;
-    if (status !== 401 && status !== 422) {
+    // 401/422 are handled by their own call sites; 428 (Telegram-not-connected,
+    // thrown only by requestOtp) is too — Register.jsx and ForgotPasswordPage.jsx
+    // both transition to a dedicated "connect Telegram" screen that already
+    // explains the situation in the active locale, so a global toast here would
+    // just be a redundant (and untranslated) duplicate.
+    if (status !== 401 && status !== 422 && status !== 428) {
       toast.error(resolveErrorMessage(error));
     }
 

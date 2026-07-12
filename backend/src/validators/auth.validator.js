@@ -27,7 +27,7 @@ const refreshTokenSchema = Joi.object({
 
 const updateProfileSchema = Joi.object({
   name: Joi.string().trim().min(2).max(100),
-  email: Joi.string().email().lowercase(),
+  email: Joi.string().email().lowercase().allow('', null),
   phone: Joi.string().trim().max(20).allow(''),
   avatar: Joi.string().uri().allow(''),
   telegram: Joi.string().trim().max(50).allow(''),

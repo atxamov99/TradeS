@@ -20,15 +20,39 @@ const updateProfile = async (userId, updateData) => {
     .filter((key) => allowed.includes(key))
     .reduce((obj, key) => ({ ...obj, [key]: updateData[key] }), {});
 
-  const user = await prisma.user.update({
-    where: { id: userId },
-    data: filteredData,
-  });
-  if (!user) throw new ApiError(404, 'User not found');
+  // Email is optional and can be added/changed here. When it actually changes,
+  // make sure no other active account already uses it and re-flag as unverified.
+  // (Soft-deleted accounts hold tombstoned `deleted_...` emails, so they never clash.)
+  if (filteredData.email !== undefined) {
+    const current = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
+    if (!current) throw new ApiError(404, 'User not found');
 
-  const userResponse = { ...user };
-  delete userResponse.password;
-  return userResponse;
+    const nextEmail = filteredData.email || null;
+    filteredData.email = nextEmail;
+
+    if (nextEmail && nextEmail !== current.email) {
+      const taken = await prisma.user.findFirst({
+        where: { email: nextEmail, deletedAt: null, NOT: { id: userId } },
+      });
+      if (taken) throw new ApiError(409, 'Bu email allaqachon band');
+      filteredData.isEmailVerified = false;
+    }
+  }
+
+  try {
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: filteredData,
+    });
+    const userResponse = { ...user };
+    delete userResponse.password;
+    return userResponse;
+  } catch (err) {
+    // Race on the unique email, or the row vanished.
+    if (err.code === 'P2002') throw new ApiError(409, 'Bu email allaqachon band');
+    if (err.code === 'P2025') throw new ApiError(404, 'User not found');
+    throw err;
+  }
 };
 
 const changePassword = async (userId, currentPassword, newPassword) => {

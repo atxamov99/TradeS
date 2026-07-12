@@ -7,6 +7,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { createAuditLog } = require('./audit.service');
 const telegramService = require('./telegram.service');
+const emailService = require('./email.service');
 
 const OTP_EXPIRES_MIN = 5;
 const OTP_MAX_ATTEMPTS = 5;
@@ -386,7 +387,7 @@ const forgotPassword = async (email) => {
   const genericMessage = 'Agar email mavjud bo\'lsa, tiklash tokeni yuborildi';
   if (!email) return { message: genericMessage };
 
-  const user = await prisma.user.findUnique({ where: { email } });
+  const user = await prisma.user.findFirst({ where: { email, deletedAt: null } });
   if (!user) return { message: genericMessage };
 
   const rawToken = crypto.randomBytes(32).toString('hex');
@@ -397,13 +398,15 @@ const forgotPassword = async (email) => {
     data: { passwordResetToken: hashResetToken(rawToken), passwordResetExpires: expiresAt },
   });
 
-  // Dev-safe delivery: in production this token would be emailed; here we log it
-  // and (in non-production) return it so the flow is testable end-to-end.
+  // Send the reset link by email (real via Resend when configured; otherwise a
+  // dev no-op that logs). Also log the token and, when email isn't configured in
+  // non-production, return it so the flow stays testable end-to-end.
   const logger = require('../utils/logger');
   logger.info(`Password reset token for ${email}: ${rawToken} (valid ${PASSWORD_RESET_EXPIRES_MIN}m)`);
+  await emailService.sendResetToken(email, rawToken);
 
   const result = { message: genericMessage };
-  if (process.env.NODE_ENV !== 'production') {
+  if (!emailService.isConfigured() && process.env.NODE_ENV !== 'production') {
     result.resetToken = rawToken;
     result.expiresAt = expiresAt;
   }
@@ -440,4 +443,175 @@ const resetPassword = async (rawToken, newPassword) => {
   return { message: 'Parol muvaffaqiyatli yangilandi' };
 };
 
-module.exports = { register, login, refreshTokens, logout, logoutAll, googleAuth, requestOtp, verifyOtp, issueTokens, forgotPassword, resetPassword };
+/**
+ * Request a password reset over the phone (Telegram OTP). Reuses the existing OTP
+ * infrastructure but for a RESET intent — unlike registration's request-otp, an
+ * already-registered number is exactly who we want to send a code to. A code is
+ * only sent when the account actually exists; the response is otherwise a generic
+ * message so we never disclose whether a number is registered (enumeration guard).
+ * If the number has no linked Telegram chat we can't deliver a code, so we surface
+ * that (same 428 as request-otp) — this reveals Telegram-link status, not account
+ * existence.
+ */
+const forgotPasswordByPhone = async (rawPhone) => {
+  const genericMessage = 'Agar bu raqam ro\'yxatdan o\'tgan bo\'lsa, tasdiqlash kodi yuborildi';
+  const phone = telegramService.normalizePhone(rawPhone);
+  if (!phone) throw new ApiError(400, 'Telefon raqam noto\'g\'ri');
+
+  const record = await prisma.phoneAuth.findUnique({ where: { phone } });
+  if (!record || !record.telegramChatId) {
+    throw new ApiError(428, 'Avval Telegram bot orqali raqamingizni ulang');
+  }
+
+  const canonicalPhone = `+${phone}`;
+  const user = await prisma.user.findFirst({ where: { phone: canonicalPhone, deletedAt: null } });
+
+  if (user) {
+    const code = String(crypto.randomInt(100000, 1000000)); // 6 digits
+    const otpExpiresAt = new Date(Date.now() + OTP_EXPIRES_MIN * 60 * 1000);
+    await prisma.phoneAuth.update({
+      where: { phone },
+      data: { otpCode: code, otpExpiresAt, attempts: 0 },
+    });
+    await telegramService.sendMessage(
+      record.telegramChatId,
+      `🔐 <b>TradeS</b> parol tiklash kodi:\n\n<code>${code}</code>\n\nKod ${OTP_EXPIRES_MIN} daqiqa amal qiladi. Hech kimga bermang.`
+    );
+  }
+
+  return { message: genericMessage };
+};
+
+/**
+ * Reset a password over the phone: verify the OTP, set the new password, and revoke
+ * all refresh sessions (same lock-out semantics as the email token flow). OTP is
+ * single-use.
+ */
+const resetPasswordByPhone = async (rawPhone, code, newPassword) => {
+  const phone = telegramService.normalizePhone(rawPhone);
+  if (!phone || !code) throw new ApiError(400, 'Telefon va kod talab qilinadi');
+
+  const record = await prisma.phoneAuth.findUnique({ where: { phone } });
+  if (!record || !record.otpCode || !record.otpExpiresAt) {
+    throw new ApiError(400, 'Avval kod so\'rang');
+  }
+  if (record.attempts >= OTP_MAX_ATTEMPTS) {
+    throw new ApiError(429, 'Juda ko\'p urinish. Yangi kod so\'rang');
+  }
+  if (record.otpExpiresAt < new Date()) {
+    throw new ApiError(400, 'Kod muddati tugagan. Yangi kod so\'rang');
+  }
+  if (record.otpCode !== String(code).trim()) {
+    await prisma.phoneAuth.update({ where: { phone }, data: { attempts: { increment: 1 } } });
+    throw new ApiError(400, 'Kod noto\'g\'ri');
+  }
+
+  const canonicalPhone = `+${phone}`;
+  const user = await prisma.user.findFirst({ where: { phone: canonicalPhone, deletedAt: null } });
+  if (!user) throw new ApiError(400, 'Foydalanuvchi topilmadi');
+
+  // OTP correct — clear it (single use)
+  await prisma.phoneAuth.update({
+    where: { phone },
+    data: { otpCode: null, otpExpiresAt: null, attempts: 0 },
+  });
+
+  const hashed = await bcrypt.hash(newPassword, 10);
+  await prisma.$transaction([
+    prisma.user.update({ where: { id: user.id }, data: { password: hashed } }),
+    // Invalidate every existing session — a reset must lock out anyone holding old tokens.
+    prisma.refreshToken.updateMany({
+      where: { userId: user.id, isRevoked: false },
+      data: { isRevoked: true },
+    }),
+  ]);
+
+  return { message: 'Parol muvaffaqiyatli yangilandi' };
+};
+
+/**
+ * Request an email OTP — the email-channel analog of requestOtp. A 6-digit code is
+ * stored on EmailAuth and delivered via Resend (dev no-op + surfaced code when the
+ * provider isn't configured). The response is generic and identical whether or not
+ * the address is registered, so it never discloses account existence.
+ */
+const requestEmailOtp = async (rawEmail) => {
+  const email = String(rawEmail || '').trim().toLowerCase();
+  if (!email) throw new ApiError(400, 'Email talab qilinadi');
+
+  const code = String(crypto.randomInt(100000, 1000000)); // 6 digits
+  const otpExpiresAt = new Date(Date.now() + OTP_EXPIRES_MIN * 60 * 1000);
+
+  await prisma.emailAuth.upsert({
+    where: { email },
+    update: { otpCode: code, otpExpiresAt, attempts: 0 },
+    create: { email, otpCode: code, otpExpiresAt, attempts: 0 },
+  });
+
+  await emailService.sendCode(email, code);
+
+  const result = { message: 'Tasdiqlash kodi emailga yuborildi' };
+  // Dev-safe: without a provider, surface the code so the flow is testable.
+  if (!emailService.isConfigured() && process.env.NODE_ENV !== 'production') {
+    result.devCode = code;
+  }
+  return result;
+};
+
+/**
+ * Verify the email OTP and register-or-login the user by email — the email-channel
+ * analog of verifyOtp. New users provide name + password; an existing account that
+ * receives a password is a re-registration attempt and is refused (409), mirroring
+ * the phone guard. Verifying the code proves ownership, so isEmailVerified is set.
+ */
+const verifyEmailOtp = async ({ email: rawEmail, code, name, password }, meta = {}) => {
+  const email = String(rawEmail || '').trim().toLowerCase();
+  if (!email || !code) throw new ApiError(400, 'Email va kod talab qilinadi');
+
+  const record = await prisma.emailAuth.findUnique({ where: { email } });
+  if (!record || !record.otpCode || !record.otpExpiresAt) {
+    throw new ApiError(400, 'Avval kod so\'rang');
+  }
+  if (record.attempts >= OTP_MAX_ATTEMPTS) {
+    throw new ApiError(429, 'Juda ko\'p urinish. Yangi kod so\'rang');
+  }
+  if (record.otpExpiresAt < new Date()) {
+    throw new ApiError(400, 'Kod muddati tugagan. Yangi kod so\'rang');
+  }
+  if (record.otpCode !== String(code).trim()) {
+    await prisma.emailAuth.update({ where: { email }, data: { attempts: { increment: 1 } } });
+    throw new ApiError(400, 'Kod noto\'g\'ri');
+  }
+
+  // OTP correct — clear it (single use)
+  await prisma.emailAuth.update({
+    where: { email },
+    data: { otpCode: null, otpExpiresAt: null, attempts: 0 },
+  });
+
+  let user = await prisma.user.findFirst({ where: { email, deletedAt: null } });
+
+  if (!user) {
+    if (!password) throw new ApiError(400, 'Ro\'yxatdan o\'tish uchun parol talab qilinadi');
+    const hashed = await bcrypt.hash(password, 10);
+    user = await prisma.user.create({
+      data: { name: name || 'Foydalanuvchi', email, password: hashed, isEmailVerified: true },
+    });
+  } else if (password) {
+    throw new ApiError(409, 'Bu email allaqachon ro\'yxatdan o\'tgan. Kirish sahifasi orqali kiring.');
+  } else if (!user.isEmailVerified) {
+    // Logging in via a code proves ownership — mark the address verified.
+    user = await prisma.user.update({ where: { id: user.id }, data: { isEmailVerified: true } });
+  }
+
+  if (user.isBlocked) throw new ApiError(403, 'Hisobingiz bloklangan');
+
+  const { accessToken, refreshToken } = await issueTokens(user, meta);
+  await prisma.user.update({ where: { id: user.id }, data: { lastLogin: new Date() } });
+
+  const userResponse = { ...user };
+  delete userResponse.password;
+  return { user: userResponse, accessToken, refreshToken };
+};
+
+module.exports = { register, login, refreshTokens, logout, logoutAll, googleAuth, requestOtp, verifyOtp, issueTokens, forgotPassword, resetPassword, forgotPasswordByPhone, resetPasswordByPhone, requestEmailOtp, verifyEmailOtp };

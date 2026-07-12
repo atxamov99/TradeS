@@ -124,14 +124,50 @@ const verifyOtp = asyncHandler(async (req, res) => {
   );
 });
 
-const forgotPassword = asyncHandler(async (req, res) => {
+const requestEmailOtp = asyncHandler(async (req, res) => {
   const { email } = req.body;
-  const result = await authService.forgotPassword(email);
+  if (!email) throw new ApiError(400, 'Email talab qilinadi');
+  const result = await authService.requestEmailOtp(email);
+  res.status(200).json(new ApiResponse(200, result, result.message));
+});
+
+const verifyEmailOtp = asyncHandler(async (req, res) => {
+  const meta = { userAgent: req.headers['user-agent'] || '', ip: req.ip };
+  const { user, accessToken, refreshToken } = await authService.verifyEmailOtp(req.body, meta);
+
+  res.cookie('accessToken', accessToken, COOKIE_OPTIONS);
+  res.cookie('refreshToken', refreshToken, COOKIE_OPTIONS);
+
+  res.status(200).json(
+    new ApiResponse(200, { user, accessToken, refreshToken }, 'Kirish muvaffaqiyatli')
+  );
+});
+
+const forgotPassword = asyncHandler(async (req, res) => {
+  const { email, phone } = req.body;
+  // Phone flow → Telegram OTP; email flow → reset token. Phone takes precedence
+  // when both are somehow sent.
+  const result = phone
+    ? await authService.forgotPasswordByPhone(phone)
+    : await authService.forgotPassword(email);
   res.status(200).json(new ApiResponse(200, result, result.message));
 });
 
 const resetPassword = asyncHandler(async (req, res) => {
-  const { token, password } = req.body;
+  const { token, password, phone, code } = req.body;
+
+  if (phone) {
+    // Phone reset: verify the OTP code instead of a token.
+    if (!code || !password) {
+      throw new ApiError(400, 'Telefon, kod va yangi parol talab qilinadi');
+    }
+    if (password.length < 6) {
+      throw new ApiError(400, 'Parol kamida 6 ta belgidan iborat bo\'lishi kerak');
+    }
+    const result = await authService.resetPasswordByPhone(phone, code, password);
+    return res.status(200).json(new ApiResponse(200, null, result.message));
+  }
+
   if (!token || !password) {
     throw new ApiError(400, 'Token va yangi parol talab qilinadi');
   }
@@ -142,4 +178,4 @@ const resetPassword = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, null, result.message));
 });
 
-module.exports = { register, login, refreshToken, logout, logoutAll, getMe, forgotPassword, resetPassword, googleAuth, requestOtp, verifyOtp, ssoAdopt };
+module.exports = { register, login, refreshToken, logout, logoutAll, getMe, forgotPassword, resetPassword, googleAuth, requestOtp, verifyOtp, requestEmailOtp, verifyEmailOtp, ssoAdopt };

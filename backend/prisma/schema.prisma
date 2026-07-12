@@ -324,3 +324,16 @@ model PhoneAuth {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 }
+
+// Email auth OTP (delivered via Resend). Analog of PhoneAuth for the email channel:
+// codes are generated on request-email-otp and cleared on verify. Persists
+// independently of User (a code can be requested before an account exists).
+model EmailAuth {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  otpCode      String?
+  otpExpiresAt DateTime?
+  attempts     Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}

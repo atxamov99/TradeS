@@ -1,6 +1,7 @@
 import { useI18n } from "../../i18n";
 import { useAuth } from "../../store";
 import { Icon } from "../shared/Icon";
+import { NotificationBell } from "./NotificationBell";
 
 export function Header({ onMenuToggle }) {
   const { logout, profile } = useAuth();
@@ -50,14 +51,7 @@ export function Header({ onMenuToggle }) {
           ))}
         </div>
 
-        <button
-          type="button"
-          className="relative text-on-surface-variant hover:text-primary transition-colors"
-          aria-label="Bildirishnomalar"
-        >
-          <Icon name="notifications" />
-          <span className="absolute top-0 right-0 w-2 h-2 bg-error rounded-full" />
-        </button>
+        <NotificationBell />
 
         <button
           type="button"

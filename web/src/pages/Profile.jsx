@@ -15,7 +15,7 @@ export default function Profile() {
   const { user, updateUser } = useAuthStore();
 
   const [editing, setEditing] = useState(false);
-  const [profileForm, setProfileForm] = useState({ name: user?.name || '', phone: user?.phone || '' });
+  const [profileForm, setProfileForm] = useState({ name: user?.name || '', phone: user?.phone || '', email: user?.email || '' });
   const [savingProfile, setSavingProfile] = useState(false);
 
   const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '' });
@@ -32,6 +32,8 @@ export default function Profile() {
       updateUser(res.data.data.user);
       toast.success(t('profile_updated'));
       setEditing(false);
+    } catch {
+      // the axios interceptor already toasts the error (e.g. 409 email taken)
     } finally {
       setSavingProfile(false);
     }
@@ -63,7 +65,7 @@ export default function Profile() {
             {!editing && (
               <button
                 onClick={() => {
-                  setProfileForm({ name: user?.name || '', phone: user?.phone || '' });
+                  setProfileForm({ name: user?.name || '', phone: user?.phone || '', email: user?.email || '' });
                   setEditing(true);
                 }}
                 className="flex items-center gap-1.5 text-sm font-semibold text-green-600 hover:text-green-700"
@@ -82,6 +84,12 @@ export default function Profile() {
               <div>
                 <label className={labelCls}>{t('phone')}</label>
                 <input className={inputCls} value={profileForm.phone} onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })} placeholder={t('enter_phone')} />
+              </div>
+              <div>
+                <label className={labelCls}>
+                  {t('email')} <span className="font-normal text-[#94A3B8]">({t('optional')})</span>
+                </label>
+                <input type="email" className={inputCls} value={profileForm.email} onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })} placeholder={t('enter_email')} />
               </div>
               <div className="flex gap-3">
                 <button type="button" onClick={() => setEditing(false)} className="flex-1 h-12 rounded-xl border border-[#E2E8F0] text-[#64748B] font-semibold hover:bg-slate-50 transition">
@@ -104,6 +112,7 @@ export default function Profile() {
               <div className="flex-1 min-w-0">
                 <p className="text-base font-bold text-[#0F172A] truncate">{user?.name || '—'}</p>
                 <p className="text-sm text-[#64748B] truncate mt-0.5">{user?.phone || '—'}</p>
+                {user?.email && <p className="text-sm text-[#64748B] truncate mt-0.5">{user.email}</p>}
               </div>
             </div>
           )}

@@ -22,7 +22,7 @@ const empty = { name: "", email: "", phone: "", role: "USER", status: "active", 
 
 export function UsersPage() {
   const { profile } = useAuth();
-  const { users, admins, createUser, updateUser, toggleUserStatus, deleteUser, grantAdminToUser, revokeAdminFromUser, toggleAdminStatus } = useAdminData();
+  const { users, admins, createUser, updateUser, toggleUserStatus, deleteUser, grantAdminToUser, revokeAdminFromUser, toggleAdminStatus, updateAdmin } = useAdminData();
   const { t } = useI18n();
   const isPrimary = profile?.isPrimary;
   const location = useLocation();
@@ -40,6 +40,7 @@ export function UsersPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [form, setForm] = useState(empty);
   const [editId, setEditId] = useState(null);
+  const [editingAdmin, setEditingAdmin] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [grantTarget, setGrantTarget] = useState(null);
@@ -67,22 +68,37 @@ export function UsersPage() {
     [allAdmins, search]
   );
 
-  function openCreate() { setEditId(null); setForm(empty); setModalOpen(true); }
+  function openCreate() { setEditId(null); setEditingAdmin(false); setForm(empty); setModalOpen(true); }
   function openEdit(u) {
     setEditId(u.id);
+    setEditingAdmin(false);
     setForm({ name: u.name, email: u.email, phone: u.phone, role: u.role, status: u.status, password: "" });
     setModalOpen(true);
   }
-  function closeModal() { setModalOpen(false); setEditId(null); setForm(empty); }
+  function openEditAdmin(a) {
+    setEditId(a.id);
+    setEditingAdmin(true);
+    setForm({ name: a.name, email: a.email, phone: a.phone, role: a.role, status: a.status, password: "" });
+    setModalOpen(true);
+  }
+  function closeModal() { setModalOpen(false); setEditId(null); setEditingAdmin(false); setForm(empty); }
 
   function handleSubmit(e) {
     e.preventDefault();
     const payload = { ...form };
-    payload.role = "USER";
     if (!payload.email) delete payload.email;
     if (!payload.phone) delete payload.phone;
-    if (editId) updateUser(editId, payload);
-    else createUser(payload);
+    if (!payload.password) delete payload.password;
+    if (editingAdmin) {
+      // Keep the ADMIN role — don't demote when editing an admin's profile.
+      delete payload.role;
+      updateAdmin(editId, payload);
+    } else {
+      // Regular-user form: role is always USER (admin rights granted separately).
+      payload.role = "USER";
+      if (editId) updateUser(editId, payload);
+      else createUser(payload);
+    }
     closeModal();
   }
 
@@ -189,6 +205,14 @@ export function UsersPage() {
                       <div className="flex items-center justify-end gap-3">
                         <button
                           type="button"
+                          onClick={() => openEditAdmin(admin)}
+                          className="p-1 text-on-surface-variant hover:text-secondary transition-colors"
+                          title="Tahrirlash"
+                        >
+                          <Icon name="edit" className="text-xl" />
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => toggleAdminStatus(admin.id)}
                           className={`p-1 transition-colors ${admin.status === "blocked" ? "text-primary hover:text-primary/70" : "text-on-surface-variant hover:text-error"}`}
                           title={admin.status === "blocked" ? "Faollashtirish" : "Bloklash"}
@@ -278,7 +302,7 @@ export function UsersPage() {
       {/* Create / Edit modal */}
       <Modal
         open={modalOpen}
-        title={editId ? "Foydalanuvchini tahrirlash" : "Yangi foydalanuvchi"}
+        title={editingAdmin ? "Adminni tahrirlash" : editId ? "Foydalanuvchini tahrirlash" : "Yangi foydalanuvchi"}
         onClose={closeModal}
         footer={
           <>

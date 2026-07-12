@@ -332,6 +332,21 @@ export function AdminDataProvider({ children }) {
     }
   }
 
+  async function updateAdmin(id, payload) {
+    const admin = admins.find((a) => a.id === id);
+    if (admin?.isPrimary) { pushToast("Super adminni tahrirlab bo'lmaydi", "danger"); return; }
+    try {
+      // Admins are users with role ADMIN — reuse the users update endpoint.
+      const res = await usersApi.update(id, payload);
+      const updated = normalizeUser(res.data?.user || res.data || payload);
+      setAdmins((curr) => curr.map((a) => (a.id === id ? { ...a, ...updated, isAdmin: true } : a)));
+      logAudit("Admin yangilandi", updated.name || id, "admin", "info");
+      pushToast("O'zgarishlar saqlandi");
+    } catch (err) {
+      pushToast(err?.message || "Yangilashda xatolik", "danger");
+    }
+  }
+
   async function toggleAdminStatus(id) {
     const admin = admins.find(a => a.id === id);
     if (!admin || admin.isPrimary) return;
@@ -530,7 +545,7 @@ export function AdminDataProvider({ children }) {
       pushToast, dismissToast,
       createUser, updateUser, toggleUserStatus, deleteUser,
       grantAdminToUser, revokeAdminFromUser,
-      toggleAdminStatus, createAdmin,
+      toggleAdminStatus, createAdmin, updateAdmin,
       createContent, updateContentStatus, deleteContent,
       createRole, deleteRole,
       togglePermission, savePermissions,

@@ -86,6 +86,7 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
+        localStorage.removeItem('savdo-auth');
         // Guard against a redirect loop when we're already on the login page.
         if (window.location.pathname !== '/login') {
           window.location.href = '/login';

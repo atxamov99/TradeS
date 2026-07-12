@@ -174,7 +174,13 @@ const resources = {
             "password_updated": "Parol yangilandi!",
             "profile_updated": "Profil yangilandi!",
             "change_password": "Parolni o'zgartirish",
-            "edit": "Tahrirlash"
+            "edit": "Tahrirlash",
+
+            // Test user banner
+            "test_banner_label": "Sinov hisobi",
+            "test_banner_days_label": "Qolgan kunlar",
+            "test_banner_actions_label": "Qolgan amallar",
+            "test_banner_register_cta": "Ro'yxatdan o'tish"
         }
     },
     ru: {
@@ -348,7 +354,13 @@ const resources = {
             "password_updated": "Пароль обновлен!",
             "profile_updated": "Профиль обновлен!",
             "change_password": "Изменить пароль",
-            "edit": "Изменить"
+            "edit": "Изменить",
+
+            // Test user banner
+            "test_banner_label": "Пробный аккаунт",
+            "test_banner_days_label": "Осталось дней",
+            "test_banner_actions_label": "Осталось действий",
+            "test_banner_register_cta": "Зарегистрироваться"
         }
     },
     en: {
@@ -522,7 +534,13 @@ const resources = {
             "password_updated": "Password updated!",
             "profile_updated": "Profile updated!",
             "change_password": "Change Password",
-            "edit": "Edit"
+            "edit": "Edit",
+
+            // Test user banner
+            "test_banner_label": "Trial account",
+            "test_banner_days_label": "Days remaining",
+            "test_banner_actions_label": "Actions remaining",
+            "test_banner_register_cta": "Register"
         }
     }
 };

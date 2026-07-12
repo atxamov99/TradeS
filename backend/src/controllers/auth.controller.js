@@ -2,6 +2,7 @@ const authService = require('../services/auth.service');
 const asyncHandler = require('../utils/asyncHandler');
 const ApiResponse = require('../utils/ApiResponse');
 const ApiError = require('../utils/ApiError');
+const { TEST_USER_ACTION_CAP } = require('../utils/testUserLimits');
 
 const COOKIE_OPTIONS = {
   httpOnly: true,
@@ -12,12 +13,14 @@ const COOKIE_OPTIONS = {
 
 const register = asyncHandler(async (req, res) => {
   const user = await authService.register(req.body);
+  if (user.isTestUser) user.testActionCap = TEST_USER_ACTION_CAP;
   res.status(201).json(new ApiResponse(201, { user }, 'Registration successful'));
 });
 
 const registerTestUser = asyncHandler(async (req, res) => {
   const meta = { userAgent: req.headers['user-agent'] || '', ip: req.ip };
   const { user, accessToken, refreshToken } = await authService.registerTestUser(meta);
+  if (user.isTestUser) user.testActionCap = TEST_USER_ACTION_CAP;
 
   res.cookie('accessToken', accessToken, COOKIE_OPTIONS);
   res.cookie('refreshToken', refreshToken, COOKIE_OPTIONS);
@@ -31,6 +34,7 @@ const login = asyncHandler(async (req, res) => {
     ip: req.ip,
   };
   const { user, accessToken, refreshToken } = await authService.login(req.body, meta);
+  if (user.isTestUser) user.testActionCap = TEST_USER_ACTION_CAP;
 
   // Web/admin use the httpOnly cookies; native mobile (no cookie jar) reads the
   // tokens from the body and sends them as a Bearer header. Returning both keeps
@@ -82,7 +86,9 @@ const logoutAll = asyncHandler(async (req, res) => {
 });
 
 const getMe = asyncHandler(async (req, res) => {
-  res.status(200).json(new ApiResponse(200, { user: req.user }, 'User retrieved'));
+  const user = req.user;
+  if (user?.isTestUser) user.testActionCap = TEST_USER_ACTION_CAP;
+  res.status(200).json(new ApiResponse(200, { user }, 'User retrieved'));
 });
 
 // Mobile app is already logged in (holds a Bearer accessToken) and wants to
@@ -106,6 +112,7 @@ const ssoAdopt = asyncHandler(async (req, res) => {
 const googleAuth = asyncHandler(async (req, res) => {
   const meta = { userAgent: req.headers['user-agent'] || '', ip: req.ip };
   const { user, accessToken, refreshToken } = await authService.googleAuth(req.body.credential, meta);
+  if (user.isTestUser) user.testActionCap = TEST_USER_ACTION_CAP;
 
   res.cookie('accessToken', accessToken, COOKIE_OPTIONS);
   res.cookie('refreshToken', refreshToken, COOKIE_OPTIONS);
@@ -125,6 +132,7 @@ const requestOtp = asyncHandler(async (req, res) => {
 const verifyOtp = asyncHandler(async (req, res) => {
   const meta = { userAgent: req.headers['user-agent'] || '', ip: req.ip };
   const { user, accessToken, refreshToken } = await authService.verifyOtp(req.body, meta);
+  if (user.isTestUser) user.testActionCap = TEST_USER_ACTION_CAP;
 
   res.cookie('accessToken', accessToken, COOKIE_OPTIONS);
   res.cookie('refreshToken', refreshToken, COOKIE_OPTIONS);
@@ -144,6 +152,7 @@ const requestEmailOtp = asyncHandler(async (req, res) => {
 const verifyEmailOtp = asyncHandler(async (req, res) => {
   const meta = { userAgent: req.headers['user-agent'] || '', ip: req.ip };
   const { user, accessToken, refreshToken } = await authService.verifyEmailOtp(req.body, meta);
+  if (user.isTestUser) user.testActionCap = TEST_USER_ACTION_CAP;
 
   res.cookie('accessToken', accessToken, COOKIE_OPTIONS);
   res.cookie('refreshToken', refreshToken, COOKIE_OPTIONS);

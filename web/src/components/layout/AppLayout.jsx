@@ -2,6 +2,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { Home, Package, ShoppingCart, BarChart2, Settings, User, ShieldCheck, LogOut } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import useAuthStore from '../../store/authStore';
+import TestUserBanner from '../common/TestUserBanner';
 
 function NavItem({ item, mobile = false }) {
   const Icon = item.icon;
@@ -137,6 +138,7 @@ export default function AppLayout() {
 
       {/* ── Main content ─────────────────────────── */}
       <main className="flex-1 md:ml-[220px] pb-20 md:pb-0">
+        <TestUserBanner user={user} />
         <Outlet />
       </main>
 

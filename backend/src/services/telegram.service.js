@@ -94,6 +94,27 @@ const ADMIN_SUPPORT_CHAT_IDS = (process.env.ADMIN_SUPPORT_CHAT_IDS || '')
 const escapeHtml = (str) =>
   String(str).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Retry a flaky Telegram send a couple of times before giving up — transient
+// network blips (seen on some Windows dev setups) shouldn't drop a support
+// message when a simple retry would have gone through.
+const SUPPORT_SEND_RETRIES = 2;
+const SUPPORT_RETRY_DELAY_MS = 1500;
+
+const sendWithRetry = async (chatId, text) => {
+  let lastErr;
+  for (let attempt = 0; attempt <= SUPPORT_SEND_RETRIES; attempt++) {
+    try {
+      return await sendMessage(chatId, text);
+    } catch (err) {
+      lastErr = err;
+      if (attempt < SUPPORT_SEND_RETRIES) await sleep(SUPPORT_RETRY_DELAY_MS);
+    }
+  }
+  throw lastErr;
+};
+
 // Send one message to every configured support admin. Best-effort per
 // recipient — one admin's delivery failing shouldn't block the others.
 // Shared by the bot's own direct-message flow and the app's Contact Support
@@ -102,7 +123,9 @@ const escapeHtml = (str) =>
 const sendToSupportAdmins = (text) =>
   Promise.all(
     ADMIN_SUPPORT_CHAT_IDS.map((chatId) =>
-      sendMessage(chatId, text).catch((err) => logger.error(`Support forward to ${chatId} failed: ${err.message}`))
+      sendWithRetry(chatId, text).catch((err) =>
+        logger.error(`Support forward to ${chatId} failed after ${SUPPORT_SEND_RETRIES + 1} attempts: ${err.message}`)
+      )
     )
   );
 

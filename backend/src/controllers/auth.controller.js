@@ -123,9 +123,9 @@ const googleAuth = asyncHandler(async (req, res) => {
 });
 
 const requestOtp = asyncHandler(async (req, res) => {
-  const { phone } = req.body;
+  const { phone, reason } = req.body;
   if (!phone) throw new ApiError(400, 'Telefon raqam talab qilinadi');
-  const result = await authService.requestOtp(phone);
+  const result = await authService.requestOtp(phone, reason);
   res.status(200).json(new ApiResponse(200, result, result.message));
 });
 

@@ -309,7 +309,7 @@ const googleAuth = async (credential, meta = {}) => {
  * Request an OTP code — delivered to the user's Telegram (linked when they shared
  * their contact with the bot). Free SMS-code alternative.
  */
-const requestOtp = async (rawPhone) => {
+const requestOtp = async (rawPhone, reason = 'register') => {
   const phone = telegramService.normalizePhone(rawPhone);
   if (!phone) throw new ApiError(400, 'Telefon raqam noto\'g\'ri');
 
@@ -337,9 +337,13 @@ const requestOtp = async (rawPhone) => {
     data: { otpCode: code, otpExpiresAt, attempts: 0 },
   });
 
+  const reasonText = reason === 'reset'
+    ? 'Parolni tiklash uchun tasdiqlash kodi'
+    : 'Ro\'yxatdan o\'tish uchun tasdiqlash kodi';
+
   await telegramService.sendMessage(
     record.telegramChatId,
-    `🔐 <b>TradeS</b> tasdiqlash kodi:\n\n<code>${code}</code>\n\nKod ${OTP_EXPIRES_MIN} daqiqa amal qiladi. Hech kimga bermang.`
+    `🔐 <b>TradeS</b> — ${reasonText}:\n\n<code>${code}</code>\n\nKod ${OTP_EXPIRES_MIN} daqiqa amal qiladi. Hech kimga bermang.`
   );
 
   return { message: 'Kod Telegram orqali yuborildi' };

@@ -162,7 +162,7 @@ export default function AppLayout() {
                 <div className={`p-1.5 rounded-lg transition-colors ${isActive ? 'bg-indigo-50' : ''}`}>
                   <ShieldCheck size={21} strokeWidth={isActive ? 2.5 : 2} />
                 </div>
-                <span className="text-[10px] font-semibold leading-tight">Admin</span>
+                <span className="text-[10px] font-semibold leading-tight">{t('role_admin')}</span>
               </>
             )}
           </NavLink>

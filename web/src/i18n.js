@@ -120,6 +120,7 @@ const resources = {
             "error_account_exists": "Bunday hisob allaqachon mavjud",
             "error_account_blocked": "Hisobingiz bloklangan",
             "error_test_user_expired": "Sinov muddati tugadi. Ro'yxatdan o'ting.",
+            "error_insufficient_stock": "Omborda yetarli mahsulot yo'q",
 
             // Sales
             "add_sale": "Savdo qo'shish",
@@ -288,6 +289,7 @@ const resources = {
             "error_account_exists": "Аккаунт уже существует",
             "error_account_blocked": "Аккаунт заблокирован",
             "error_test_user_expired": "Пробный период закончился. Зарегистрируйтесь, чтобы продолжить.",
+            "error_insufficient_stock": "Недостаточно товара на складе",
 
             // Sales
             "add_sale": "Добавить продажу",
@@ -456,6 +458,7 @@ const resources = {
             "error_account_exists": "Account already exists",
             "error_account_blocked": "Account is blocked",
             "error_test_user_expired": "Trial period ended. Please register a full account.",
+            "error_insufficient_stock": "Insufficient stock",
 
             // Sales
             "add_sale": "Add Sale",

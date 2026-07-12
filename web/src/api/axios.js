@@ -11,6 +11,7 @@ const ERROR_CODE_KEYS = {
   ACCOUNT_BLOCKED: 'error_account_blocked',
   BAG_WEIGHT_REQUIRED: 'bag_weight_required',
   TEST_USER_EXPIRED: 'error_test_user_expired',
+  INSUFFICIENT_STOCK: 'error_insufficient_stock',
 };
 
 // Prefer a translated string for known error codes so the message respects

@@ -27,9 +27,17 @@ const createSale = async (userId, saleData) => {
   if (productId) {
     const owned = await prisma.product.findFirst({
       where: { id: productId, ownerId: userId },
-      select: { id: true },
+      select: { id: true, stock: true },
     });
     if (!owned) throw new ApiError(404, `Product ${productId} not found`);
+
+    // Block overselling for real-time sales — but offline-synced sales already
+    // happened physically before the device reconnected, so they must still be
+    // recorded even if stock has since run out (see the note below on negative
+    // stock for the offline path).
+    if (!isFromOffline && qty > owned.stock) {
+      throw new ApiError(400, 'Insufficient stock', [], '', 'INSUFFICIENT_STOCK');
+    }
   }
 
   // Use transaction to ensure both sale creation and stock deduction succeed

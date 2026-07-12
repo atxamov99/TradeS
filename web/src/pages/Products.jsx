@@ -5,6 +5,9 @@ import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import * as productsApi from '../api/products.api';
 import useAuthStore from '../store/authStore';
+import Dropdown from '../components/ui/Dropdown';
+
+const BAG_WEIGHT_PRESETS = [5, 10, 25, 50, 100];
 
 export default function Products() {
   const { t, i18n } = useTranslation();
@@ -117,13 +120,16 @@ export default function Products() {
         ) : (
           <div className="flex flex-col gap-3">
             {products.map((product) => (
-              <div key={product.id} className="bg-white rounded-2xl border border-[#E2E8F0] p-4 flex items-center justify-between gap-3">
+              <div key={product.id} className="bg-white dark:bg-[#1E293B] rounded-2xl border border-[#E2E8F0] dark:border-[#334155] p-4 flex items-center justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <p className="font-bold text-[#0F172A] truncate">{product.name}</p>
                     <StockBadge stock={product.stock} />
                   </div>
-                  <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-sm text-[#64748B]">
+                  {product.unit === 'box' && product.bagWeightKg ? (
+                    <p className="text-xs text-[#94A3B8] dark:text-slate-500 mb-0.5">{t('unit_box')} · {product.bagWeightKg} kg</p>
+                  ) : null}
+                  <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-sm text-[#64748B] dark:text-slate-400">
                     <span>{t('buy_price')} {Number(product.buyPrice).toLocaleString(locale)} {t('currency')}</span>
                     <span className="text-green-600 font-semibold">{t('sell_price')} {Number(product.sellPrice).toLocaleString(locale)} {t('currency')}</span>
                   </div>
@@ -174,10 +180,17 @@ export default function Products() {
 }
 
 function ProductModal({ product, onClose, t, fmt, UNITS }) {
-  const emptyForm = { name: '', buyPrice: '', sellPrice: '', stock: '', unit: 'pcs' };
+  const emptyForm = { name: '', buyPrice: '', sellPrice: '', stock: '', unit: 'pcs', bagWeightKg: '' };
   const [form, setForm] = useState(
     product
-      ? { name: product.name, buyPrice: product.buyPrice, sellPrice: product.sellPrice, stock: product.stock, unit: product.unit || 'pcs' }
+      ? {
+        name: product.name,
+        buyPrice: product.buyPrice,
+        sellPrice: product.sellPrice,
+        stock: product.stock,
+        unit: product.unit || 'pcs',
+        bagWeightKg: product.bagWeightKg ? String(product.bagWeightKg) : '',
+      }
       : emptyForm
   );
   const [errors, setErrors] = useState({});
@@ -212,6 +225,7 @@ function ProductModal({ product, onClose, t, fmt, UNITS }) {
     if (!form.buyPrice || isNaN(bp) || bp <= 0) e.buyPrice = t('enter_price');
     if (!form.sellPrice || isNaN(sp) || sp <= 0) e.sellPrice = t('enter_price');
     if (form.stock === '' || isNaN(st) || st < 0) e.stock = t('enter_quantity');
+    if (form.unit === 'box' && !(Number(form.bagWeightKg) > 0)) e.bagWeightKg = t('bag_weight_required');
     return e;
   };
 
@@ -225,6 +239,7 @@ function ProductModal({ product, onClose, t, fmt, UNITS }) {
       sellPrice: parseFloat(form.sellPrice),
       stock: parseInt(form.stock, 10) || 0,
       unit: form.unit,
+      bagWeightKg: form.unit === 'box' ? parseFloat(form.bagWeightKg) : null,
     };
     if (product) {
       updateMutation.mutate({ id: product.id, data: payload });
@@ -290,12 +305,33 @@ function ProductModal({ product, onClose, t, fmt, UNITS }) {
               {errors.stock && <p className="text-red-500 text-sm mt-1">{errors.stock}</p>}
             </div>
             <div>
-              <label className="block text-sm font-semibold text-[#0F172A] mb-2">{t('unit')}</label>
-              <select value={form.unit} onChange={handleChange('unit')} className="w-full h-12 rounded-xl border border-[#E2E8F0] px-4 text-base text-[#0F172A] bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition">
-                {UNITS.map((u) => <option key={u.value} value={u.value}>{u.label}</option>)}
-              </select>
+              <label className="block text-sm font-semibold text-[#0F172A] dark:text-slate-100 mb-2">{t('unit')}</label>
+              <Dropdown
+                options={UNITS}
+                value={form.unit}
+                onChange={(v) => {
+                  setForm((p) => ({ ...p, unit: v, bagWeightKg: v === 'box' ? p.bagWeightKg : '' }));
+                  if (errors.bagWeightKg) setErrors((p) => ({ ...p, bagWeightKg: '' }));
+                }}
+              />
             </div>
           </div>
+
+          {form.unit === 'box' && (
+            <div>
+              <label className="block text-sm font-semibold text-[#0F172A] dark:text-slate-100 mb-2">{t('bag_weight_label')}</label>
+              <Dropdown
+                options={BAG_WEIGHT_PRESETS.map((w) => ({ value: String(w), label: `${w} kg` }))}
+                value={form.bagWeightKg}
+                onChange={(v) => {
+                  setForm((p) => ({ ...p, bagWeightKg: v }));
+                  if (errors.bagWeightKg) setErrors((p) => ({ ...p, bagWeightKg: '' }));
+                }}
+                placeholder={t('bag_weight_required')}
+                error={errors.bagWeightKg}
+              />
+            </div>
+          )}
 
           <div className="flex gap-3 mt-2">
             <button type="button" onClick={onClose} className="flex-1 h-12 rounded-xl border border-[#E2E8F0] text-[#64748B] font-semibold hover:bg-slate-50 transition">

@@ -49,6 +49,8 @@ const TX = {
     rule_lower:   "Bitta kichik harf (a-z)",
     rule_number:  "Bitta raqam (0-9)",
     pwd_mismatch: "Parollar mos kelmadi",
+    no_account:   "Bu raqam bilan hisob topilmadi",
+    contact_support: "Yordam kerakmi? Qo'llab-quvvatlashga yozing",
   },
   ru: {
     title:        "Сброс пароля",
@@ -87,6 +89,8 @@ const TX = {
     rule_lower:   "Одна строчная буква (a-z)",
     rule_number:  "Одна цифра (0-9)",
     pwd_mismatch: "Пароли не совпадают",
+    no_account:   "Аккаунт с этим номером не найден",
+    contact_support: "Нужна помощь? Написать в поддержку",
   },
   en: {
     title:        "Reset Password",
@@ -125,6 +129,8 @@ const TX = {
     rule_lower:   "One lowercase letter (a-z)",
     rule_number:  "One number (0-9)",
     pwd_mismatch: "Passwords do not match",
+    no_account:   "No account found with this number",
+    contact_support: "Need help? Contact support",
   },
 };
 
@@ -507,6 +513,15 @@ export function ForgotPasswordPage() {
           )}
 
         </div>
+
+        <a
+          href={`https://t.me/${BOT}?start=support`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-5 text-center text-sm text-gray-400 dark:text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 hover:underline transition"
+        >
+          {tx.contact_support}
+        </a>
       </div>
 
       {/* Footer */}

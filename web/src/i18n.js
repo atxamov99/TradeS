@@ -185,6 +185,7 @@ const resources = {
             // Misc / auth
             "copyright": "Barcha huquqlar himoyalangan.",
             "forgot_password": "Parolni unutdingizmi?",
+            "contact_support": "Yordam kerakmi? Qo'llab-quvvatlashga yozing",
             "phone_required": "Telefon raqamni to'liq kiriting",
             "toast_welcome_back": "Xush kelibsiz, {{name}}!",
             "toast_logged_out": "Tizimdan chiqdingiz",
@@ -437,6 +438,7 @@ const resources = {
             // Misc / auth
             "copyright": "Все права защищены.",
             "forgot_password": "Забыли пароль?",
+            "contact_support": "Нужна помощь? Написать в поддержку",
             "phone_required": "Введите номер телефона полностью",
             "toast_welcome_back": "С возвращением, {{name}}!",
             "toast_logged_out": "Вы вышли из системы",
@@ -689,6 +691,7 @@ const resources = {
             // Misc / auth
             "copyright": "All rights reserved.",
             "forgot_password": "Forgot password?",
+            "contact_support": "Need help? Contact support",
             "phone_required": "Enter your full phone number",
             "toast_welcome_back": "Welcome back, {{name}}!",
             "toast_logged_out": "Logged out",

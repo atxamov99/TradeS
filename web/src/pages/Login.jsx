@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import useAuthStore from '../store/authStore';
 
 const LANGS = ['uz', 'ru', 'en'];
+const BOT = import.meta.env.VITE_TELEGRAM_BOT || 'trades_uz_bot';
 
 const TX = {
   uz: {
@@ -395,8 +396,16 @@ export default function Login() {
             </div>
             <span className="font-bold text-slate-400">TradeS</span>
           </div>
-          <div>
-            &copy; {new Date().getFullYear()} TradeS. {t('copyright')}
+          <div className="flex items-center gap-4">
+            <a
+              href={`https://t.me/${BOT}?start=support`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-primary-600 dark:hover:text-primary-400 hover:underline transition"
+            >
+              {t('contact_support')}
+            </a>
+            <span>&copy; {new Date().getFullYear()} TradeS. {t('copyright')}</span>
           </div>
         </div>
       </footer>

@@ -52,4 +52,21 @@ const authLimiter = rateLimit({
   },
 });
 
-module.exports = { apiLimiter, authLimiter };
+/**
+ * Contact-support rate limiter — 3 messages per 15 minutes per IP.
+ * This forwards straight to a real person's Telegram, so it needs to be
+ * strict enough to block someone spamming garbage.
+ */
+const supportLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 3,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    statusCode: 429,
+    message: 'Too many support messages. Please try again later.',
+  },
+});
+
+module.exports = { apiLimiter, authLimiter, supportLimiter };

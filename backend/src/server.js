@@ -147,6 +147,22 @@ const cleanupExpiredTestUsers = async () => {
   }
 };
 
+const SUPPORT_MESSAGE_TTL_HOURS = 24;
+const SUPPORT_MESSAGE_CLEANUP_INTERVAL_MS = 60 * 60 * 1000; // hourly
+
+const cleanupOldSupportMessages = async () => {
+  const cutoff = new Date();
+  cutoff.setHours(cutoff.getHours() - SUPPORT_MESSAGE_TTL_HOURS);
+  try {
+    const { count } = await prisma.supportMessage.deleteMany({
+      where: { createdAt: { lt: cutoff } },
+    });
+    if (count > 0) logger.info(`Support message cleanup: removed ${count} message(s) older than 24h`);
+  } catch (err) {
+    logger.error(`Support message cleanup failed: ${err.message}`);
+  }
+};
+
 const startServer = async () => {
   try {
     await prisma.$connect();
@@ -167,6 +183,9 @@ const startServer = async () => {
 
     setInterval(cleanupExpiredTestUsers, TEST_USER_CLEANUP_INTERVAL_MS);
     cleanupExpiredTestUsers(); // also run once at boot
+
+    setInterval(cleanupOldSupportMessages, SUPPORT_MESSAGE_CLEANUP_INTERVAL_MS);
+    cleanupOldSupportMessages(); // also run once at boot
   } catch (err) {
     logger.error(`Database connection failed: ${err.message}`);
     process.exit(1);

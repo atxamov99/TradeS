@@ -164,10 +164,9 @@ export default function Register() {
         toast.success(tx.otp_desc);
       }
     } catch (err) {
+      // Non-428 errors already surface a toast via the shared axios interceptor.
       if (method === 'phone' && err.response?.status === 428) {
         setStep('connect');
-      } else {
-        toast.error(err.response?.data?.message || 'Xatolik yuz berdi');
       }
     }
   };
@@ -200,10 +199,10 @@ export default function Register() {
           password: form.password,
         });
       }
-      toast.success(`Xush kelibsiz, ${form.name.trim()}!`);
+      toast.success(t('toast_welcome_back', { name: form.name.trim() }));
       navigate('/dashboard');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Kod noto\'g\'ri');
+      // Error toast already shown by the shared axios interceptor.
     }
   };
 

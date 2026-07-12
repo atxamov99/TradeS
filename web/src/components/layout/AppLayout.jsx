@@ -106,7 +106,7 @@ export default function AppLayout() {
           {isAdmin && (
             <>
               <div className="mt-4 mb-1 px-3">
-                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Admin</p>
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">{t('role_admin')}</p>
               </div>
               <NavLink
                 to="/dashboard/admin"
@@ -119,7 +119,7 @@ export default function AppLayout() {
                 }
               >
                 <ShieldCheck size={18} strokeWidth={2} />
-                <span>Admin Panel</span>
+                <span>{t('admin_panel_nav')}</span>
               </NavLink>
             </>
           )}
@@ -132,7 +132,7 @@ export default function AppLayout() {
             className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-500 hover:bg-red-50 hover:text-red-500 transition-all"
           >
             <LogOut size={18} strokeWidth={2} />
-            <span>Chiqish</span>
+            <span>{t('logout')}</span>
           </button>
         </div>
       </aside>

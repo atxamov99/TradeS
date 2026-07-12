@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import * as authApi from '../api/auth.api';
 import toast from 'react-hot-toast';
+import i18n from '../i18n';
 
 const useAuthStore = create(
   persist(
@@ -17,7 +18,7 @@ const useAuthStore = create(
         set({ isLoading: true });
         try {
           const res = await authApi.register(data);
-          toast.success('Registration successful!');
+          toast.success(i18n.t('toast_registration_success'));
           return res.data;
         } catch (err) {
           const errors = err.response?.data?.errors;
@@ -103,7 +104,7 @@ const useAuthStore = create(
           const res = await authApi.login(credentials);
           const { user } = res.data.data;
           set({ user, isLoading: false });
-          toast.success(`Welcome back, ${user.name}!`);
+          toast.success(i18n.t('toast_welcome_back', { name: user.name }));
           return user;
         } catch (err) {
           set({ isLoading: false });
@@ -143,7 +144,7 @@ const useAuthStore = create(
           // ignore network errors on logout
         } finally {
           set({ user: null });
-          toast.success('Logged out');
+          toast.success(i18n.t('toast_logged_out'));
         }
       },
 

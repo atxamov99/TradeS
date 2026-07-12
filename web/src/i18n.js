@@ -180,7 +180,16 @@ const resources = {
             "test_banner_label": "Sinov hisobi",
             "test_banner_days_label": "Qolgan kunlar",
             "test_banner_actions_label": "Qolgan amallar",
-            "test_banner_register_cta": "Ro'yxatdan o'tish"
+            "test_banner_register_cta": "Ro'yxatdan o'tish",
+
+            // Misc / auth
+            "copyright": "Barcha huquqlar himoyalangan.",
+            "forgot_password": "Parolni unutdingizmi?",
+            "phone_required": "Telefon raqamni to'liq kiriting",
+            "toast_welcome_back": "Xush kelibsiz, {{name}}!",
+            "toast_logged_out": "Tizimdan chiqdingiz",
+            "toast_registration_success": "Ro'yxatdan o'tish muvaffaqiyatli!",
+            "admin_panel_nav": "Boshqaruv paneli"
         }
     },
     ru: {
@@ -360,7 +369,16 @@ const resources = {
             "test_banner_label": "Пробный аккаунт",
             "test_banner_days_label": "Осталось дней",
             "test_banner_actions_label": "Осталось действий",
-            "test_banner_register_cta": "Зарегистрироваться"
+            "test_banner_register_cta": "Зарегистрироваться",
+
+            // Misc / auth
+            "copyright": "Все права защищены.",
+            "forgot_password": "Забыли пароль?",
+            "phone_required": "Введите номер телефона полностью",
+            "toast_welcome_back": "С возвращением, {{name}}!",
+            "toast_logged_out": "Вы вышли из системы",
+            "toast_registration_success": "Регистрация прошла успешно!",
+            "admin_panel_nav": "Панель управления"
         }
     },
     en: {
@@ -540,7 +558,16 @@ const resources = {
             "test_banner_label": "Trial account",
             "test_banner_days_label": "Days remaining",
             "test_banner_actions_label": "Actions remaining",
-            "test_banner_register_cta": "Register"
+            "test_banner_register_cta": "Register",
+
+            // Misc / auth
+            "copyright": "All rights reserved.",
+            "forgot_password": "Forgot password?",
+            "phone_required": "Enter your full phone number",
+            "toast_welcome_back": "Welcome back, {{name}}!",
+            "toast_logged_out": "Logged out",
+            "toast_registration_success": "Registration successful!",
+            "admin_panel_nav": "Admin Panel"
         }
     }
 };

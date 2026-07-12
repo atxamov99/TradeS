@@ -10,8 +10,15 @@ const { assertTestUserWithinLimits } = require('../utils/testUserLimits');
 // ownership, resurrect archived products, or inject stock/price for another tenant.
 const PRODUCT_SYNC_FIELDS = [
   'name', 'buyPrice', 'sellPrice', 'unit', 'description',
-  'price', 'discount', 'category', 'stock', 'brand', 'tags',
+  'price', 'discount', 'category', 'stock', 'brand', 'tags', 'bagWeightKg',
 ];
+
+// Mobile clients send stock as `quantity`; normalize to the `stock` column name
+// before whitelisting so it isn't silently dropped.
+const normalizeProductPayload = (payload = {}) =>
+  payload.quantity !== undefined && payload.stock === undefined
+    ? { ...payload, stock: payload.quantity }
+    : payload;
 
 // Keep only whitelisted keys from an untrusted client payload.
 const pickAllowed = (payload = {}, allowed) => {
@@ -63,7 +70,7 @@ const processSyncBatch = async (userId, operations) => {
           });
           if (!existing) {
             // Only trust whitelisted fields from the client; server sets ownership/derived fields.
-            const safe = pickAllowed(payload, PRODUCT_SYNC_FIELDS);
+            const safe = pickAllowed(normalizeProductPayload(payload), PRODUCT_SYNC_FIELDS);
             const slug = slugify(safe.name, { lower: true, strict: true }) + '-' + Date.now();
             const basePrice = safe.price || 0;
             const finalPrice = basePrice - (basePrice * (safe.discount || 0)) / 100;
@@ -72,7 +79,6 @@ const processSyncBatch = async (userId, operations) => {
               data: {
                 ...safe,
                 slug,
-                finalPrice,
                 createdById: userId,
                 ownerId: userId,
                 isActive: true,
@@ -97,14 +103,14 @@ const processSyncBatch = async (userId, operations) => {
             const serverTime = product.updatedAt;
             if (clientTime >= serverTime) {
               // Only trust whitelisted fields — never let the client change ownerId/isActive/slug/finalPrice.
-              const updateData = pickAllowed(payload, PRODUCT_SYNC_FIELDS);
+              const updateData = pickAllowed(normalizeProductPayload(payload), PRODUCT_SYNC_FIELDS);
+
               if (payload.name && payload.name !== product.name) {
                 updateData.slug = slugify(payload.name, { lower: true, strict: true }) + '-' + Date.now();
               }
-              if (payload.price !== undefined || payload.discount !== undefined) {
-                const p = payload.price !== undefined ? payload.price : product.price;
-                const d = payload.discount !== undefined ? payload.discount : product.discount;
-                updateData.finalPrice = p - (p * d) / 100;
+              if (payload.sellPrice !== undefined) {
+                updateData.price = Number(payload.sellPrice) || 0;
+                updateData.finalPrice = Number(payload.sellPrice) || 0;
               }
 
               const updated = await prisma.product.update({

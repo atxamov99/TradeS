@@ -161,12 +161,6 @@ const refreshTokens = async (incomingRefreshToken) => {
     throw new ApiError(401, 'Refresh token expired');
   }
 
-  // Revoke old token
-  await prisma.refreshToken.update({
-    where: { id: storedToken.id },
-    data: { isRevoked: true },
-  });
-
   const user = await prisma.user.findUnique({ where: { id: decoded.id } });
   if (!user || user.isBlocked) {
     throw new ApiError(401, 'User not found or blocked');
@@ -179,14 +173,27 @@ const refreshTokens = async (incomingRefreshToken) => {
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + REFRESH_TOKEN_EXPIRES_DAYS);
 
-  await prisma.refreshToken.create({
-    data: {
-      userId: user.id,
-      token: newRefreshToken,
-      expiresAt,
-      userAgent: storedToken.userAgent,
-      ip: storedToken.ip,
-    },
+  // Rotate atomically: revoke the old token and mint the new one in a single
+  // transaction. The updateMany guard (isRevoked:false) ensures only one concurrent
+  // request can win the rotation — a second, racing request sees count 0 and is
+  // rejected, preventing a single refresh token from yielding two live sessions.
+  await prisma.$transaction(async (tx) => {
+    const revoked = await tx.refreshToken.updateMany({
+      where: { id: storedToken.id, isRevoked: false },
+      data: { isRevoked: true },
+    });
+    if (revoked.count === 0) {
+      throw new ApiError(401, 'Refresh token already used');
+    }
+    await tx.refreshToken.create({
+      data: {
+        userId: user.id,
+        token: newRefreshToken,
+        expiresAt,
+        userAgent: storedToken.userAgent,
+        ip: storedToken.ip,
+      },
+    });
   });
 
   return { accessToken: newAccessToken, refreshToken: newRefreshToken };

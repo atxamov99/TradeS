@@ -17,6 +17,10 @@ const prisma = require('./config/prisma');
 
 const app = express();
 
+// Behind a single reverse proxy (Render/Vercel) — trust the first proxy hop so
+// req.ip reflects the real client (X-Forwarded-For) for rate limiting and logging.
+app.set('trust proxy', 1);
+
 // ── Security Middlewares ───────────────────────────────────────────────────
 
 app.use(helmet());

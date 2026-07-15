@@ -93,5 +93,14 @@ export const migrations = schemaMigrations({
         }),
       ],
     },
+    {
+      toVersion: 5,
+      steps: [
+        addColumns({
+          table: "products",
+          columns: [{ name: "created_by_id", type: "string", isOptional: true }],
+        }),
+      ],
+    },
   ],
 });

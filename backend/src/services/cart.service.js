@@ -36,47 +36,51 @@ const addToCart = async (userId, productId, quantity) => {
     throw new ApiError(400, `Only ${product.stock} items in stock`);
   }
 
-  // Ensure cart exists
-  let cart = await prisma.cart.upsert({
-    where: { userId },
-    update: {},
-    create: { userId },
-    include: { items: true },
-  });
-
-  const existingItem = cart.items.find((item) => item.productId === productId);
-
-  if (existingItem) {
-    const newQty = existingItem.quantity + quantity;
-    if (newQty > product.stock) {
-      throw new ApiError(400, `Only ${product.stock} items available`);
-    }
-    await prisma.cartItem.update({
-      where: { id: existingItem.id },
-      data: { quantity: newQty, price: product.finalPrice },
+  // Do the read-modify-write of the cart line atomically. Two concurrent "add"
+  // requests for the same product would otherwise both read the old quantity and
+  // clobber each other's write (lost update) — a transaction serialises them.
+  return await prisma.$transaction(async (tx) => {
+    const cart = await tx.cart.upsert({
+      where: { userId },
+      update: {},
+      create: { userId },
+      include: { items: true },
     });
-  } else {
-    await prisma.cartItem.create({
-      data: {
-        cartId: cart.id,
-        productId,
-        quantity,
-        price: product.finalPrice,
-      },
-    });
-  }
 
-  // Recompute cart totals
-  const updatedItems = await prisma.cartItem.findMany({ where: { cartId: cart.id } });
-  const totalItems = updatedItems.reduce((sum, i) => sum + i.quantity, 0);
-  const totalPrice = updatedItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
+    const existingItem = cart.items.find((item) => item.productId === productId);
 
-  return await prisma.cart.update({
-    where: { id: cart.id },
-    data: { totalItems, totalPrice },
-    include: {
-      items: { include: { product: true } }
+    if (existingItem) {
+      const newQty = existingItem.quantity + quantity;
+      if (newQty > product.stock) {
+        throw new ApiError(400, `Only ${product.stock} items available`);
+      }
+      await tx.cartItem.update({
+        where: { id: existingItem.id },
+        data: { quantity: newQty, price: product.finalPrice },
+      });
+    } else {
+      await tx.cartItem.create({
+        data: {
+          cartId: cart.id,
+          productId,
+          quantity,
+          price: product.finalPrice,
+        },
+      });
     }
+
+    // Recompute cart totals from the now-current items
+    const updatedItems = await tx.cartItem.findMany({ where: { cartId: cart.id } });
+    const totalItems = updatedItems.reduce((sum, i) => sum + i.quantity, 0);
+    const totalPrice = updatedItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
+
+    return await tx.cart.update({
+      where: { id: cart.id },
+      data: { totalItems, totalPrice },
+      include: {
+        items: { include: { product: true } }
+      }
+    });
   });
 };
 

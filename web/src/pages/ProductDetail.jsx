@@ -27,7 +27,8 @@ export default function ProductDetail() {
 
   const handleAddToCart = () => {
     if (!user) { toast.error('Please login to add to cart'); return; }
-    addItem(product.id, qty);
+    // Fire-and-forget: the store rethrows and the axios interceptor toasts the error.
+    addItem(product.id, qty).catch(() => {});
   };
 
   const handleWishlist = async () => {

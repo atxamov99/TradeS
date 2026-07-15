@@ -1,9 +1,10 @@
 const prisma = require('../config/prisma');
 const ApiError = require('../utils/ApiError');
+const { clampLimit } = require('../utils/pagination');
 
 const getContent = async ({ page = 1, limit = 20, type, status } = {}) => {
-  const skip = (Number(page) - 1) * Number(limit);
-  const take = Number(limit);
+  const take = clampLimit(limit, 20);
+  const skip = (Number(page) - 1) * take;
   const where = {};
 
   if (type) where.type = type;

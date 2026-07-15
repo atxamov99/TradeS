@@ -9,6 +9,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { database } from "@/db";
 import { Product } from "@/db/models/Product";
 import { DraggableFAB } from "@/components/DraggableFAB";
+import { useUserStore } from "@/store/userStore";
 
 function stockInfo(qty: number, c: any): { color: string; label: string; bg: string } {
   if (qty === 0) return { color: c.danger, label: "Tugadi", bg: c.danger + "18" };
@@ -25,6 +26,14 @@ export default function ProductsScreen() {
   const categories = useCategories();
   const t = useT();
   const { c } = useTheme();
+  const { user } = useUserStore();
+
+  // Egalik: yaratuvchisi bo'lmagan (yoki hali egasi noma'lum, ya'ni sinxronlanmagan
+  // mahalliy yozuv) tovar — "o'ziniki" deb hisoblanadi. Aks holda faqat xarid mumkin.
+  function isOwner(item: Product | null) {
+    if (!item) return true;
+    return !item.createdById || item.createdById === user?.id;
+  }
 
   async function deleteProduct(item: Product) {
     setConfirmDelete(false);
@@ -200,27 +209,43 @@ export default function ProductsScreen() {
                 {menuProduct?.sellPrice.toLocaleString()} so'm · {menuProduct?.stockQty} {menuProduct?.unit}
               </Text>
 
-              <TouchableOpacity
-                onPress={() => { router.push(`/products/${menuProduct?.id}`); setMenuProduct(null); }}
-                style={{ flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: c.bgMuted, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 15, marginBottom: 10 }}
-              >
-                <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: c.primary + "18", alignItems: "center", justifyContent: "center" }}>
-                  <Ionicons name="create-outline" size={20} color={c.primary} />
-                </View>
-                <Text style={{ color: c.text, fontWeight: "700", fontSize: 15 }}>Tahrirlash</Text>
-                <View style={{ flex: 1 }} />
-                <Ionicons name="chevron-forward" size={16} color={c.textMuted} />
-              </TouchableOpacity>
+              {isOwner(menuProduct) ? (
+                <>
+                  <TouchableOpacity
+                    onPress={() => { router.push(`/products/${menuProduct?.id}`); setMenuProduct(null); }}
+                    style={{ flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: c.bgMuted, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 15, marginBottom: 10 }}
+                  >
+                    <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: c.primary + "18", alignItems: "center", justifyContent: "center" }}>
+                      <Ionicons name="create-outline" size={20} color={c.primary} />
+                    </View>
+                    <Text style={{ color: c.text, fontWeight: "700", fontSize: 15 }}>Tahrirlash</Text>
+                    <View style={{ flex: 1 }} />
+                    <Ionicons name="chevron-forward" size={16} color={c.textMuted} />
+                  </TouchableOpacity>
 
-              <TouchableOpacity
-                onPress={() => setConfirmDelete(true)}
-                style={{ flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: c.danger + "12", borderRadius: 16, paddingHorizontal: 16, paddingVertical: 15, marginBottom: 10 }}
-              >
-                <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: c.danger + "20", alignItems: "center", justifyContent: "center" }}>
-                  <Ionicons name="trash-outline" size={20} color={c.danger} />
-                </View>
-                <Text style={{ color: c.danger, fontWeight: "700", fontSize: 15 }}>O'chirish</Text>
-              </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => setConfirmDelete(true)}
+                    style={{ flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: c.danger + "12", borderRadius: 16, paddingHorizontal: 16, paddingVertical: 15, marginBottom: 10 }}
+                  >
+                    <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: c.danger + "20", alignItems: "center", justifyContent: "center" }}>
+                      <Ionicons name="trash-outline" size={20} color={c.danger} />
+                    </View>
+                    <Text style={{ color: c.danger, fontWeight: "700", fontSize: 15 }}>O'chirish</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <TouchableOpacity
+                  onPress={() => { router.push(`/products/${menuProduct?.id}`); setMenuProduct(null); }}
+                  style={{ flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: c.primary + "14", borderRadius: 16, paddingHorizontal: 16, paddingVertical: 15, marginBottom: 10 }}
+                >
+                  <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: c.primary + "22", alignItems: "center", justifyContent: "center" }}>
+                    <Ionicons name="cart-outline" size={20} color={c.primary} />
+                  </View>
+                  <Text style={{ color: c.primary, fontWeight: "700", fontSize: 15 }}>Xarid qilish</Text>
+                  <View style={{ flex: 1 }} />
+                  <Ionicons name="chevron-forward" size={16} color={c.primary} />
+                </TouchableOpacity>
+              )}
 
               <TouchableOpacity
                 onPress={() => setMenuProduct(null)}

@@ -47,7 +47,9 @@ export default function AddSaleScreen() {
           s.serverId = null;
         });
         await selected.update((p) => {
-          p.stockQty = p.stockQty - qtyNum;
+          // Manfiy stok bo'lmasin (audit: HIGH H2) — handleSale allaqachon oldindan
+          // tekshiradi, bu esa poyga holati (race condition)ga qarshi qo'shimcha himoya.
+          p.stockQty = Math.max(0, p.stockQty - qtyNum);
           p.isSynced = false;
         });
       });
@@ -61,14 +63,11 @@ export default function AddSaleScreen() {
 
   async function handleSale() {
     if (!selected || qtyNum <= 0) return;
+    // Stokdan ko'p sotishga yo'l qo'ymaymiz — manfiy stok (audit: HIGH H2).
     if (qtyNum > selected.stockQty) {
       Alert.alert(
         "⚠️ Stok yetarli emas",
-        `Stokda ${selected.stockQty} ${selected.unit} bor, siz ${qtyNum} ta yozmoqdasiz.\n\nBaribir davom ettirasizmi?`,
-        [
-          { text: "Bekor qilish", style: "cancel" },
-          { text: "Ha, yozish", onPress: doSale },
-        ]
+        `Stokda ${selected.stockQty} ${selected.unit} bor, siz ${qtyNum} ta yozmoqchisiz.`
       );
       return;
     }

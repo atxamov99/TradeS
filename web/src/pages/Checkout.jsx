@@ -46,7 +46,13 @@ export default function Checkout() {
       resetCart();
       toast.success('Order placed successfully!');
       navigate('/products');
-    } catch (_) {
+    } catch (err) {
+      // The global axios interceptor toasts most errors but skips 401/422
+      // (auth / validation) — surface those here so the user always gets feedback.
+      const status = err.response?.status;
+      if (status === 401 || status === 422) {
+        toast.error(err.response?.data?.message || 'Could not place the order. Please check your details.');
+      }
     } finally {
       setIsLoading(false);
     }

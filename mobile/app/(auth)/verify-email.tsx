@@ -19,7 +19,9 @@ export default function VerifyEmailScreen() {
 
   async function handleVerify() {
     if (code.length !== 6) return;
-    if (code === DEMO_CODE) {
+    // Demo bypass faqat lokal dev build'da ishlaydi — production'da OTP tekshiruvidan
+    // qochib bo'lmasin (audit: CRITICAL#3, demo OTP backdoor).
+    if (__DEV__ && code === DEMO_CODE) {
       await setToken("demo-token", "demo-refresh");
       return;
     }
@@ -109,35 +111,40 @@ export default function VerifyEmailScreen() {
           </Text>
         </TouchableOpacity>
 
-        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 16 }}>
-          <View style={{ flex: 1, height: 1, backgroundColor: c.border }} />
-          <Text style={{ color: c.textMuted, marginHorizontal: 12, fontSize: 13 }}>{t.auth.or}</Text>
-          <View style={{ flex: 1, height: 1, backgroundColor: c.border }} />
-        </View>
+        {/* Demo kirish — faqat dev build'da (production'da ko'rinmaydi) */}
+        {__DEV__ && (
+          <>
+            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 16 }}>
+              <View style={{ flex: 1, height: 1, backgroundColor: c.border }} />
+              <Text style={{ color: c.textMuted, marginHorizontal: 12, fontSize: 13 }}>{t.auth.or}</Text>
+              <View style={{ flex: 1, height: 1, backgroundColor: c.border }} />
+            </View>
 
-        <TouchableOpacity
-          style={{
-            backgroundColor: c.bgCard,
-            borderRadius: 16,
-            height: 52,
-            alignItems: "center",
-            justifyContent: "center",
-            flexDirection: "row",
-            gap: 8,
-            borderWidth: 1.5,
-            borderColor: c.border,
-          }}
-          onPress={enterDemo}
-        >
-          <Ionicons name="rocket" size={18} color={c.primaryDark} />
-          <Text style={{ color: c.primaryDark, fontWeight: "700", fontSize: 15 }}>
-            {t.auth.enterDemo}
-          </Text>
-        </TouchableOpacity>
+            <TouchableOpacity
+              style={{
+                backgroundColor: c.bgCard,
+                borderRadius: 16,
+                height: 52,
+                alignItems: "center",
+                justifyContent: "center",
+                flexDirection: "row",
+                gap: 8,
+                borderWidth: 1.5,
+                borderColor: c.border,
+              }}
+              onPress={enterDemo}
+            >
+              <Ionicons name="rocket" size={18} color={c.primaryDark} />
+              <Text style={{ color: c.primaryDark, fontWeight: "700", fontSize: 15 }}>
+                {t.auth.enterDemo}
+              </Text>
+            </TouchableOpacity>
 
-        <Text style={{ color: c.textMuted, textAlign: "center", fontSize: 12, marginTop: 12 }}>
-          {t.auth.demoCodeHint} <Text style={{ fontWeight: "800" }}>000000</Text>
-        </Text>
+            <Text style={{ color: c.textMuted, textAlign: "center", fontSize: 12, marginTop: 12 }}>
+              {t.auth.demoCodeHint} <Text style={{ fontWeight: "800" }}>000000</Text>
+            </Text>
+          </>
+        )}
       </View>
     </View>
   );

@@ -1,24 +1,24 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const prisma = require("../config/prisma");
+const asyncHandler = require("../utils/asyncHandler");
+const ApiResponse = require("../utils/ApiResponse");
+const ApiError = require("../utils/ApiError");
+const logger = require("../utils/logger");
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-exports.askAI = async (req, res) => {
-    try {
+exports.askAI = asyncHandler(async (req, res) => {
         const { prompt, question, language } = req.body;
         const finalPrompt = prompt || question;
 
         if (!finalPrompt) {
-            return res.status(400).json({
-                success: false,
-                message: "Savol (prompt yoki question) talab qilinadi"
-            });
+            throw new ApiError(400, "Savol (prompt yoki question) talab qilinadi");
         }
 
         if (!process.env.GEMINI_API_KEY) {
-            console.error("GEMINI_API_KEY is not defined in backend .env!");
-            return res.status(500).json({ success: false, message: "AI API key is missing" });
+            logger.error("GEMINI_API_KEY is not defined in backend .env!");
+            throw new ApiError(500, "AI API key is missing");
         }
 
         // Fetch context data using Prisma — scoped to the requesting user so one
@@ -60,15 +60,5 @@ exports.askAI = async (req, res) => {
         const response = await result.response;
         const text = response.text();
 
-        res.json({
-            success: true,
-            data: text
-        });
-    } catch (error) {
-        console.error("AI Error Full:", error);
-        res.status(500).json({
-            success: false,
-            message: error.message || "AI xizmatida xatolik yuz berdi"
-        });
-    }
-};
+        res.status(200).json(new ApiResponse(200, text, "AI javobi tayyor"));
+});

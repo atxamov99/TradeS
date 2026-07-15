@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { mmkv } from "./storage";
+import { secureStorage } from "./storage";
 
 function simpleHash(s: string): string {
   let h = 5381;
@@ -22,42 +22,42 @@ export const useAuthStore = create<AuthState>((set) => ({
   refreshToken: null,
 
   loadToken: async () => {
-    const token = await mmkv.getString("token");
-    const refreshToken = await mmkv.getString("refreshToken");
+    const token = await secureStorage.getString("token");
+    const refreshToken = await secureStorage.getString("refreshToken");
     set({ token, refreshToken });
   },
 
   setToken: async (token, refreshToken) => {
     set({ token, refreshToken }); // state first — triggers re-render immediately
-    mmkv.setString("token", token).catch(() => {});
-    mmkv.setString("refreshToken", refreshToken).catch(() => {});
+    secureStorage.setString("token", token).catch(() => {});
+    secureStorage.setString("refreshToken", refreshToken).catch(() => {});
   },
 
   clearToken: async () => {
     set({ token: null, refreshToken: null });
-    mmkv.delete("token").catch(() => {});
-    mmkv.delete("refreshToken").catch(() => {});
-    mmkv.delete("emailHash").catch(() => {});
-    mmkv.delete("emailToken").catch(() => {});
-    mmkv.delete("emailRefresh").catch(() => {});
+    secureStorage.delete("token").catch(() => {});
+    secureStorage.delete("refreshToken").catch(() => {});
+    secureStorage.delete("emailHash").catch(() => {});
+    secureStorage.delete("emailToken").catch(() => {});
+    secureStorage.delete("emailRefresh").catch(() => {});
   },
 
   saveEmailCredentials: async (email, password, token, refresh) => {
     const hash = simpleHash(email.toLowerCase() + "::" + password);
-    await mmkv.setString("emailHash", hash);
-    await mmkv.setString("emailToken", token);
-    await mmkv.setString("emailRefresh", refresh);
-    await mmkv.setString("token", token);
-    await mmkv.setString("refreshToken", refresh);
+    await secureStorage.setString("emailHash", hash);
+    await secureStorage.setString("emailToken", token);
+    await secureStorage.setString("emailRefresh", refresh);
+    await secureStorage.setString("token", token);
+    await secureStorage.setString("refreshToken", refresh);
     set({ token, refreshToken: refresh });
   },
 
   verifyEmailOffline: async (email, password) => {
-    const stored = await mmkv.getString("emailHash");
+    const stored = await secureStorage.getString("emailHash");
     if (!stored) return null;
     const hash = simpleHash(email.toLowerCase() + "::" + password);
     if (stored !== hash) return null;
-    return (await mmkv.getString("emailToken")) ?? null;
+    return (await secureStorage.getString("emailToken")) ?? null;
   },
 
 }));

@@ -1,6 +1,7 @@
 const prisma = require('../config/prisma');
 const ApiError = require('../utils/ApiError');
 const slugify = require('slugify');
+const { clampLimit } = require('../utils/pagination');
 
 const getProducts = async (userId, queryParams = {}, options = {}) => {
   const { search, page = 1, limit = 50, sortBy = 'createdAt', order = 'desc' } = queryParams;
@@ -13,8 +14,8 @@ const getProducts = async (userId, queryParams = {}, options = {}) => {
     where.name = { contains: search, mode: 'insensitive' };
   }
 
-  const skip = (Number(page) - 1) * Number(limit);
-  const take = Number(limit);
+  const take = clampLimit(limit, 50);
+  const skip = (Number(page) - 1) * take;
   const sortField = sortBy === 'name' ? 'name' : 'createdAt';
 
   const [products, total] = await Promise.all([

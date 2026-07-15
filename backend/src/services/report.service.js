@@ -261,6 +261,21 @@ const getSecurityReport = async ({ from, to } = {}) => {
   };
 };
 
+// Escape a value for safe CSV output. Prevents CSV/formula injection: a cell that
+// starts with = + - @ (or tab/CR) can be executed as a formula when opened in Excel/
+// Sheets, so we prefix such values with a single quote. Also quotes values containing
+// commas, quotes, or newlines per RFC 4180.
+const escapeCsv = (value) => {
+  let str = value === null || value === undefined ? '' : String(value);
+  if (/^[=+\-@\t\r]/.test(str)) {
+    str = `'${str}`;
+  }
+  if (/[",\n\r]/.test(str)) {
+    str = `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+};
+
 const exportReport = async ({ type, from, to } = {}) => {
   const rangeStart = from ? new Date(from) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   const rangeEnd = to ? new Date(to) : new Date();
@@ -274,7 +289,8 @@ const exportReport = async ({ type, from, to } = {}) => {
     });
     const header = 'ID,Name,Email,Role,Status,CreatedAt\n';
     const rows = users.map((u) =>
-      `${u.id},${u.name},${u.email},${u.role},${u.isBlocked ? 'blocked' : 'active'},${u.createdAt.toISOString()}`
+      [u.id, u.name, u.email, u.role, u.isBlocked ? 'blocked' : 'active', u.createdAt.toISOString()]
+        .map(escapeCsv).join(',')
     ).join('\n');
     return header + rows;
   }
@@ -287,7 +303,8 @@ const exportReport = async ({ type, from, to } = {}) => {
     });
     const header = 'ID,OrderNumber,User,Total,Status,CreatedAt\n';
     const rows = orders.map((o) =>
-      `${o.id},${o.orderNumber},${o.user.name},${o.totalPrice},${o.orderStatus},${o.createdAt.toISOString()}`
+      [o.id, o.orderNumber, o.user.name, o.totalPrice, o.orderStatus, o.createdAt.toISOString()]
+        .map(escapeCsv).join(',')
     ).join('\n');
     return header + rows;
   }

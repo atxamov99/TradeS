@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const prisma = require('../config/prisma');
 const ApiError = require('../utils/ApiError');
+const { clampLimit } = require('../utils/pagination');
 
 const TAX_RATE = 0.1;
 const SHIPPING_THRESHOLD = 50;
@@ -134,8 +135,8 @@ const createOrder = async (userId, { items, shippingAddress, paymentMethod, note
 };
 
 const getUserOrders = async (userId, { page = 1, limit = 10 } = {}) => {
-  const skip = (Number(page) - 1) * Number(limit);
-  const take = Number(limit);
+  const take = clampLimit(limit, 10);
+  const skip = (Number(page) - 1) * take;
 
   const [orders, total] = await Promise.all([
     prisma.order.findMany({

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Eye, EyeOff, UserPlus, CheckCircle2, XCircle,
-  ShoppingBag, Globe, ChevronDown, Send, ArrowLeft, KeyRound
+  ShoppingBag, Globe, ChevronDown, Send, ArrowLeft, KeyRound, Smartphone, Mail
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
@@ -14,12 +14,17 @@ const BOT = import.meta.env.VITE_TELEGRAM_BOT || 'trades_uz_bot';
 const TX = {
   uz: {
     register_title: "Hisob yaratish",
-    register_sub:   "Telefon raqamingiz orqali ro'yxatdan o'ting",
+    register_sub:   "Telefon yoki email orqali ro'yxatdan o'ting",
     have_account:   "Hisobingiz bormi?",
     login:          "Kirish",
+    tab_phone:      "Telefon",
+    tab_email:      "Email",
     name_label:     "To'liq ism",
     name_ph:        "Ism va familiyangiz",
     phone_label:    "Telefon raqam",
+    email_label:    "Email manzil",
+    email_ph:       "email@misol.com",
+    otp_desc_email: "Emailingizga yuborilgan 6 xonali kodni kiriting",
     pwd_label:      "Parol",
     pwd_ph:         "Kamida 8 ta belgi",
     submit:         "Kod olish",
@@ -35,12 +40,17 @@ const TX = {
   },
   ru: {
     register_title: "Создать аккаунт",
-    register_sub:   "Зарегистрируйтесь по номеру телефона",
+    register_sub:   "Зарегистрируйтесь по телефону или email",
     have_account:   "Уже есть аккаунт?",
     login:          "Войти",
+    tab_phone:      "Телефон",
+    tab_email:      "Email",
     name_label:     "Полное имя",
     name_ph:        "Ваше имя и фамилия",
     phone_label:    "Номер телефона",
+    email_label:    "Email адрес",
+    email_ph:       "email@example.com",
+    otp_desc_email: "Введите 6-значный код из письма",
     pwd_label:      "Пароль",
     pwd_ph:         "Минимум 8 символов",
     submit:         "Получить код",
@@ -56,12 +66,17 @@ const TX = {
   },
   en: {
     register_title: "Create Account",
-    register_sub:   "Sign up with your phone number",
+    register_sub:   "Sign up with your phone or email",
     have_account:   "Already have an account?",
     login:          "Sign In",
+    tab_phone:      "Phone",
+    tab_email:      "Email",
     name_label:     "Full Name",
     name_ph:        "Your full name",
     phone_label:    "Phone Number",
+    email_label:    "Email Address",
+    email_ph:       "email@example.com",
+    otp_desc_email: "Enter the 6-digit code sent to your email",
     pwd_label:      "Password",
     pwd_ph:         "At least 8 characters",
     submit:         "Get Code",
@@ -102,10 +117,13 @@ export default function Register() {
   const navigate = useNavigate();
   const requestOtp = useAuthStore((s) => s.requestOtp);
   const verifyOtp = useAuthStore((s) => s.verifyOtp);
+  const requestEmailOtp = useAuthStore((s) => s.requestEmailOtp);
+  const verifyEmailOtp = useAuthStore((s) => s.verifyEmailOtp);
   const isLoading = useAuthStore((s) => s.isLoading);
 
   const [step, setStep] = useState('form'); // 'form' | 'connect' | 'otp'
-  const [form, setForm] = useState({ name: '', phone: '+998 ', password: '' });
+  const [method, setMethod] = useState('phone'); // 'phone' | 'email'
+  const [form, setForm] = useState({ name: '', phone: '+998 ', email: '', password: '' });
   const [code, setCode] = useState('');
   const [showPwd, setShowPwd] = useState(false);
   const [pwdTouched, setPwdTouched] = useState(false);
@@ -122,20 +140,31 @@ export default function Register() {
   const validate = () => {
     const e = {};
     if (!form.name.trim())          e.name = t('name_required');
-    if (phoneDigits.length < 12)    e.phone = t('phone_required') || 'Telefon raqamni to\'liq kiriting';
+    if (method === 'phone') {
+      if (phoneDigits.length < 12)  e.phone = t('phone_required') || 'Telefon raqamni to\'liq kiriting';
+    } else {
+      if (!/^\S+@\S+\.\S+$/.test(form.email.trim()))
+        e.email = t('email_required') || 'Email manzilni kiriting';
+    }
     if (!form.password)             e.password = t('password_required');
     else if (!pwdValid)             e.password = t('rule_length');
     return e;
   };
 
-  // Send / resend the OTP. On 428 (Telegram not linked) → show the connect step.
+  // Send / resend the OTP. Phone → Telegram (428 → connect step); email → Resend code.
   const sendCode = async () => {
     try {
-      await requestOtp(form.phone);
-      setStep('otp');
-      toast.success(tx.otp_desc);
+      if (method === 'email') {
+        await requestEmailOtp(form.email.trim().toLowerCase());
+        setStep('otp');
+        toast.success(tx.otp_desc_email);
+      } else {
+        await requestOtp(form.phone);
+        setStep('otp');
+        toast.success(tx.otp_desc);
+      }
     } catch (err) {
-      if (err.response?.status === 428) {
+      if (method === 'phone' && err.response?.status === 428) {
         setStep('connect');
       } else {
         toast.error(err.response?.data?.message || 'Xatolik yuz berdi');
@@ -156,12 +185,21 @@ export default function Register() {
     e.preventDefault();
     if (code.replace(/\D/g, '').length !== 6) return;
     try {
-      await verifyOtp({
-        phone: form.phone,
-        code: code.replace(/\D/g, ''),
-        name: form.name.trim(),
-        password: form.password,
-      });
+      if (method === 'email') {
+        await verifyEmailOtp({
+          email: form.email.trim().toLowerCase(),
+          code: code.replace(/\D/g, ''),
+          name: form.name.trim(),
+          password: form.password,
+        });
+      } else {
+        await verifyOtp({
+          phone: form.phone,
+          code: code.replace(/\D/g, ''),
+          name: form.name.trim(),
+          password: form.password,
+        });
+      }
       toast.success(`Xush kelibsiz, ${form.name.trim()}!`);
       navigate('/dashboard');
     } catch (err) {
@@ -242,6 +280,28 @@ export default function Register() {
                 <p className="text-slate-400 text-sm mt-1">{tx.register_sub}</p>
               </div>
 
+              {/* Method toggle: phone (Telegram OTP) vs email (Resend OTP) */}
+              <div className="flex gap-1 p-1 rounded-xl bg-[#0E150F]/60 border border-[#2ECC71]/10 mb-5">
+                <button
+                  type="button"
+                  onClick={() => { setMethod('phone'); setErrors({}); }}
+                  className={`flex-1 flex items-center justify-center gap-2 h-10 rounded-lg text-sm font-bold transition-all ${
+                    method === 'phone' ? 'bg-[#2ECC71] text-slate-950' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Smartphone size={15} /> {tx.tab_phone}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setMethod('email'); setErrors({}); }}
+                  className={`flex-1 flex items-center justify-center gap-2 h-10 rounded-lg text-sm font-bold transition-all ${
+                    method === 'email' ? 'bg-[#2ECC71] text-slate-950' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Mail size={15} /> {tx.tab_email}
+                </button>
+              </div>
+
               <form onSubmit={handleFormSubmit} noValidate className="flex flex-col gap-5">
                 {/* Name */}
                 <div className="flex flex-col gap-1.5">
@@ -250,12 +310,20 @@ export default function Register() {
                   {errors.name && <p className="text-red-400 text-xs mt-0.5">{errors.name}</p>}
                 </div>
 
-                {/* Phone */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">{tx.phone_label}</label>
-                  <input type="tel" autoComplete="tel" value={form.phone} onChange={onChange('phone')} placeholder="+998 90 123 45 67" className={inputCls('phone')} />
-                  {errors.phone && <p className="text-red-400 text-xs mt-0.5">{errors.phone}</p>}
-                </div>
+                {/* Phone or Email (by selected method) */}
+                {method === 'phone' ? (
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">{tx.phone_label}</label>
+                    <input type="tel" autoComplete="tel" value={form.phone} onChange={onChange('phone')} placeholder="+998 90 123 45 67" className={inputCls('phone')} />
+                    {errors.phone && <p className="text-red-400 text-xs mt-0.5">{errors.phone}</p>}
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">{tx.email_label}</label>
+                    <input type="email" autoComplete="email" value={form.email} onChange={onChange('email')} placeholder={tx.email_ph} className={inputCls('email')} />
+                    {errors.email && <p className="text-red-400 text-xs mt-0.5">{errors.email}</p>}
+                  </div>
+                )}
 
                 {/* Password */}
                 <div className="flex flex-col gap-1.5">
@@ -341,8 +409,8 @@ export default function Register() {
                   <KeyRound className="w-8 h-8 text-[#2ECC71]" />
                 </div>
                 <h2 className="text-2xl font-extrabold text-white">{tx.otp_title}</h2>
-                <p className="text-slate-400 text-sm">{tx.otp_desc}</p>
-                <p className="text-[#2ECC71] font-semibold text-sm">{form.phone}</p>
+                <p className="text-slate-400 text-sm">{method === 'email' ? tx.otp_desc_email : tx.otp_desc}</p>
+                <p className="text-[#2ECC71] font-semibold text-sm">{method === 'email' ? form.email : form.phone}</p>
               </div>
 
               <form onSubmit={handleVerify} className="flex flex-col gap-4 mt-5">

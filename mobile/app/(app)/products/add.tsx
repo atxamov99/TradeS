@@ -9,6 +9,7 @@ import { useCategories } from "@/hooks/useCategories";
 import { useProductCount } from "@/hooks/useProducts";
 import { useRoleStore } from "@/store/roleStore";
 import { useSubscriptionStore } from "@/store/subscriptionStore";
+import { useUserStore } from "@/store/userStore";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
 
 const UNIT_KEYS = ["kg", "dona", "litr", "metr", "paket", "quti"] as const;
@@ -23,6 +24,7 @@ export default function AddProductScreen() {
   const productCount = useProductCount();
   const { isAdmin } = useRoleStore();
   const { getProductLimit } = useSubscriptionStore();
+  const { user } = useUserStore();
   const FREE_LIMIT = getProductLimit();
 
   const [name, setName] = useState("");
@@ -75,6 +77,7 @@ export default function AddProductScreen() {
           p.archivedAt = null;
           p.isSynced = false;
           p.serverId = null;
+          p.createdById = user?.id ?? null;
         });
       });
       router.back();

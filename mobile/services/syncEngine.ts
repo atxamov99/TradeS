@@ -50,6 +50,7 @@ type RemoteProduct = {
   stock: number;
   unit: string;
   isActive: boolean;
+  createdById?: string | null;
 };
 
 type RemoteSale = {
@@ -244,6 +245,7 @@ async function pullProductCatalog() {
           p.unit = rp.unit;
           p.archivedAt = rp.isActive ? null : (p.archivedAt ?? Date.now());
           p.isSynced = true;
+          p.createdById = rp.createdById ?? null;
         });
       } else {
         await productsCollection.create((p) => {
@@ -257,6 +259,7 @@ async function pullProductCatalog() {
           p.archivedAt = rp.isActive ? null : Date.now();
           p.isSynced = true;
           p.serverId = rp.id;
+          p.createdById = rp.createdById ?? null;
         });
       }
     }
@@ -323,4 +326,18 @@ export async function getPendingCount(): Promise<number> {
     database.collections.get<Sale>("sales").query(Q.where("is_synced", false)).fetchCount(),
   ]);
   return products + sales;
+}
+
+/**
+ * Logout'da chaqiriladi (audit: HIGH H3) — lokal WatermelonDB'ni butunlay tozalaydi,
+ * shu qurilmada keyingi kirgan foydalanuvchi avvalgi hisobning tovar/sotuvlarini
+ * ko'rmasin. `lastSyncAt` ham reset qilinadi, aks holda keyingi foydalanuvchi uchun
+ * `pullSync()` eski sanadan boshlab tortishga urinib, tarixiy sotuvlarni to'liq
+ * qayta tiklamasligi mumkin.
+ */
+export async function clearLocalData() {
+  await database.write(async () => {
+    await database.unsafeResetDatabase();
+  });
+  await mmkv.delete(LAST_PULL_KEY);
 }

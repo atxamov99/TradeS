@@ -59,6 +59,31 @@ const useAuthStore = create(
         }
       },
 
+      // Ask backend to email a 6-digit OTP (register/login by email — Telegram analog).
+      requestEmailOtp: async (email) => {
+        set({ isLoading: true });
+        try {
+          const res = await authApi.requestEmailOtp(email);
+          return res.data;
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
+      // Verify email OTP → registers-or-logs-in by email, sets the user (cookie-based).
+      verifyEmailOtp: async (data) => {
+        set({ isLoading: true });
+        try {
+          const res = await authApi.verifyEmailOtp(data);
+          const { user } = res.data.data;
+          set({ user, isLoading: false });
+          return user;
+        } catch (err) {
+          set({ isLoading: false });
+          throw err;
+        }
+      },
+
       login: async (credentials) => {
         set({ isLoading: true });
         try {
@@ -88,8 +113,13 @@ const useAuthStore = create(
         try {
           const res = await authApi.getMe();
           set({ user: res.data.data.user });
-        } catch (_) {
-          set({ user: null });
+        } catch (err) {
+          // Only drop the session on a real auth failure (401/403). A network
+          // error or 5xx must NOT log the user out — keep the persisted user.
+          const status = err.response?.status;
+          if (status === 401 || status === 403) {
+            set({ user: null });
+          }
         }
       },
 

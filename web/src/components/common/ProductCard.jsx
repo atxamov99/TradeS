@@ -13,7 +13,8 @@ export default function ProductCard({ product }) {
   const handleAddToCart = (e) => {
     e.preventDefault();
     if (!user) { toast.error('Please login to add to cart'); return; }
-    addItem(product.id, 1);
+    // Fire-and-forget: the store rethrows and the axios interceptor toasts the error.
+    addItem(product.id, 1).catch(() => {});
   };
 
   const handleWishlist = async (e) => {

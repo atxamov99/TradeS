@@ -1,5 +1,6 @@
 const prisma = require('../config/prisma');
 const ApiError = require('../utils/ApiError');
+const { clampLimit } = require('../utils/pagination');
 
 const createSale = async (userId, saleData) => {
   const { product: productId, productName, quantity, sellPrice, buyPrice, unit, note, syncId, isFromOffline, createdAt } = saleData;
@@ -89,8 +90,8 @@ const getSales = async (userId, { page = 1, limit = 100, from, to, date } = {}) 
     if (to) where.createdAt.lte = new Date(to);
   }
 
-  const skip = (Number(page) - 1) * Number(limit);
-  const take = Number(limit);
+  const take = clampLimit(limit, 100);
+  const skip = (Number(page) - 1) * take;
 
   const [sales, total] = await Promise.all([
     prisma.sale.findMany({

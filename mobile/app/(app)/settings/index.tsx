@@ -11,6 +11,7 @@ import { useT } from "@/hooks/useT";
 import { useRoleStore } from "@/store/roleStore";
 import { api } from "@/services/api";
 import { Lang } from "@/i18n";
+import { clearLocalData } from "@/services/syncEngine";
 
 const LANGS: { code: Lang; label: string; flag: string }[] = [
   { code: "uz", label: "O'zbek", flag: "🇺🇿" },
@@ -81,7 +82,17 @@ export default function ProfileScreen() {
   function handleLogout() {
     Alert.alert(t.settings.logout, t.settings.logoutConfirm, [
       { text: t.products.cancel, style: "cancel" },
-      { text: t.settings.logout, style: "destructive", onPress: () => { clearUser(); clearToken(); } },
+      {
+        text: t.settings.logout,
+        style: "destructive",
+        onPress: async () => {
+          // Avval lokal bazani tozalaymiz (audit: HIGH H3) — shu qurilmadagi keyingi
+          // foydalanuvchi avvalgi hisobning ma'lumotlarini ko'rmasin.
+          await clearLocalData().catch(() => {});
+          clearUser();
+          clearToken();
+        },
+      },
     ]);
   }
 

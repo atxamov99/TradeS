@@ -3,6 +3,24 @@ const saleService = require('./sale.service');
 const ApiError = require('../utils/ApiError');
 const slugify = require('slugify');
 
+// Fields a mobile client is allowed to set on a product via sync. Everything else
+// (ownerId, createdById, slug, finalPrice, isActive, id, timestamps) is server-owned
+// and must never be taken from the client payload — otherwise a device could spoof
+// ownership, resurrect archived products, or inject stock/price for another tenant.
+const PRODUCT_SYNC_FIELDS = [
+  'name', 'buyPrice', 'sellPrice', 'unit', 'description',
+  'price', 'discount', 'category', 'stock', 'brand', 'tags',
+];
+
+// Keep only whitelisted keys from an untrusted client payload.
+const pickAllowed = (payload = {}, allowed) => {
+  const out = {};
+  for (const key of allowed) {
+    if (payload[key] !== undefined) out[key] = payload[key];
+  }
+  return out;
+};
+
 /**
  * Process a batch of offline operations from mobile client.
  */
@@ -30,12 +48,15 @@ const processSyncBatch = async (userId, operations) => {
             where: { name: payload.name, createdById: userId }
           });
           if (!existing) {
-            const slug = slugify(payload.name, { lower: true, strict: true }) + '-' + Date.now();
-            const finalPrice = payload.price - (payload.price * (payload.discount || 0)) / 100;
+            // Only trust whitelisted fields from the client; server sets ownership/derived fields.
+            const safe = pickAllowed(payload, PRODUCT_SYNC_FIELDS);
+            const slug = slugify(safe.name, { lower: true, strict: true }) + '-' + Date.now();
+            const basePrice = safe.price || 0;
+            const finalPrice = basePrice - (basePrice * (safe.discount || 0)) / 100;
 
             const product = await prisma.product.create({
               data: {
-                ...payload,
+                ...safe,
                 slug,
                 finalPrice,
                 createdById: userId,
@@ -57,7 +78,8 @@ const processSyncBatch = async (userId, operations) => {
             const clientTime = clientUpdatedAt ? new Date(clientUpdatedAt) : new Date(0);
             const serverTime = product.updatedAt;
             if (clientTime >= serverTime) {
-              const updateData = { ...payload };
+              // Only trust whitelisted fields — never let the client change ownerId/isActive/slug/finalPrice.
+              const updateData = pickAllowed(payload, PRODUCT_SYNC_FIELDS);
               if (payload.name && payload.name !== product.name) {
                 updateData.slug = slugify(payload.name, { lower: true, strict: true }) + '-' + Date.now();
               }

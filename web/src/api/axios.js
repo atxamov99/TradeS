@@ -26,12 +26,25 @@ const processQueue = (error, token = null) => {
   failedQueue = [];
 };
 
+// Auth endpoints where a 401 means bad credentials, not an expired session.
+// Attempting a token refresh (and redirect) for these would cause loops.
+const AUTH_PATHS = [
+  '/auth/login', '/auth/register', '/auth/refresh-token',
+  '/auth/request-otp', '/auth/verify-otp',
+  '/auth/request-email-otp', '/auth/verify-email-otp',
+];
+const isAuthEndpoint = (url = '') => AUTH_PATHS.some((p) => url.includes(p));
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !isAuthEndpoint(originalRequest.url)
+    ) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
@@ -54,7 +67,10 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
-        window.location.href = '/login';
+        // Guard against a redirect loop when we're already on the login page.
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

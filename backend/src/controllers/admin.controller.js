@@ -36,7 +36,7 @@ const blockUser = asyncHandler(async (req, res) => {
 });
 
 const unblockUser = asyncHandler(async (req, res) => {
-  const user = await adminService.unblockUser(req.params.id);
+  const user = await adminService.unblockUser(req.params.id, req.user.role);
   res.status(200).json(new ApiResponse(200, { user }, 'User unblocked'));
 });
 
@@ -53,7 +53,7 @@ const getAllAdmins = asyncHandler(async (req, res) => {
 });
 
 const toggleAdminStatus = asyncHandler(async (req, res) => {
-  const user = await adminService.toggleAdminStatus(req.params.id, req.user.id);
+  const user = await adminService.toggleAdminStatus(req.params.id, req.user.id, req.user.role);
   res.status(200).json(new ApiResponse(200, { user }, 'Admin status updated'));
 });
 

@@ -1,6 +1,7 @@
 const prisma = require('../config/prisma');
 const ApiError = require('../utils/ApiError');
 const bcrypt = require('bcryptjs');
+const { clampLimit } = require('../utils/pagination');
 
 const stripPassword = (user) => {
   if (!user) return user;
@@ -118,8 +119,8 @@ const getDashboardStats = async () => {
 };
 
 const getAllUsers = async ({ page = 1, limit = 20, search, role } = {}) => {
-  const skip = (Number(page) - 1) * Number(limit);
-  const take = Number(limit);
+  const take = clampLimit(limit, 20);
+  const skip = (Number(page) - 1) * take;
   const where = { deletedAt: null };
 
   if (search) {
@@ -251,7 +252,9 @@ const blockUser = async (userId, adminId, actorRole) => {
   }
 };
 
-const unblockUser = async (userId) => {
+const unblockUser = async (userId, actorRole) => {
+  // A plain ADMIN may not act on a SUPER_ADMIN account (privilege escalation guard)
+  await assertCanActOn(userId, actorRole);
   try {
     const user = await prisma.user.update({
       where: { id: userId },
@@ -345,8 +348,8 @@ const deleteUser = async (userId, adminId, actorRole) => {
 };
 
 const getAllAdmins = async ({ page = 1, limit = 50 } = {}) => {
-  const skip = (Number(page) - 1) * Number(limit);
-  const take = Number(limit);
+  const take = clampLimit(limit, 20);
+  const skip = (Number(page) - 1) * take;
   const where = { role: { in: ['ADMIN', 'SUPER_ADMIN'] }, deletedAt: null };
 
   const [users, total] = await Promise.all([
@@ -357,8 +360,10 @@ const getAllAdmins = async ({ page = 1, limit = 50 } = {}) => {
   return { users: stripPasswordMany(users), total, page: Number(page), pages: Math.ceil(total / take) };
 };
 
-const toggleAdminStatus = async (userId, adminId) => {
+const toggleAdminStatus = async (userId, adminId, actorRole) => {
   if (userId === adminId) throw new ApiError(400, 'You cannot change your own status');
+  // A plain ADMIN may not suspend/reinstate a SUPER_ADMIN (privilege escalation guard)
+  await assertCanActOn(userId, actorRole);
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user || !['ADMIN', 'SUPER_ADMIN'].includes(user.role)) {
     throw new ApiError(404, 'Admin not found');
@@ -371,8 +376,8 @@ const toggleAdminStatus = async (userId, adminId) => {
 };
 
 const getAllOrders = async ({ page = 1, limit = 20, status } = {}) => {
-  const skip = (Number(page) - 1) * Number(limit);
-  const take = Number(limit);
+  const take = clampLimit(limit, 20);
+  const skip = (Number(page) - 1) * take;
   const where = {};
   if (status) where.orderStatus = status;
 

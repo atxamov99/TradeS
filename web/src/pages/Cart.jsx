@@ -63,14 +63,14 @@ export default function Cart() {
                   <div className="flex items-center gap-3 mt-2">
                     <div className="flex items-center border rounded-lg">
                       <button
-                        onClick={() => item.quantity > 1 ? updateItem(productId, item.quantity - 1) : removeItem(productId)}
+                        onClick={() => (item.quantity > 1 ? updateItem(productId, item.quantity - 1) : removeItem(productId)).catch(() => {})}
                         className="p-1.5 hover:bg-gray-50 dark:hover:bg-gray-800"
                       >
                         <Minus className="h-3.5 w-3.5" />
                       </button>
                       <span className="px-3 text-sm">{item.quantity}</span>
                       <button
-                        onClick={() => updateItem(productId, item.quantity + 1)}
+                        onClick={() => updateItem(productId, item.quantity + 1).catch(() => {})}
                         disabled={item.quantity >= (product?.stock || 99)}
                         className="p-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-40"
                       >
@@ -78,7 +78,7 @@ export default function Cart() {
                       </button>
                     </div>
                     <button
-                      onClick={() => removeItem(productId)}
+                      onClick={() => removeItem(productId).catch(() => {})}
                       className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"
                     >
                       <Trash2 className="h-4 w-4" />

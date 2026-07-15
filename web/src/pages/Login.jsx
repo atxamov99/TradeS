@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
-  Eye, EyeOff, LogIn, ShoppingBag, Globe, ChevronDown
+  Eye, EyeOff, LogIn, ShoppingBag, Globe, ChevronDown, Mail, KeyRound, ArrowLeft
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import useAuthStore from '../store/authStore';
 
@@ -18,6 +19,17 @@ const TX = {
     no_account:  "Hisob yo'qmi?",
     register:    "Ro'yxatdan o'ting",
     phone_required: "Telefon raqamni to'liq kiriting",
+    email_login:    "Email kod bilan kirish",
+    back_to_pwd:    "Parol bilan kirish",
+    email_label:    "Email manzil",
+    email_ph:       "email@misol.com",
+    email_required: "Email manzilni kiriting",
+    get_code:       "Kod olish",
+    otp_label:      "Tasdiqlash kodi",
+    otp_sent:       "Emailingizga 6 xonali kod yuborildi",
+    verify_login:   "Kirish",
+    resend:         "Kodni qayta yuborish",
+    back:           "Orqaga",
     trust: ["Ma'lumotlaringiz xavfsiz", "Bepul foydalanish", "O'rnatish shart emas"],
   },
   ru: {
@@ -29,6 +41,17 @@ const TX = {
     no_account:  "Нет аккаунта?",
     register:    "Зарегистрироваться",
     phone_required: "Введите номер телефона полностью",
+    email_login:    "Войти по коду из email",
+    back_to_pwd:    "Войти по паролю",
+    email_label:    "Email адрес",
+    email_ph:       "email@example.com",
+    email_required: "Введите email адрес",
+    get_code:       "Получить код",
+    otp_label:      "Код подтверждения",
+    otp_sent:       "6-значный код отправлен на ваш email",
+    verify_login:   "Войти",
+    resend:         "Отправить код повторно",
+    back:           "Назад",
     trust: ["Ваши данные в безопасности", "Бесплатное использование", "Установка не нужна"],
   },
   en: {
@@ -40,6 +63,17 @@ const TX = {
     no_account:  "Don't have an account?",
     register:    "Sign Up",
     phone_required: "Enter your full phone number",
+    email_login:    "Sign in with email code",
+    back_to_pwd:    "Sign in with password",
+    email_label:    "Email Address",
+    email_ph:       "email@example.com",
+    email_required: "Enter your email address",
+    get_code:       "Get Code",
+    otp_label:      "Verification Code",
+    otp_sent:       "A 6-digit code was sent to your email",
+    verify_login:   "Sign In",
+    resend:         "Resend code",
+    back:           "Back",
     trust: ["Your data is secure", "Free to use", "No installation needed"],
   },
 };
@@ -67,11 +101,21 @@ export default function Login() {
   const [errors, setErrors] = useState({});
   const [langOpen, setLangOpen] = useState(false);
 
+  // Email-code login: alternate to phone+password. mode 'password' | 'email'.
+  const [mode, setMode] = useState('password');
+  const [emailStep, setEmailStep] = useState('request'); // 'request' | 'otp'
+  const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
+
   const login = useAuthStore((s) => s.login);
+  const requestEmailOtp = useAuthStore((s) => s.requestEmailOtp);
+  const verifyEmailOtp = useAuthStore((s) => s.verifyEmailOtp);
   const isLoading = useAuthStore((s) => s.isLoading);
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname || '/dashboard';
+
+  const goAfterLogin = () => navigate(from === '/login' ? '/dashboard' : from, { replace: true });
 
   const phoneDigits = form.phone.replace(/\D/g, '');
 
@@ -89,8 +133,33 @@ export default function Login() {
     setErrors({});
     try {
       await login({ phone: form.phone.replace(/\s/g, ''), password: form.password });
-      navigate(from === '/login' ? '/dashboard' : from, { replace: true });
+      goAfterLogin();
     } catch (_) {}
+  };
+
+  // Send / resend the email OTP, then move to the code step.
+  const sendEmailCode = async () => {
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) { setErrors({ email: tx.email_required }); return; }
+    setErrors({});
+    try {
+      await requestEmailOtp(email.trim().toLowerCase());
+      setEmailStep('otp');
+      toast.success(tx.otp_sent);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Xatolik yuz berdi');
+    }
+  };
+
+  const handleEmailLogin = async (e) => {
+    e.preventDefault();
+    if (code.replace(/\D/g, '').length !== 6) return;
+    try {
+      // No password → login-only (existing account). New emails are rejected here.
+      await verifyEmailOtp({ email: email.trim().toLowerCase(), code: code.replace(/\D/g, '') });
+      goAfterLogin();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Kod noto\'g\'ri');
+    }
   };
 
   const onChange = (f) => (e) => {
@@ -159,6 +228,7 @@ export default function Login() {
             <p className="text-slate-400 text-sm mt-1">{tx.login_sub}</p>
           </div>
 
+          {mode === 'password' && (
           <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">{t('phone')}</label>
@@ -199,7 +269,88 @@ export default function Login() {
                 : <><LogIn size={16} />{t('login')}</>
               }
             </button>
+
+            <button
+              type="button"
+              onClick={() => { setMode('email'); setErrors({}); setEmailStep('request'); setCode(''); }}
+              className="mt-1 flex items-center justify-center gap-2 text-sm text-slate-400 hover:text-[#2ECC71] transition"
+            >
+              <Mail size={15} /> {tx.email_login}
+            </button>
           </form>
+          )}
+
+          {mode === 'email' && emailStep === 'request' && (
+            <div className="flex flex-col gap-5">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">{tx.email_label}</label>
+                <input
+                  type="email"
+                  autoComplete="email"
+                  autoFocus
+                  value={email}
+                  onChange={(e) => { setEmail(e.target.value); if (errors.email) setErrors({}); }}
+                  placeholder={tx.email_ph}
+                  className={inputCls('email')}
+                />
+                {errors.email && <p className="text-red-400 text-xs mt-0.5">{errors.email}</p>}
+              </div>
+              <button
+                type="button"
+                onClick={sendEmailCode}
+                disabled={isLoading}
+                className="w-full h-12 bg-[#2ECC71] hover:bg-[#2ecc71]/90 text-slate-950 text-sm font-extrabold rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-60 shadow-lg shadow-[#2ECC71]/10 mt-1 hover:scale-[1.02] active:scale-[0.98]"
+              >
+                {isLoading ? <span className="w-5 h-5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" /> : tx.get_code}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setMode('password'); setErrors({}); }}
+                className="flex items-center justify-center gap-1.5 text-sm text-slate-400 hover:text-white transition"
+              >
+                <ArrowLeft size={14} /> {tx.back_to_pwd}
+              </button>
+            </div>
+          )}
+
+          {mode === 'email' && emailStep === 'otp' && (
+            <form onSubmit={handleEmailLogin} noValidate className="flex flex-col gap-4">
+              <div className="flex flex-col items-center text-center gap-3 mb-1">
+                <div className="w-16 h-16 rounded-2xl bg-[#2ECC71]/15 flex items-center justify-center">
+                  <KeyRound className="w-8 h-8 text-[#2ECC71]" />
+                </div>
+                <p className="text-slate-400 text-sm">{tx.otp_sent}</p>
+                <p className="text-[#2ECC71] font-semibold text-sm">{email}</p>
+              </div>
+              <input
+                type="text"
+                inputMode="numeric"
+                autoFocus
+                maxLength={6}
+                value={code}
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="••••••"
+                className="w-full h-14 rounded-xl border border-[#2ECC71]/20 bg-[#0E150F]/50 text-white text-center text-2xl font-extrabold tracking-[0.5em] placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-[#2ECC71]/30 focus:border-[#2ECC71]"
+              />
+              <button
+                type="submit"
+                disabled={isLoading || code.length !== 6}
+                className="w-full h-12 bg-[#2ECC71] hover:bg-[#2ecc71]/90 text-slate-950 text-sm font-extrabold rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+              >
+                {isLoading ? <span className="w-5 h-5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" /> : <><LogIn size={16} />{tx.verify_login}</>}
+              </button>
+              <button type="button" onClick={sendEmailCode} disabled={isLoading} className="text-[#2ECC71] text-sm font-bold hover:underline disabled:opacity-50">
+                {tx.resend}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setEmailStep('request'); setCode(''); }}
+                className="flex items-center justify-center gap-1.5 text-sm text-slate-400 hover:text-white transition"
+              >
+                <ArrowLeft size={14} /> {tx.back}
+              </button>
+            </form>
+          )}
 
           <div className="mt-6 text-center text-sm text-slate-400">
             {tx.no_account}{' '}

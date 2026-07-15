@@ -1,8 +1,9 @@
 const prisma = require('../config/prisma');
+const { clampLimit } = require('../utils/pagination');
 
 const getAuditLogs = async ({ page = 1, limit = 30, category, from, to, search } = {}) => {
-  const skip = (Number(page) - 1) * Number(limit);
-  const take = Number(limit);
+  const take = clampLimit(limit, 30);
+  const skip = (Number(page) - 1) * take;
   const where = {};
 
   if (category) where.category = category;

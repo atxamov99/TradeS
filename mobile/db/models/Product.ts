@@ -14,6 +14,7 @@ export class Product extends Model {
   @field("archived_at") declare archivedAt: number | null;
   @field("is_synced") declare isSynced: boolean;
   @field("server_id") declare serverId: string | null;
+  @field("created_by_id") declare createdById: string | null;
   @readonly @date("created_at") declare createdAt: Date;
   @readonly @date("updated_at") declare updatedAt: Date;
 

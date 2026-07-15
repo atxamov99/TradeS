@@ -134,7 +134,9 @@ export default function Login() {
     try {
       await login({ phone: form.phone.replace(/\s/g, ''), password: form.password });
       goAfterLogin();
-    } catch (_) {}
+    } catch (_) {
+      // login() already surfaces toast errors
+    }
   };
 
   // Send / resend the email OTP, then move to the code step.

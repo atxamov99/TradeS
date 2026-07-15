@@ -16,8 +16,8 @@ import {
   recentActivities as initialRecentActivities,
   roles as initialRoles
 } from "../constants/mockData";
-import { usersApi } from "../services/api/users.api";
-import { productsApi } from "../services/api/products.api";
+import { getAllUsers, blockUser, unblockUser, deleteUser } from "../api/admin.api";
+import { getProducts, createProduct, updateProduct, deleteProduct } from "../api/products.api";
 import { useAuth } from "./index";
 
 const AdminDataContext = createContext(null);
@@ -89,8 +89,8 @@ export function AdminDataProvider({ children }) {
     async function load() {
       try {
         const [usersRes, productsRes] = await Promise.allSettled([
-          usersApi.getAll({ limit: 100 }),
-          productsApi.getAll({ limit: 100 })
+          getAllUsers({ limit: 100 }),
+          getProducts({ limit: 100 })
         ]);
 
         if (usersRes.status === "fulfilled") {
@@ -163,9 +163,9 @@ export function AdminDataProvider({ children }) {
     const isBlocked = user.status !== "blocked";
     try {
       if (isBlocked) {
-        await usersApi.block(id);
+        await blockUser(id);
       } else {
-        await usersApi.unblock(id);
+        await unblockUser(id);
       }
       setUsers((curr) =>
         curr.map((u) => u.id === id ? { ...u, status: isBlocked ? "blocked" : "active" } : u)
@@ -181,7 +181,7 @@ export function AdminDataProvider({ children }) {
   async function deleteUser(id) {
     const target = users.find((u) => u.id === id);
     try {
-      await usersApi.remove(id);
+      await deleteUser(id);
       setUsers((curr) => curr.filter((u) => u.id !== id));
       logAudit("Foydalanuvchi o'chirildi", id, "user", "danger");
       pushToast(`${target?.name || id} o'chirildi`, "danger");
@@ -302,7 +302,7 @@ export function AdminDataProvider({ children }) {
   // ── Products ──────────────────────────────────────────────
   async function createProduct(payload) {
     try {
-      const res = await productsApi.create(payload);
+      const res = await createProduct(payload);
       const product = normalizeProduct(res.data?.product || res.data || {});
       setProducts((curr) => [product, ...curr]);
       logAudit("Mahsulot yaratildi", product.name, "content", "success");
@@ -314,7 +314,7 @@ export function AdminDataProvider({ children }) {
 
   async function updateProduct(id, payload) {
     try {
-      const res = await productsApi.update(id, payload);
+      const res = await updateProduct(id, payload);
       const updated = normalizeProduct(res.data?.product || res.data || payload);
       setProducts((curr) => curr.map((p) => p.id === id ? { ...p, ...updated } : p));
       logAudit("Mahsulot yangilandi", id, "content", "info");
@@ -327,7 +327,7 @@ export function AdminDataProvider({ children }) {
   async function deleteProduct(id) {
     const target = products.find((p) => p.id === id);
     try {
-      await productsApi.remove(id);
+      await deleteProduct(id);
       setProducts((curr) => curr.filter((p) => p.id !== id));
       logAudit("Mahsulot o'chirildi", target?.name || id, "content", "danger");
       pushToast(`"${target?.name || id}" o'chirildi`, "danger");
@@ -341,7 +341,7 @@ export function AdminDataProvider({ children }) {
     if (!product) return;
     const next = product.status === "active" ? "inactive" : "active";
     try {
-      await productsApi.update(id, { isActive: next === "active" });
+      await updateProduct(id, { isActive: next === "active" });
       setProducts((curr) => curr.map((p) => p.id === id ? { ...p, status: next } : p));
       logAudit(
         next === "active" ? "Mahsulot aktivlashtirildi" : "Mahsulot nofaol qilindi",

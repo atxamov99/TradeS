@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../store";
 import { useI18n } from "../../i18n";
-import { reportsApi } from "../../services/api/reports.api";
+import * as reportsApi from "../../api/reports.api";
 
 const initialReportCards = [
   {

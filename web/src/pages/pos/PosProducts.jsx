@@ -53,7 +53,9 @@ export default function PosProducts() {
       toast.success(editing ? 'Updated' : 'Created');
       qc.invalidateQueries(['pos-products-list']);
       setShowForm(false);
-    } catch (_) {}
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to save product');
+    }
   };
 
   const stockColor = (s) => s === 0 ? 'text-red-400' : s <= 5 ? 'text-yellow-400' : 'text-pos-accent';

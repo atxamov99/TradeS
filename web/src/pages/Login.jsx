@@ -90,7 +90,9 @@ export default function Login() {
     try {
       await login({ phone: form.phone.replace(/\s/g, ''), password: form.password });
       navigate(from === '/login' ? '/dashboard' : from, { replace: true });
-    } catch (_) {}
+    } catch (err) {
+      // login() already shows toast errors
+    }
   };
 
   const onChange = (f) => (e) => {

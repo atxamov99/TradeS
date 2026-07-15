@@ -21,7 +21,9 @@ const useCartStore = create((set, get) => ({
       const res = await cartApi.addToCart({ productId, quantity });
       set({ cart: res.data.data.cart });
       toast.success('Added to cart');
-    } catch (_) {}
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to add item');
+    }
   },
 
   removeItem: async (productId) => {
@@ -29,21 +31,27 @@ const useCartStore = create((set, get) => ({
       const res = await cartApi.removeFromCart(productId);
       set({ cart: res.data.data.cart });
       toast.success('Removed from cart');
-    } catch (_) {}
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to remove item');
+    }
   },
 
   updateItem: async (productId, quantity) => {
     try {
       const res = await cartApi.updateCartItem(productId, { quantity });
       set({ cart: res.data.data.cart });
-    } catch (_) {}
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to update item');
+    }
   },
 
   clearCart: async () => {
     try {
       await cartApi.clearCart();
       set({ cart: { items: [], totalItems: 0, totalPrice: 0 } });
-    } catch (_) {}
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to clear cart');
+    }
   },
 
   resetCart: () => set({ cart: null }),

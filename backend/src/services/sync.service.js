@@ -65,8 +65,12 @@ const processSyncBatch = async (userId, operations) => {
         if (operation === 'create') {
           assertTestUserWithinLimits(user);
 
+          // Idempotency key is the client-generated id (payload.id === entityId,
+          // stable across retries of the same queued op), not the product name --
+          // matching by name would silently merge two genuinely different
+          // products that happen to share one into a single server row.
           const existing = await prisma.product.findFirst({
-            where: { name: payload.name, createdById: userId }
+            where: { id: payload.id, createdById: userId }
           });
           if (!existing) {
             // Only trust whitelisted fields from the client; server sets ownership/derived fields.

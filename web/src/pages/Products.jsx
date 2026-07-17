@@ -8,6 +8,8 @@ import useAuthStore from '../store/authStore';
 import Dropdown from '../components/ui/Dropdown';
 
 const BAG_WEIGHT_PRESETS = [5, 10, 25, 50, 100];
+const CUSTOM_BAG_WEIGHT = '__custom__';
+const isPresetBagWeight = (w) => BAG_WEIGHT_PRESETS.some((p) => String(p) === String(w));
 
 export default function Products() {
   const { t, i18n } = useTranslation();
@@ -208,6 +210,9 @@ function ProductModal({ product, onClose, t, fmt, UNITS }) {
       }
       : emptyForm
   );
+  const [bagWeightMode, setBagWeightMode] = useState(
+    product?.bagWeightKg && !isPresetBagWeight(product.bagWeightKg) ? CUSTOM_BAG_WEIGHT : ''
+  );
   const [errors, setErrors] = useState({});
   const qc = useQueryClient();
 
@@ -326,6 +331,7 @@ function ProductModal({ product, onClose, t, fmt, UNITS }) {
                 value={form.unit}
                 onChange={(v) => {
                   setForm((p) => ({ ...p, unit: v, bagWeightKg: v === 'box' ? p.bagWeightKg : '' }));
+                  if (v !== 'box') setBagWeightMode('');
                   if (errors.bagWeightKg) setErrors((p) => ({ ...p, bagWeightKg: '' }));
                 }}
               />
@@ -336,15 +342,42 @@ function ProductModal({ product, onClose, t, fmt, UNITS }) {
             <div>
               <label className="block text-sm font-semibold text-[#0F172A] dark:text-slate-100 mb-2">{t('bag_weight_label')}</label>
               <Dropdown
-                options={BAG_WEIGHT_PRESETS.map((w) => ({ value: String(w), label: `${w} kg` }))}
-                value={form.bagWeightKg}
+                options={[
+                  ...BAG_WEIGHT_PRESETS.map((w) => ({ value: String(w), label: `${w} kg` })),
+                  { value: CUSTOM_BAG_WEIGHT, label: t('bag_weight_custom') },
+                ]}
+                value={bagWeightMode === CUSTOM_BAG_WEIGHT ? CUSTOM_BAG_WEIGHT : form.bagWeightKg}
                 onChange={(v) => {
-                  setForm((p) => ({ ...p, bagWeightKg: v }));
+                  if (v === CUSTOM_BAG_WEIGHT) {
+                    setBagWeightMode(CUSTOM_BAG_WEIGHT);
+                    setForm((p) => ({ ...p, bagWeightKg: isPresetBagWeight(p.bagWeightKg) ? '' : p.bagWeightKg }));
+                  } else {
+                    setBagWeightMode('');
+                    setForm((p) => ({ ...p, bagWeightKg: v }));
+                  }
                   if (errors.bagWeightKg) setErrors((p) => ({ ...p, bagWeightKg: '' }));
                 }}
                 placeholder={t('bag_weight_required')}
-                error={errors.bagWeightKg}
+                error={bagWeightMode !== CUSTOM_BAG_WEIGHT ? errors.bagWeightKg : undefined}
               />
+              {bagWeightMode === CUSTOM_BAG_WEIGHT && (
+                <input
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  autoFocus
+                  value={form.bagWeightKg}
+                  onChange={(e) => {
+                    setForm((p) => ({ ...p, bagWeightKg: e.target.value }));
+                    if (errors.bagWeightKg) setErrors((p) => ({ ...p, bagWeightKg: '' }));
+                  }}
+                  placeholder="0.00"
+                  className={`${inputCls('bagWeightKg')} mt-2`}
+                />
+              )}
+              {bagWeightMode === CUSTOM_BAG_WEIGHT && errors.bagWeightKg && (
+                <p className="text-red-500 text-sm mt-1">{errors.bagWeightKg}</p>
+              )}
             </div>
           )}
 

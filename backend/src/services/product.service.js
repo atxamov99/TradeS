@@ -102,6 +102,10 @@ const createProduct = async (productData, userId) => {
   if (shopId) {
     const member = await assertShopMember(shopId, userId);
     if (!member) throw new ApiError(403, 'Not a member of this shop');
+    // Same least-privilege policy as update/restock/delete: a CASHIER sets
+    // buyPrice/sellPrice on create, so letting them create unrestricted would
+    // reopen the margin-manipulation risk RBAC on writes was meant to close.
+    if (member.role !== 'OWNER') throw new ApiError(403, 'Only the shop owner can add products');
   }
   const slug = slugify(rest.name, { lower: true, strict: true }) + '-' + Date.now();
   const finalPrice = rest.price - (rest.price * (rest.discount || 0)) / 100;

@@ -3,17 +3,23 @@ const ApiError = require('../utils/ApiError');
 const slugify = require('slugify');
 const { clampLimit } = require('../utils/pagination');
 const { assertTestUserWithinLimits } = require('../utils/testUserLimits');
-const { scopeToOwnerOrShop, assertShopMember } = require('../utils/shopAccess');
+const { scopeToOwnerOrShop, assertShopMember, getUserShopIds } = require('../utils/shopAccess');
 
 const getProducts = async (userId, queryParams = {}, options = {}) => {
-  const { search, page = 1, limit = 50, sortBy = 'createdAt', order = 'desc' } = queryParams;
+  const { search, page = 1, limit = 50, sortBy = 'createdAt', order = 'desc', scope } = queryParams;
+  const { isAdmin = false } = options;
 
-  // Products are a shared global catalog: every authenticated user sees every
-  // product regardless of who created it. No ownerId filter on reads. Archived
-  // products (isActive=false, i.e. "deleted" but kept for history) are hidden.
+  // Default: shared global catalog (every authenticated user sees every
+  // product) — mobile sync (pullProductCatalog) depends on this exact
+  // behavior, so it must stay the default. Archived products (isActive=false)
+  // are always hidden. Passing scope=shop opts into the POS view: only
+  // products owned directly by the caller or by a shop they belong to.
   const where = { isActive: true };
   if (search) {
     where.name = { contains: search, mode: 'insensitive' };
+  }
+  if (scope === 'shop' && !isAdmin) {
+    Object.assign(where, await scopeToOwnerOrShop(userId));
   }
 
   const take = clampLimit(limit, 50);
@@ -39,8 +45,11 @@ const getProducts = async (userId, queryParams = {}, options = {}) => {
   };
 };
 
-const getProductById = async (id) => {
-  // Global catalog: any authenticated user can view any product by id.
+const getProductById = async (id, userId, options = {}) => {
+  // Default: global catalog (any authenticated user can view any product by
+  // id). Passing scope=shop opts into the POS view — 404s if the product
+  // isn't owned by the caller or one of their shops.
+  const { scope, isAdmin = false } = options;
   const product = await prisma.product.findUnique({
     where: { id },
     include: {
@@ -50,16 +59,32 @@ const getProductById = async (id) => {
   });
 
   if (!product) throw new ApiError(404, 'Product not found');
+  if (scope === 'shop' && !isAdmin && !(await isProductInScope(product, userId))) {
+    throw new ApiError(404, 'Product not found');
+  }
   return product;
 };
 
-const getProductBySlug = async (slug) => {
+const getProductBySlug = async (slug, userId, options = {}) => {
+  const { scope, isAdmin = false } = options;
   const product = await prisma.product.findUnique({
     where: { slug },
     include: { images: true, reviews: true },
   });
   if (!product) throw new ApiError(404, 'Product not found');
+  if (scope === 'shop' && !isAdmin && !(await isProductInScope(product, userId))) {
+    throw new ApiError(404, 'Product not found');
+  }
   return product;
+};
+
+// Whether `product` belongs to `userId` directly (legacy ownerId) or via a
+// shop `userId` is a member of.
+const isProductInScope = async (product, userId) => {
+  if (product.ownerId === userId) return true;
+  if (!product.shopId) return false;
+  const shopIds = await getUserShopIds(userId);
+  return shopIds.includes(product.shopId);
 };
 
 const createProduct = async (productData, userId) => {

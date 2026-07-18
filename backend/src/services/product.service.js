@@ -3,7 +3,7 @@ const ApiError = require('../utils/ApiError');
 const slugify = require('slugify');
 const { clampLimit } = require('../utils/pagination');
 const { assertTestUserWithinLimits } = require('../utils/testUserLimits');
-const { scopeToOwnerOrShop, assertShopMember, getUserShopIds } = require('../utils/shopAccess');
+const { scopeToOwnerOrShop, assertShopMember, assertShopOwner, getUserShopIds } = require('../utils/shopAccess');
 
 const getProducts = async (userId, queryParams = {}, options = {}) => {
   const { search, page = 1, limit = 50, sortBy = 'createdAt', order = 'desc', scope } = queryParams;
@@ -126,6 +126,17 @@ const createProduct = async (productData, userId) => {
   return product;
 };
 
+// Shop products may only be modified/restocked/deleted by the shop's OWNER —
+// a CASHIER can sell but not edit the catalog. Legacy products (no shopId)
+// keep the original single-owner check (already enforced by the caller's
+// scopeToOwnerOrShop `where` clause, since there's no shop membership to
+// distinguish roles).
+const assertProductWriteAccess = async (product, userId, isAdmin) => {
+  if (isAdmin || !product.shopId) return;
+  const isOwner = await assertShopOwner(product.shopId, userId);
+  if (!isOwner) throw new ApiError(403, 'Only the shop owner can modify this product');
+};
+
 const updateProduct = async (id, userId, updateData, options = {}) => {
   const { isAdmin = false } = options;
   const where = { id };
@@ -135,6 +146,7 @@ const updateProduct = async (id, userId, updateData, options = {}) => {
 
   const product = await prisma.product.findFirst({ where });
   if (!product) throw new ApiError(404, 'Product not found');
+  await assertProductWriteAccess(product, userId, isAdmin);
 
   // images is a relation — pull it out of the scalar update and, if provided,
   // replace the whole image set (delete existing + create new)
@@ -183,6 +195,7 @@ const restockProduct = async (id, userId, quantity, options = {}) => {
 
   const product = await prisma.product.findFirst({ where });
   if (!product) throw new ApiError(404, 'Product not found');
+  await assertProductWriteAccess(product, userId, isAdmin);
 
   const qty = Number(quantity);
   if (!(qty > 0)) {
@@ -207,6 +220,7 @@ const deleteProduct = async (id, userId, options = {}) => {
 
   const product = await prisma.product.findFirst({ where });
   if (!product) throw new ApiError(404, 'Product not found');
+  await assertProductWriteAccess(product, userId, isAdmin);
 
   // OrderItem, CartItem and InventoryBatch reference a product with RESTRICT, so a
   // hard delete would fail (and previously that FK error was masked as a misleading

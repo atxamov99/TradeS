@@ -32,4 +32,25 @@ const assertShopOwner = async (shopId, userId) => {
   return member && member.role === 'OWNER';
 };
 
-module.exports = { getUserShopIds, scopeToOwnerOrShop, assertShopMember, assertShopOwner };
+// Prisma where-fragment for Sale rows this user may VIEW: owners see every
+// sale in shops they own (including cashiers' sales); cashiers see only
+// their own sales (cashierId=userId) in shops they're a cashier of; legacy
+// solo accounts with no shop membership see their own sales, same as before
+// Shop existed.
+const scopeSalesForViewer = async (userId) => {
+  const memberships = await prisma.shopMember.findMany({
+    where: { userId },
+    select: { shopId: true, role: true },
+  });
+  if (!memberships.length) return { userId };
+
+  const ownerShopIds = memberships.filter((m) => m.role === 'OWNER').map((m) => m.shopId);
+  const cashierShopIds = memberships.filter((m) => m.role === 'CASHIER').map((m) => m.shopId);
+
+  const or = [{ userId, shopId: null }];
+  if (ownerShopIds.length) or.push({ shopId: { in: ownerShopIds } });
+  if (cashierShopIds.length) or.push({ cashierId: userId, shopId: { in: cashierShopIds } });
+  return { OR: or };
+};
+
+module.exports = { getUserShopIds, scopeToOwnerOrShop, assertShopMember, assertShopOwner, scopeSalesForViewer };

@@ -1,5 +1,5 @@
 const prisma = require('../config/prisma');
-const { scopeToOwnerOrShop } = require('../utils/shopAccess');
+const { scopeToOwnerOrShop, scopeSalesForViewer } = require('../utils/shopAccess');
 
 /**
  * Build a date range for a given day
@@ -23,7 +23,7 @@ const monthRange = (yearMonth) => {
 };
 
 const aggregateSales = async (userId, startDate, endDate) => {
-  const scope = await scopeToOwnerOrShop(userId, 'userId');
+  const scope = await scopeSalesForViewer(userId);
   const stats = await prisma.sale.aggregate({
     where: {
       ...scope,
@@ -52,7 +52,7 @@ const aggregateSales = async (userId, startDate, endDate) => {
 };
 
 const topProducts = async (userId, startDate, endDate, limit = 5) => {
-  const scope = await scopeToOwnerOrShop(userId, 'userId');
+  const scope = await scopeSalesForViewer(userId);
   const result = await prisma.sale.groupBy({
     by: ['productName'],
     where: {
@@ -86,7 +86,7 @@ const topProducts = async (userId, startDate, endDate, limit = 5) => {
 
 const getDailyReport = async (userId, dateStr) => {
   const { start, end } = dayRange(dateStr || new Date().toISOString().slice(0, 10));
-  const scope = await scopeToOwnerOrShop(userId, 'userId');
+  const scope = await scopeSalesForViewer(userId);
   const [stats, products, salesRaw] = await Promise.all([
     aggregateSales(userId, start, end),
     topProducts(userId, start, end),
@@ -117,7 +117,7 @@ const getDailyReport = async (userId, dateStr) => {
 const getMonthlyReport = async (userId, yearMonth) => {
   const ym = yearMonth || new Date().toISOString().slice(0, 7);
   const { start, end } = monthRange(ym);
-  const scope = await scopeToOwnerOrShop(userId, 'userId');
+  const scope = await scopeSalesForViewer(userId);
 
   const [stats, products, salesRaw] = await Promise.all([
     aggregateSales(userId, start, end),

@@ -2,7 +2,7 @@ const prisma = require('../config/prisma');
 const ApiError = require('../utils/ApiError');
 const { clampLimit } = require('../utils/pagination');
 const { assertTestUserWithinLimits } = require('../utils/testUserLimits');
-const { scopeToOwnerOrShop, getUserShopIds } = require('../utils/shopAccess');
+const { scopeToOwnerOrShop, scopeSalesForViewer } = require('../utils/shopAccess');
 
 const createSale = async (userId, saleData) => {
   const { product: productId, productName, quantity, sellPrice, buyPrice, unit, note, syncId, isFromOffline, createdAt } = saleData;
@@ -101,11 +101,10 @@ const bulkSync = async (userId, sales) => {
 };
 
 const getSales = async (userId, { page = 1, limit = 100, from, to, date } = {}) => {
-  // Legacy solo accounts only see their own sales; shop members (owner or
-  // cashier) see every sale recorded under any shop they belong to, so an
-  // owner can see what their cashiers sold.
-  const shopIds = await getUserShopIds(userId);
-  const where = shopIds.length ? { OR: [{ userId }, { shopId: { in: shopIds } }] } : { userId };
+  // Legacy solo accounts only see their own sales. Shop owners see every sale
+  // recorded under any shop they own (including their cashiers'). Cashiers
+  // see only their own sales — not the shop's full sales list.
+  const where = await scopeSalesForViewer(userId);
 
   if (date) {
     // Single day filter

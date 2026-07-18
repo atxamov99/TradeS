@@ -36,11 +36,9 @@ const processSyncBatch = async (userId, operations) => {
   const results = [];
 
   // userId is constant across the whole batch, so fetch the test-account
-  // fields once rather than per-operation. Note: testActionCount on this
-  // in-memory `user` object is not updated as we increment it below for each
-  // product created within this same batch, so a capped/expired check for a
-  // later op in a large batch may lag slightly behind reality — an accepted,
-  // low-severity edge case (same class already accepted elsewhere).
+  // fields once rather than per-operation. The in-memory `user.testActionCount`
+  // is incremented alongside each DB increment below, so the cap is enforced
+  // correctly even for many creates within a single batch.
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { isTestUser: true, testExpiresAt: true, testActionCount: true },
@@ -98,6 +96,9 @@ const processSyncBatch = async (userId, operations) => {
 
             if (user.isTestUser) {
               await prisma.user.update({ where: { id: userId }, data: { testActionCount: { increment: 1 } } });
+              // Keep the in-memory count in sync so assertTestUserWithinLimits() caps
+              // later creates within this same batch instead of all seeing the stale count.
+              user.testActionCount = (user.testActionCount || 0) + 1;
             }
           } else {
             serverEntityId = existing.id;

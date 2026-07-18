@@ -7,6 +7,7 @@ const API_BASE = import.meta.env.VITE_API_URL || '/api/v1';
 const ERROR_CODE_KEYS = {
   ACCOUNT_NOT_FOUND: 'error_account_not_found',
   WRONG_PASSWORD: 'error_wrong_password',
+  INVALID_CREDENTIALS: 'error_invalid_credentials',
   ACCOUNT_EXISTS: 'error_account_exists',
   ACCOUNT_BLOCKED: 'error_account_blocked',
   BAG_WEIGHT_REQUIRED: 'bag_weight_required',

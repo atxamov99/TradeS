@@ -112,7 +112,8 @@ const login = async ({ email, phone, password }, meta = {}) => {
       actor: email || phone || 'unknown',
       ip: meta.ip || '',
     }).catch(() => {});
-    throw new ApiError(404, 'Bunday hisob topilmadi', [], '', 'ACCOUNT_NOT_FOUND');
+    // Generic credentials error (no account/password distinction) to avoid user enumeration.
+    throw new ApiError(401, 'Login yoki parol noto\'g\'ri', [], '', 'INVALID_CREDENTIALS');
   }
 
   const isPasswordMatch = await bcrypt.compare(password, user.password);
@@ -124,7 +125,8 @@ const login = async ({ email, phone, password }, meta = {}) => {
       actor: email || phone,
       ip: meta.ip || '',
     }).catch(() => {});
-    throw new ApiError(400, 'Parol noto\'g\'ri', [], '', 'WRONG_PASSWORD');
+    // Same generic error as "account not found" — do not reveal which part was wrong.
+    throw new ApiError(401, 'Login yoki parol noto\'g\'ri', [], '', 'INVALID_CREDENTIALS');
   }
 
   if (user.isBlocked) {
@@ -400,17 +402,7 @@ const verifyOtp = async ({ phone: rawPhone, code, name, password }, meta = {}) =
     // silently logging into the existing account and discarding the new name/password.
     throw new ApiError(409, 'Bu raqam allaqachon ro\'yxatdan o\'tgan. Kirish sahifasi orqali kiring.', [], '', 'ACCOUNT_EXISTS');
   }
-
-  if (!password) throw new ApiError(400, 'Ro\'yxatdan o\'tish uchun parol talab qilinadi');
-  const hashed = await bcrypt.hash(password, 10);
-  user = await prisma.user.create({
-    data: {
-      name: name || 'Foydalanuvchi',
-      phone: canonicalPhone,
-      password: hashed,
-      isEmailVerified: false,
-    },
-  });
+  // Existing account with no password → login (user already loaded above).
 
   if (user.isBlocked) throw new ApiError(403, 'Hisobingiz bloklangan', [], '', 'ACCOUNT_BLOCKED');
 

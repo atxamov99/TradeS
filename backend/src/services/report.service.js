@@ -1,4 +1,5 @@
 const prisma = require('../config/prisma');
+const { scopeToOwnerOrShop } = require('../utils/shopAccess');
 
 /**
  * Build a date range for a given day
@@ -22,9 +23,10 @@ const monthRange = (yearMonth) => {
 };
 
 const aggregateSales = async (userId, startDate, endDate) => {
+  const scope = await scopeToOwnerOrShop(userId, 'userId');
   const stats = await prisma.sale.aggregate({
     where: {
-      userId,
+      ...scope,
       createdAt: { gte: startDate, lte: endDate },
     },
     _sum: {
@@ -50,10 +52,11 @@ const aggregateSales = async (userId, startDate, endDate) => {
 };
 
 const topProducts = async (userId, startDate, endDate, limit = 5) => {
+  const scope = await scopeToOwnerOrShop(userId, 'userId');
   const result = await prisma.sale.groupBy({
     by: ['productName'],
     where: {
-      userId,
+      ...scope,
       createdAt: { gte: startDate, lte: endDate },
     },
     _sum: {
@@ -83,11 +86,12 @@ const topProducts = async (userId, startDate, endDate, limit = 5) => {
 
 const getDailyReport = async (userId, dateStr) => {
   const { start, end } = dayRange(dateStr || new Date().toISOString().slice(0, 10));
+  const scope = await scopeToOwnerOrShop(userId, 'userId');
   const [stats, products, salesRaw] = await Promise.all([
     aggregateSales(userId, start, end),
     topProducts(userId, start, end),
     prisma.sale.findMany({
-      where: { userId, createdAt: { gte: start, lte: end } },
+      where: { ...scope, createdAt: { gte: start, lte: end } },
       select: { createdAt: true, totalRevenue: true, profit: true },
     }),
   ]);
@@ -113,12 +117,13 @@ const getDailyReport = async (userId, dateStr) => {
 const getMonthlyReport = async (userId, yearMonth) => {
   const ym = yearMonth || new Date().toISOString().slice(0, 7);
   const { start, end } = monthRange(ym);
+  const scope = await scopeToOwnerOrShop(userId, 'userId');
 
   const [stats, products, salesRaw] = await Promise.all([
     aggregateSales(userId, start, end),
     topProducts(userId, start, end, 10),
     prisma.sale.findMany({
-      where: { userId, createdAt: { gte: start, lte: end } },
+      where: { ...scope, createdAt: { gte: start, lte: end } },
       select: { createdAt: true, totalRevenue: true, profit: true },
     }),
   ]);
@@ -149,12 +154,15 @@ const getSummary = async (userId) => {
     aggregateSales(userId, ...Object.values(dayRange(today))),
     aggregateSales(userId, ...Object.values(monthRange(thisMonth))),
     aggregateSales(userId, new Date(0), new Date()),
-    prisma.product.findMany({
-      where: { ownerId: userId, stock: { lte: 5 } },
-      select: { id: true, name: true, stock: true, unit: true },
-      orderBy: { stock: 'asc' },
-      take: 10,
-    }),
+    (async () => {
+      const scope = await scopeToOwnerOrShop(userId, 'ownerId');
+      return prisma.product.findMany({
+        where: { ...scope, stock: { lte: 5 } },
+        select: { id: true, name: true, stock: true, unit: true },
+        orderBy: { stock: 'asc' },
+        take: 10,
+      });
+    })(),
   ]);
 
   return { today: todayStats, thisMonth: monthStats, allTime: allTimeStats, lowStock };

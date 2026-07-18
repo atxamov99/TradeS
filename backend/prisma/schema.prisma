@@ -13,6 +13,11 @@ enum Role {
   SUPER_ADMIN
 }
 
+enum ShopMemberRole {
+  OWNER
+  CASHIER
+}
+
 model User {
   id              String         @id @default(cuid())
   name            String
@@ -40,11 +45,44 @@ model User {
   ownedProducts   Product[]      @relation("Owner")
   orders          Order[]
   sales           Sale[]
+  cashierSales    Sale[]         @relation("Cashier")
   cart            Cart?
   wishlist        Wishlist?
   refreshTokens   RefreshToken[]
   inventoryBatches InventoryBatch[]
   syncQueues      SyncQueue[]
+  ownedShops      Shop[]         @relation("ShopOwner")
+  shopMemberships ShopMember[]
+  expenses        Expense[]      @relation("ExpenseCreatedBy")
+}
+
+model Shop {
+  id        String       @id @default(cuid())
+  name      String
+  ownerId   String
+  owner     User         @relation("ShopOwner", fields: [ownerId], references: [id])
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  members   ShopMember[]
+  products  Product[]
+  sales     Sale[]
+  expenses  Expense[]
+
+  @@index([ownerId])
+}
+
+model ShopMember {
+  id        String         @id @default(cuid())
+  shopId    String
+  shop      Shop           @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      ShopMemberRole @default(CASHIER)
+  createdAt DateTime       @default(now())
+
+  @@unique([shopId, userId])
+  @@index([userId])
 }
 
 model Address {
@@ -68,6 +106,7 @@ model Product {
   sellPrice   Float    @default(0)
   unit        String   @default("dona")
   bagWeightKg Float?
+  barcode     String?
   description String   @default("")
   price       Float    @default(0)
   discount    Float    @default(0)
@@ -84,6 +123,8 @@ model Product {
   owner       User?    @relation("Owner", fields: [ownerId], references: [id])
   createdById String?
   createdBy   User?    @relation("CreatedBy", fields: [createdById], references: [id])
+  shopId      String?
+  shop        Shop?    @relation(fields: [shopId], references: [id])
 
   images      ProductImage[]
   reviews     Review[]
@@ -98,6 +139,8 @@ model Product {
   @@index([price])
   @@index([ownerId])
   @@index([createdById])
+  @@index([shopId])
+  @@index([barcode])
 }
 
 model ProductImage {
@@ -190,8 +233,29 @@ model Sale {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  shopId        String?
+  shop          Shop?    @relation(fields: [shopId], references: [id])
+  cashierId     String?
+  cashier       User?    @relation("Cashier", fields: [cashierId], references: [id])
+
   @@index([userId, createdAt])
   @@index([createdAt])
+  @@index([shopId, createdAt])
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  shopId      String
+  shop        Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  amount      Float
+  category    String   @default("other")
+  note        String   @default("")
+  createdById String
+  createdBy   User     @relation("ExpenseCreatedBy", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([shopId, createdAt])
 }
 
 model Cart {

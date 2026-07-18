@@ -3,6 +3,7 @@ const ApiError = require('../utils/ApiError');
 const slugify = require('slugify');
 const { clampLimit } = require('../utils/pagination');
 const { assertTestUserWithinLimits } = require('../utils/testUserLimits');
+const { scopeToOwnerOrShop, assertShopMember } = require('../utils/shopAccess');
 
 const getProducts = async (userId, queryParams = {}, options = {}) => {
   const { search, page = 1, limit = 50, sortBy = 'createdAt', order = 'desc' } = queryParams;
@@ -69,9 +70,13 @@ const createProduct = async (productData, userId) => {
   assertTestUserWithinLimits(user);
 
   // images is a relation (ProductImage[]) — Prisma needs { create: [...] }, not a raw array
-  const { images = [], ...rest } = productData;
+  const { images = [], shopId, ...rest } = productData;
   if (rest.unit === 'box' && !(Number(rest.bagWeightKg) > 0)) {
     throw new ApiError(400, 'Bag weight (kg) is required', [], '', 'BAG_WEIGHT_REQUIRED');
+  }
+  if (shopId) {
+    const member = await assertShopMember(shopId, userId);
+    if (!member) throw new ApiError(403, 'Not a member of this shop');
   }
   const slug = slugify(rest.name, { lower: true, strict: true }) + '-' + Date.now();
   const finalPrice = rest.price - (rest.price * (rest.discount || 0)) / 100;
@@ -83,6 +88,7 @@ const createProduct = async (productData, userId) => {
       finalPrice,
       ownerId: userId,
       createdById: userId,
+      shopId: shopId || null,
       images: { create: images.map((img) => ({ url: img.url, alt: img.alt || '' })) },
     },
     include: { images: true },
@@ -99,7 +105,7 @@ const updateProduct = async (id, userId, updateData, options = {}) => {
   const { isAdmin = false } = options;
   const where = { id };
   if (!isAdmin && userId) {
-    where.ownerId = userId;
+    Object.assign(where, await scopeToOwnerOrShop(userId));
   }
 
   const product = await prisma.product.findFirst({ where });
@@ -147,7 +153,7 @@ const restockProduct = async (id, userId, quantity, options = {}) => {
   const { isAdmin = false } = options;
   const where = { id };
   if (!isAdmin && userId) {
-    where.ownerId = userId;
+    Object.assign(where, await scopeToOwnerOrShop(userId));
   }
 
   const product = await prisma.product.findFirst({ where });
@@ -171,7 +177,7 @@ const deleteProduct = async (id, userId, options = {}) => {
   const { isAdmin = false } = options;
   const where = { id };
   if (!isAdmin && userId) {
-    where.ownerId = userId;
+    Object.assign(where, await scopeToOwnerOrShop(userId));
   }
 
   const product = await prisma.product.findFirst({ where });

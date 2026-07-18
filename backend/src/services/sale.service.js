@@ -2,6 +2,7 @@ const prisma = require('../config/prisma');
 const ApiError = require('../utils/ApiError');
 const { clampLimit } = require('../utils/pagination');
 const { assertTestUserWithinLimits } = require('../utils/testUserLimits');
+const { scopeToOwnerOrShop, getUserShopIds } = require('../utils/shopAccess');
 
 const createSale = async (userId, saleData) => {
   const { product: productId, productName, quantity, sellPrice, buyPrice, unit, note, syncId, isFromOffline, createdAt } = saleData;
@@ -22,14 +23,18 @@ const createSale = async (userId, saleData) => {
   const sp = Number(sellPrice) || 0;
   const bp = Number(buyPrice) || 0;
 
-  // If a productId is given, it must belong to this user — prevents decrementing
-  // another owner's stock via a forged productId (IDOR).
+  // If a productId is given, it must belong to this user (or a shop they're a
+  // member of) — prevents decrementing another owner's stock via a forged
+  // productId (IDOR).
+  let shopId = null;
   if (productId) {
+    const ownerScope = await scopeToOwnerOrShop(userId);
     const owned = await prisma.product.findFirst({
-      where: { id: productId, ownerId: userId },
-      select: { id: true, stock: true },
+      where: { id: productId, ...ownerScope },
+      select: { id: true, stock: true, shopId: true },
     });
     if (!owned) throw new ApiError(404, `Product ${productId} not found`);
+    shopId = owned.shopId;
 
     // Block overselling for real-time sales — but offline-synced sales already
     // happened physically before the device reconnected, so they must still be
@@ -48,6 +53,8 @@ const createSale = async (userId, saleData) => {
     const sale = await tx.sale.create({
       data: {
         userId,
+        cashierId: userId,
+        shopId,
         productId: productId || null,
         productName,
         quantity: qty,
@@ -94,7 +101,11 @@ const bulkSync = async (userId, sales) => {
 };
 
 const getSales = async (userId, { page = 1, limit = 100, from, to, date } = {}) => {
-  const where = { userId };
+  // Legacy solo accounts only see their own sales; shop members (owner or
+  // cashier) see every sale recorded under any shop they belong to, so an
+  // owner can see what their cashiers sold.
+  const shopIds = await getUserShopIds(userId);
+  const where = shopIds.length ? { OR: [{ userId }, { shopId: { in: shopIds } }] } : { userId };
 
   if (date) {
     // Single day filter

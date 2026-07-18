@@ -145,6 +145,19 @@ const handleUpdate = async (update) => {
 
   try {
     if (msg.contact) {
+      // Only accept the sender's OWN number. Telegram sets contact.user_id === from.id
+      // exclusively for the "request_contact" button (the sender's own contact). A
+      // manually forwarded/other contact has a different or absent user_id — reject it,
+      // otherwise an attacker could link a victim's phone to their own chat and receive
+      // the victim's password-reset code (account takeover).
+      if (!msg.contact.user_id || !msg.from || msg.contact.user_id !== msg.from.id) {
+        await sendMessage(
+          chatId,
+          '⚠️ Iltimos, faqat <b>o\'zingizning</b> raqamingizni «📱 Raqamni ulashish» tugmasi orqali yuboring. Boshqa kontaktni ulash mumkin emas.',
+          { reply_markup: CONTACT_KEYBOARD }
+        );
+        return;
+      }
       const phone = normalizePhone(msg.contact.phone_number);
       if (!phone) return;
       await prisma.phoneAuth.upsert({

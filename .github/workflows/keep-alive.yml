@@ -1,0 +1,23 @@
+name: Keep Render backend awake
+
+# Render's free tier sleeps after ~15 min of inactivity, adding a ~30-60s cold
+# start to the next request. This pings /health every ~10 min to keep it warm.
+# Note: GitHub's scheduled runs can be delayed under load, so this is best-effort —
+# for guaranteed no-sleep use a dedicated pinger (cron-job.org / UptimeRobot) or
+# Render's paid plan.
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping backend health endpoint
+        run: |
+          echo "Pinging Render backend…"
+          curl -fsS --max-time 90 https://trades-backend-m2a6.onrender.com/health \
+            && echo " — awake" \
+            || echo "ping failed (backend may be waking up)"

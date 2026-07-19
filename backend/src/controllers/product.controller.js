@@ -10,12 +10,18 @@ const getProducts = asyncHandler(async (req, res) => {
 });
 
 const getProductById = asyncHandler(async (req, res) => {
-  const product = await productService.getProductById(req.params.id);
+  const product = await productService.getProductById(req.params.id, req.user.id, {
+    scope: req.query.scope,
+    isAdmin: isAdmin(req),
+  });
   res.status(200).json(new ApiResponse(200, { product }, 'Product retrieved'));
 });
 
 const getProductBySlug = asyncHandler(async (req, res) => {
-  const product = await productService.getProductBySlug(req.params.slug);
+  const product = await productService.getProductBySlug(req.params.slug, req.user.id, {
+    scope: req.query.scope,
+    isAdmin: isAdmin(req),
+  });
   res.status(200).json(new ApiResponse(200, { product }, 'Product retrieved'));
 });
 

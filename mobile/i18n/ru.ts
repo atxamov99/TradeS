@@ -151,6 +151,12 @@ const ru: Translations = {
     subscription: "Тарифный план",
     logout: "Выйти",
     logoutConfirm: "Хотите выйти?",
+    logoutDataLossTitle: "Данные будут потеряны",
+    logoutDataLossBody:
+      "После выхода следующие записи на этом устройстве будут удалены безвозвратно:",
+    logoutPendingSync: "Товары/продажи, не отправленные на сервер",
+    logoutLocalOnly: "Долговая книга и сотрудники (только на этом устройстве)",
+    logoutAnyway: "Всё равно выйти",
     version: "Версия",
     theme: "Тема",
     appearance: "Внешний вид",

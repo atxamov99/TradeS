@@ -22,7 +22,16 @@
  *
  * runSync() — root layout da AppState "active" bo'lganda chaqiriladi.
  */
-import { database, productsCollection, salesCollection } from "@/db";
+import {
+  database,
+  productsCollection,
+  salesCollection,
+  customersCollection,
+  customerTxCollection,
+  suppliersCollection,
+  supplierTxCollection,
+  employeesCollection,
+} from "@/db";
 import { Product } from "@/db/models/Product";
 import { Sale } from "@/db/models/Sale";
 import { Q } from "@nozbe/watermelondb";
@@ -107,6 +116,24 @@ async function syncProducts() {
     unsynced.filter((p) => p.serverId).map((p) => [p.serverId as string, p])
   );
 
+  // Stok ikki marta kamayib ketmasligi uchun (audit: CRITICAL) — mahalliy stok sotuv
+  // yozilgan zahoti kamaytiriladi (`sales/add.tsx`), server esa har bir sotuv uchun
+  // stokni O'ZI yana kamaytiradi (`backend/src/services/sale.service.js`). Agar biz
+  // kamaytirilgan mahalliy stokni o'sha holicha yuborsak, ayni sotuv ikki marta
+  // hisobdan chiqadi. Shuning uchun hali push qilinmagan sotuvlar miqdorini payload'da
+  // QAYTA QO'SHAMIZ: server avval "sotuvlarsiz" stokni yozadi, keyin `syncSales()`
+  // yuborgan har bir sotuv uni roppa-rosa bir marta kamaytiradi.
+  // runSync() tartibi shuni kafolatlaydi: syncProducts() → syncSales().
+  const pendingSales = await database.collections
+    .get<Sale>("sales")
+    .query(Q.where("is_synced", false))
+    .fetch();
+  const pendingQtyByProductId = new Map<string, number>();
+  for (const s of pendingSales) {
+    if (!s.productId) continue;
+    pendingQtyByProductId.set(s.productId, (pendingQtyByProductId.get(s.productId) ?? 0) + s.qty);
+  }
+
   const operations: SyncOperation[] = unsynced.map((p) => {
     // Faqat backend Product sxemasidagi maydonlar (payload prisma.create/update ga spread qilinadi)
     const payload = {
@@ -114,7 +141,8 @@ async function syncProducts() {
       buyPrice: p.buyPrice,
       sellPrice: p.sellPrice,
       price: p.sellPrice,
-      stock: p.stockQty,
+      // Hali yuborilmagan sotuvlar qaytarib qo'shiladi — yuqoridagi izohga qarang.
+      stock: p.stockQty + (pendingQtyByProductId.get(p.id) ?? 0),
       unit: p.unit,
       isActive: p.archivedAt ? false : true,
     };
@@ -326,6 +354,32 @@ export async function getPendingCount(): Promise<number> {
     database.collections.get<Sale>("sales").query(Q.where("is_synced", false)).fetchCount(),
   ]);
   return products + sales;
+}
+
+/**
+ * Logout'dan OLDIN chaqiriladi (audit: CRITICAL) — `clearLocalData()` butun bazani
+ * o'chiradi, lekin sync faqat products+sales bilan ishlaydi. Mijoz/yetkazuvchi qarz
+ * daftari (`customers`, `suppliers` va ularning tranzaksiyalari) hamda `employees`
+ * serverga umuman yuborilmaydi, ya'ni o'chirilsa tiklab bo'lmaydi. Shuning uchun
+ * chiqishdan oldin foydalanuvchi nima yo'qotishini aniq ko'rsatish kerak.
+ *
+ *   pendingSync — serverga hali yuborilmagan tovar/sotuvlar (sync qilinsa saqlanadi)
+ *   localOnly   — umuman sync qilinmaydigan yozuvlar (qaytarib bo'lmaydi)
+ */
+export async function getLocalDataAtRisk(): Promise<{ pendingSync: number; localOnly: number }> {
+  const [pendingSync, customers, customerTx, suppliers, supplierTx, employees] = await Promise.all([
+    getPendingCount(),
+    customersCollection.query().fetchCount(),
+    customerTxCollection.query().fetchCount(),
+    suppliersCollection.query().fetchCount(),
+    supplierTxCollection.query().fetchCount(),
+    employeesCollection.query().fetchCount(),
+  ]);
+
+  return {
+    pendingSync,
+    localOnly: customers + customerTx + suppliers + supplierTx + employees,
+  };
 }
 
 /**

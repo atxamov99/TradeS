@@ -11,7 +11,7 @@ import { useT } from "@/hooks/useT";
 import { useRoleStore } from "@/store/roleStore";
 import { api } from "@/services/api";
 import { Lang } from "@/i18n";
-import { clearLocalData } from "@/services/syncEngine";
+import { clearLocalData, getLocalDataAtRisk, runSync } from "@/services/syncEngine";
 
 const LANGS: { code: Lang; label: string; flag: string }[] = [
   { code: "uz", label: "O'zbek", flag: "🇺🇿" },
@@ -82,18 +82,43 @@ export default function ProfileScreen() {
   function handleLogout() {
     Alert.alert(t.settings.logout, t.settings.logoutConfirm, [
       { text: t.products.cancel, style: "cancel" },
-      {
-        text: t.settings.logout,
-        style: "destructive",
-        onPress: async () => {
-          // Avval lokal bazani tozalaymiz (audit: HIGH H3) — shu qurilmadagi keyingi
-          // foydalanuvchi avvalgi hisobning ma'lumotlarini ko'rmasin.
-          await clearLocalData().catch(() => {});
-          clearUser();
-          clearToken();
-        },
-      },
+      { text: t.settings.logout, style: "destructive", onPress: confirmLogout },
     ]);
+  }
+
+  // Chiqish lokal bazani butunlay o'chiradi (audit: HIGH H3 — keyingi foydalanuvchi
+  // avvalgi hisob ma'lumotlarini ko'rmasligi uchun). Lekin qarz daftari va xodimlar
+  // serverda saqlanmaydi, shuning uchun avval yuborish mumkin bo'lganini yuboramiz,
+  // qolgani yo'qotilishini esa aniq ogohlantirish bilan tasdiqlatamiz (audit: CRITICAL).
+  async function confirmLogout() {
+    await runSync().catch(() => {});
+    const { pendingSync, localOnly } = await getLocalDataAtRisk().catch(() => ({
+      pendingSync: 0,
+      localOnly: 0,
+    }));
+
+    if (pendingSync + localOnly === 0) {
+      await doLogout();
+      return;
+    }
+
+    const lines = [
+      pendingSync > 0 ? `• ${t.settings.logoutPendingSync}: ${pendingSync}` : null,
+      localOnly > 0 ? `• ${t.settings.logoutLocalOnly}: ${localOnly}` : null,
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    Alert.alert(t.settings.logoutDataLossTitle, `${t.settings.logoutDataLossBody}\n\n${lines}`, [
+      { text: t.products.cancel, style: "cancel" },
+      { text: t.settings.logoutAnyway, style: "destructive", onPress: doLogout },
+    ]);
+  }
+
+  async function doLogout() {
+    await clearLocalData().catch(() => {});
+    clearUser();
+    clearToken();
   }
 
   function openEmailModal() {

@@ -93,8 +93,9 @@ const registerTestUser = async (meta = {}) => {
 /**
  * Login user and return tokens
  */
-const login = async ({ email, phone, password }, meta = {}) => {
+const login = async ({ email, phone: rawPhone, password }, meta = {}) => {
   const logger = require('../utils/logger');
+  const phone = rawPhone ? `+${telegramService.normalizePhone(rawPhone)}` : null;
   logger.debug(`Login attempt for ${email || phone}`);
   
   let user;

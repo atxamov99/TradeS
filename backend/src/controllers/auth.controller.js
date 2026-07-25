@@ -180,8 +180,8 @@ const resetPassword = asyncHandler(async (req, res) => {
     if (!code || !password) {
       throw new ApiError(400, 'Telefon, kod va yangi parol talab qilinadi');
     }
-    if (password.length < 6) {
-      throw new ApiError(400, 'Parol kamida 6 ta belgidan iborat bo\'lishi kerak');
+    if (password.length < 8) {
+      throw new ApiError(400, 'Parol kamida 8 ta belgidan iborat bo\'lishi kerak');
     }
     const result = await authService.resetPasswordByPhone(phone, code, password);
     return res.status(200).json(new ApiResponse(200, null, result.message));
@@ -190,8 +190,8 @@ const resetPassword = asyncHandler(async (req, res) => {
   if (!token || !password) {
     throw new ApiError(400, 'Token va yangi parol talab qilinadi');
   }
-  if (password.length < 6) {
-    throw new ApiError(400, 'Parol kamida 6 ta belgidan iborat bo\'lishi kerak');
+  if (password.length < 8) {
+    throw new ApiError(400, 'Parol kamida 8 ta belgidan iborat bo\'lishi kerak');
   }
   const result = await authService.resetPassword(token, password);
   res.status(200).json(new ApiResponse(200, null, result.message));

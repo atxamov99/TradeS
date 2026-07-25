@@ -217,7 +217,7 @@ export default function ProfileScreen() {
           iconName="mail"
           iconBg="#DBEAFE"
           label={t.settings.emailTitle}
-          sub={user?.email || t.settings.emailNotAdded}}
+          sub={user?.email || t.settings.emailNotAdded}
           right={<Ionicons name="chevron-forward" size={18} color={c.textMuted} />}
           onPress={openEmailModal}
         />

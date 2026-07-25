@@ -62,7 +62,7 @@ const changePassword = async (userId, currentPassword, newPassword) => {
   const isMatch = await bcrypt.compare(currentPassword, user.password);
   if (!isMatch) throw new ApiError(400, 'Current password is incorrect');
 
-  const salt = await bcrypt.genSalt(10);
+  const salt = await bcrypt.genSalt(12);
   const hashedPassword = await bcrypt.hash(newPassword, salt);
 
   await prisma.$transaction([

@@ -31,14 +31,18 @@ app.set('trust proxy', 1);
 
 app.use(helmet());
 
-const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173,http://localhost:8081')
+// Explicit origins only — no regex wildcard that allows any localhost port.
+// Add dev origins (Vite default 5173, admin 5174, Expo Go via Expo DevTools) to
+// CORS_ORIGIN env var; the defaults cover the standard local dev stack.
+const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173,http://localhost:5174,http://localhost:8081')
   .split(',')
   .map((o) => o.trim());
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin) || /^http:\/\/localhost:\d+$/.test(origin)) {
+      // Allow non-browser (curl, mobile native) requests that send no Origin.
+      if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
         callback(new Error(`CORS policy: Origin ${origin} not allowed`));
@@ -72,11 +76,21 @@ if (process.env.NODE_ENV === 'development') {
 
 // ── Health Check ───────────────────────────────────────────────────────────
 
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-  });
+app.get('/health', async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.status(200).json({
+      status: 'OK',
+      db: 'connected',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err) {
+    res.status(503).json({
+      status: 'ERROR',
+      db: 'disconnected',
+      timestamp: new Date().toISOString(),
+    });
+  }
 });
 
 // ── API Routes ─────────────────────────────────────────────────────────────

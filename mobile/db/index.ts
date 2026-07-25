@@ -13,25 +13,35 @@ import { Customer } from "./models/Customer";
 import { CustomerTransaction } from "./models/CustomerTransaction";
 import { Employee } from "./models/Employee";
 
-// LokiJS faqat web'da (IndexedDB'ga tayanadi) — native (iOS/Android)da endi WatermelonDB'ning
-// o'z SQLite adapteri ishlatiladi (audit: CRITICAL#4). LokiJS native platformada sovuq
-// restart'da ma'lumot yo'qotishi mumkin edi; SQLite haqiqiy fayl bazasi bo'lgani uchun
-// bunday xavf yo'q. Native modul (`WMDatabaseBridge`) allaqachon autolink qilingan —
-// qo'shimcha sozlash shart emas. `jsi` ataylab berilmagan — standart async bridge yetarli.
-const adapter = Platform.OS === "web"
-  ? new LokiJSAdapter({
-      schema,
-      migrations,
-      useWebWorker: false,
-      useIncrementalIndexedDB: false,
-    })
-  : new SQLiteAdapter({
+// LokiJS — web va Expo Go (native modul mavjud bo'lmaganda fallback).
+// SQLite — haqiqiy dev build'larda ishlatiladi (sovuq restart'da ma'lumot saqlanadi).
+// Expo Go'da SQLiteAdapter `WMDatabaseBridge` native modulini talab qiladi, u mavjud emas —
+// shuning uchun avval SQLiteAdapter'ni sinab ko'ramiz, xato bo'lsa LokiJS'ga tushamiz.
+let adapter;
+const LOKI_FALLBACK = new LokiJSAdapter({
+  schema,
+  migrations,
+  useWebWorker: false,
+  useIncrementalIndexedDB: false,
+});
+
+try {
+  if (Platform.OS === "web") {
+    adapter = LOKI_FALLBACK;
+  } else {
+    adapter = new SQLiteAdapter({
       schema,
       migrations,
       onSetUpError: (error) => {
-        console.warn("WatermelonDB SQLite init xatosi:", error);
+        console.warn("WatermelonDB SQLite init xatosi — LokiJS fallback:", error);
       },
     });
+  }
+} catch (_e) {
+  // Native modul topilmasa (Expo Go) — LokiJS bilan davom etamiz.
+  console.warn("SQLiteAdapter yarata olmadi, LokiJS ishlatilmoqda (Expo Go?)");
+  adapter = LOKI_FALLBACK;
+}
 
 export const database = new Database({
   adapter,

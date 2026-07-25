@@ -1,21 +1,27 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { database, employeesCollection } from "@/db";
 import { useTheme } from "@/hooks/useTheme";
 import { useT } from "@/hooks/useT";
+import { useRoleStore } from "@/store/roleStore";
 
 type Role = "admin" | "cashier";
 
 export default function AddEmployeeScreen() {
   const { c } = useTheme();
   const t = useT();
+  const isAdmin = useRoleStore((s) => s.isAdmin());
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [pin, setPin] = useState("");
   const [role, setRole] = useState<Role>("cashier");
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!isAdmin) router.replace("/settings");
+  }, [isAdmin]);
 
   async function handleSave() {
     if (!name.trim()) { Alert.alert(t.common.error, t.employees.name); return; }

@@ -65,10 +65,15 @@ const changePassword = async (userId, currentPassword, newPassword) => {
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(newPassword, salt);
 
-  await prisma.user.update({
-    where: { id: userId },
-    data: { password: hashedPassword },
-  });
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    }),
+    prisma.refreshToken.deleteMany({
+      where: { userId },
+    }),
+  ]);
 
   return { message: 'Password changed successfully' };
 };

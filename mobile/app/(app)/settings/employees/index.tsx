@@ -1,15 +1,22 @@
 import { View, Text, FlatList, TouchableOpacity, Alert } from "react-native";
 import { router } from "expo-router";
+import { useEffect } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useTheme } from "@/hooks/useTheme";
 import { useT } from "@/hooks/useT";
+import { useRoleStore } from "@/store/roleStore";
 import { database } from "@/db";
 
 export default function EmployeesScreen() {
   const { c } = useTheme();
   const t = useT();
   const employees = useEmployees();
+  const isAdmin = useRoleStore((s) => s.isAdmin());
+
+  useEffect(() => {
+    if (!isAdmin) router.replace("/settings");
+  }, [isAdmin]);
 
   function handleDelete(emp: any) {
     Alert.alert(t.employees.delete, `${emp.name} ${t.employees.deleteConfirm}`, [

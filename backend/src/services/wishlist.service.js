@@ -18,7 +18,8 @@ const getWishlist = async (userId) => {
   });
 
   if (!wishlist) return { userId, products: [] };
-  return wishlist;
+  // Filter out inactive products from the response
+  return { ...wishlist, products: wishlist.products.filter((p) => p.isActive) };
 };
 
 const toggleWishlist = async (userId, productId) => {

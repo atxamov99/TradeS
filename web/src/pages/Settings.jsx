@@ -48,7 +48,6 @@ export default function Settings() {
   const roleMap = {
     USER: { label: t('role_user'), cls: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-300' },
     ADMIN: { label: t('role_admin'), cls: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300' },
-    SUPER_ADMIN: { label: t('role_super_admin'), cls: 'bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-300' },
   };
 
   const initials = getInitials(user?.name);

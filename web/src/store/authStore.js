@@ -165,7 +165,7 @@ const useAuthStore = create(
       updateUser: (updates) => set((state) => ({ user: { ...state.user, ...updates } })),
 
       isAuthenticated: () => !!get().user,
-      isAdmin: () => ['ADMIN', 'SUPER_ADMIN'].includes(get().user?.role),
+      isAdmin: () => get().user?.role === 'ADMIN',
     }),
     {
       name: 'savdo-auth',

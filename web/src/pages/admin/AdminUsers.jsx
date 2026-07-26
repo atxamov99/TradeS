@@ -38,7 +38,7 @@ export default function AdminUsers() {
     onSuccess: () => { qc.invalidateQueries(['admin-users']); toast.success(t('admin_user_deleted')); },
   });
 
-  const roleColors = { USER: 'gray', ADMIN: 'blue', SUPER_ADMIN: 'purple' };
+  const roleColors = { USER: 'gray', ADMIN: 'blue' };
 
   return (
     <div className="p-6 space-y-4">

@@ -12,7 +12,7 @@ const sidebarMenu = [
 // Settings sits pinned to the bottom of the sidebar.
 export const settingsItem = { key: "settings", path: "/settings", icon: "settings", label: "Sozlamalar" };
 
-// Admins page — only shown to isPrimary (SUPER_ADMIN)
+// Admins page — only shown to isPrimary (single ADMIN tier, always true for the one admin)
 const primaryOnlyMenu = [
   { key: "admins", path: "/admins", icon: "admin_panel_settings", label: "Adminlar" }
 ];

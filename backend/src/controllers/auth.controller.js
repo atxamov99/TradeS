@@ -96,7 +96,7 @@ const getMe = asyncHandler(async (req, res) => {
 // verified the Bearer token above; here we just mint a fresh cookie session
 // for whichever browser/webview made this call.
 const ssoAdopt = asyncHandler(async (req, res) => {
-  if (!['ADMIN', 'SUPER_ADMIN'].includes(req.user.role)) {
+  if (req.user.role !== 'ADMIN') {
     throw new ApiError(403, 'Admin panelga kirish uchun ruxsat yo\'q');
   }
 

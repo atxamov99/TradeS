@@ -2,7 +2,7 @@ const ApiError = require('../utils/ApiError');
 
 /**
  * Role-based access control middleware.
- * Usage: authorize('ADMIN', 'SUPER_ADMIN')
+ * Usage: authorize('ADMIN')
  */
 const authorize = (...roles) => {
   return (req, res, next) => {

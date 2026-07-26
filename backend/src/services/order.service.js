@@ -156,7 +156,7 @@ const getUserOrders = async (userId, { page = 1, limit = 10 } = {}) => {
 
 const getOrderById = async (orderId, userId, role) => {
   const where = { id: orderId };
-  if (role !== 'ADMIN' && role !== 'SUPER_ADMIN') {
+  if (role !== 'ADMIN') {
     where.userId = userId;
   }
 

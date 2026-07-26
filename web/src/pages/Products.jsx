@@ -14,9 +14,9 @@ const isPresetBagWeight = (w) => BAG_WEIGHT_PRESETS.some((p) => String(p) === St
 export default function Products() {
   const { t, i18n } = useTranslation();
   const user = useAuthStore((s) => s.user);
-  // Mirrors backend rule (product.service.js): owner OR ADMIN/SUPER_ADMIN may edit/delete.
+  // Mirrors backend rule (product.service.js): owner OR ADMIN may edit/delete.
   const canManage = (product) =>
-    !!user && (['ADMIN', 'SUPER_ADMIN'].includes(user.role) || product.ownerId === user.id);
+    !!user && (user.role === 'ADMIN' || product.ownerId === user.id);
   const locale = i18n.language.startsWith('uz') ? 'uz-UZ' : i18n.language.startsWith('ru') ? 'ru-RU' : 'en-US';
 
   const UNITS = [

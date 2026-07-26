@@ -17,7 +17,7 @@ router.patch('/:id/cancel', orderController.cancelOrder);
 // Admin only
 router.patch(
   '/:id/status',
-  authorize('ADMIN', 'SUPER_ADMIN'),
+  authorize('ADMIN'),
   validate(updateOrderStatusSchema),
   orderController.updateOrderStatus
 );

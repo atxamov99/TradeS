@@ -10,24 +10,20 @@ import { authApi } from "../services/api/auth.api";
 
 const STORAGE_KEY = "savdo-admin-auth";
 
+// Single ADMIN tier system-wide (owner decision, 2026-07-22) — one set of
+// permissions, no second/lesser admin tier.
 const ROLE_PERMISSIONS = {
-  SUPER_ADMIN: [
-    "dashboard.view", "users.view", "users.create", "users.update", "users.delete",
-    "content.view", "content.create", "content.update", "content.delete",
-    "reports.view", "reports.export", "audit_logs.view", "settings.view",
-    "settings.manage", "profile.view", "profile.update", "admins.manage"
-  ],
   ADMIN: [
     "dashboard.view", "users.view", "users.create", "users.update", "users.delete",
     "content.view", "content.create", "content.update", "content.delete",
     "reports.view", "reports.export", "audit_logs.view", "settings.view",
-    "profile.view", "profile.update"
+    "settings.manage", "profile.view", "profile.update", "admins.manage"
   ]
 };
 
 function buildProfile(user) {
   const role = user.role?.toUpperCase() || "ADMIN";
-  const isPrimary = role === "SUPER_ADMIN";
+  const isPrimary = role === "ADMIN";
   const initials = (user.name || user.email || "AD").slice(0, 2).toUpperCase();
 
   return {

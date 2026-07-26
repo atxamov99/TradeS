@@ -25,7 +25,7 @@ export function LoginPage() {
 
       const auth = await login(credentials);
       const role = auth?.profile?.role?.toUpperCase();
-      if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
+      if (role !== "ADMIN") {
         throw new Error("Ruxsat yo'q: Siz admin emassiz");
       }
       navigate("/dashboard", { replace: true });

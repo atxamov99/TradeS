@@ -5,7 +5,7 @@ const auditController = require('../controllers/audit.controller');
 const { protect } = require('../middlewares/auth.middleware');
 const { authorize } = require('../middlewares/rbac.middleware');
 
-router.use(protect, authorize('ADMIN', 'SUPER_ADMIN'));
+router.use(protect, authorize('ADMIN'));
 
 router.get('/', auditController.getAuditLogs);
 router.get('/export', auditController.getAuditLogsExport);

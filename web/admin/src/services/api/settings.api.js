@@ -2,7 +2,7 @@ import { http } from "../http";
 
 /**
  * Settings API — generic key-value store (backend `/settings`).
- * GET (ADMIN/SUPER_ADMIN), PUT (SUPER_ADMIN only).
+ * GET and PUT both just require the single ADMIN role, no higher tier.
  */
 export const settingsApi = {
   /** GET /api/v1/settings → { data: { settings: { key: value, ... } } } */
@@ -13,7 +13,7 @@ export const settingsApi = {
   get: (key) =>
     http.get(`/settings/${key}`),
 
-  /** PUT /api/v1/settings/:key — SUPER_ADMIN only → { data: { key, value } } */
+  /** PUT /api/v1/settings/:key → { data: { key, value } } */
   put: (key, value) =>
     http.put(`/settings/${key}`, { value }),
 };

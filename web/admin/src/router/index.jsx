@@ -19,7 +19,7 @@ function RequireAuth({ children }) {
   const { isAuthenticated, auth } = useAuth();
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   const role = auth?.profile?.role?.toUpperCase();
-  if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
+  if (role !== "ADMIN") {
     return <Navigate to="/login" replace />;
   }
   return children;

@@ -13,9 +13,9 @@ function fmtPrice(n) { return Number(n || 0).toFixed(2); }
 export default function PosProducts() {
   const qc = useQueryClient();
   const user = useAuthStore((s) => s.user);
-  // Mirrors backend rule (product.service.js): owner OR ADMIN/SUPER_ADMIN may edit/delete.
+  // Mirrors backend rule (product.service.js): owner OR ADMIN may edit/delete.
   const canManage = (p) =>
-    !!user && (['ADMIN', 'SUPER_ADMIN'].includes(user.role) || p.ownerId === user.id);
+    !!user && (user.role === 'ADMIN' || p.ownerId === user.id);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [showForm, setShowForm] = useState(false);

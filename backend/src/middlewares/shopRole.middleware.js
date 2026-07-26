@@ -2,13 +2,13 @@ const asyncHandler = require('../utils/asyncHandler');
 const ApiError = require('../utils/ApiError');
 const { getUserShopIds } = require('../utils/shopAccess');
 
-const PLATFORM_STAFF = ['ADMIN', 'SUPER_ADMIN'];
+const PLATFORM_STAFF = ['ADMIN'];
 
 /**
  * Business-role gate: the caller must belong to at least one shop (as OWNER or
- * CASHIER) to reach shop write/sell endpoints. Platform staff
- * (ADMIN/SUPER_ADMIN) bypass — they manage the global catalog from the admin
- * panel, not from a shop membership.
+ * CASHIER) to reach shop write/sell endpoints. Platform staff (ADMIN) bypass —
+ * they manage the global catalog from the admin panel, not from a shop
+ * membership.
  *
  * This closes the core role hole: `product` and `sales` routes were guarded by
  * `protect` alone, so ANY authenticated USER (a buyer, a random signup) could

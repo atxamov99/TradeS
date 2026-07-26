@@ -2,7 +2,7 @@ const productService = require('../services/product.service');
 const asyncHandler = require('../utils/asyncHandler');
 const ApiResponse = require('../utils/ApiResponse');
 
-const isAdmin = (req) => ['ADMIN', 'SUPER_ADMIN'].includes(req.user.role);
+const isAdmin = (req) => req.user.role === 'ADMIN';
 
 const getProducts = asyncHandler(async (req, res) => {
   const result = await productService.getProducts(req.user.id, req.query, { isAdmin: isAdmin(req) });

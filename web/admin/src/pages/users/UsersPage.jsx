@@ -22,7 +22,7 @@ const empty = { name: "", email: "", phone: "", role: "USER", status: "active", 
 
 export function UsersPage() {
   const { profile } = useAuth();
-  const { users, admins, createUser, updateUser, toggleUserStatus, deleteUser, grantAdminToUser, revokeAdminFromUser, toggleAdminStatus, updateAdmin } = useAdminData();
+  const { users, admins, createUser, updateUser, toggleUserStatus, deleteUser, revokeAdminFromUser, toggleAdminStatus, updateAdmin } = useAdminData();
   const { t } = useI18n();
   const isPrimary = profile?.isPrimary;
   const location = useLocation();
@@ -273,16 +273,6 @@ export function UsersPage() {
                         >
                           <Icon name={u.status === "blocked" ? "lock_open" : "block"} className="text-xl" />
                         </button>
-                        {isPrimary && (
-                          <button
-                            type="button"
-                            onClick={() => setGrantTarget({ user: u, action: "grant" })}
-                            className="p-1 text-on-surface-variant hover:text-primary transition-colors"
-                            title="Admin qilish"
-                          >
-                            <Icon name="admin_panel_settings" className="text-xl" />
-                          </button>
-                        )}
                         <button type="button" onClick={() => setDeleteTarget(u)} className="p-1 text-on-surface-variant hover:text-error transition-colors" title="O'chirish">
                           <Icon name="delete" className="text-xl" />
                         </button>
@@ -371,10 +361,12 @@ export function UsersPage() {
         <p className="text-body-sm text-on-surface-variant">Bu amalni qaytarib bo'lmaydi. Foydalanuvchi tarixi saqlanishi mumkin.</p>
       </Modal>
 
-      {/* Grant / Revoke admin */}
+      {/* Revoke admin — there's exactly one ADMIN account system-wide (owner
+          decision), granted only via CLI (seedAdmin.js), so this modal only
+          ever offers to revoke, never to grant. */}
       <Modal
         open={Boolean(grantTarget)}
-        title={grantTarget?.action === "grant" ? "Admin huquqini berish" : "Admin huquqini olish"}
+        title="Admin huquqini olish"
         description={grantTarget ? `"${grantTarget.user.name}"` : ""}
         onClose={() => setGrantTarget(null)}
         footer={
@@ -383,21 +375,18 @@ export function UsersPage() {
             <button
               type="button"
               onClick={async () => {
-                if (grantTarget.action === "grant") await grantAdminToUser(grantTarget.user.id);
-                else await revokeAdminFromUser(grantTarget.user.id);
+                await revokeAdminFromUser(grantTarget.user.id);
                 setGrantTarget(null);
               }}
-              className={`px-5 py-2.5 text-body-sm font-medium rounded-lg transition-colors ${grantTarget?.action === "grant" ? "bg-primary-container text-on-primary-container hover:bg-primary hover:text-on-primary" : "bg-error text-on-error hover:bg-error/90"}`}
+              className="px-5 py-2.5 text-body-sm font-medium rounded-lg transition-colors bg-error text-on-error hover:bg-error/90"
             >
-              {grantTarget?.action === "grant" ? "Admin qilish" : "Adminlikdan olish"}
+              Adminlikdan olish
             </button>
           </>
         }
       >
         <p className="text-body-sm text-on-surface-variant">
-          {grantTarget?.action === "grant"
-            ? "Ushbu foydalanuvchiga admin huquqi beriladi va u admin panelidan foydalana oladi."
-            : "Ushbu foydalanuvchidan admin huquqi olib tashlanadi va u oddiy foydalanuvchiga aylanadi."}
+          Ushbu foydalanuvchidan admin huquqi olib tashlanadi va u oddiy foydalanuvchiga aylanadi.
         </p>
       </Modal>
     </div>

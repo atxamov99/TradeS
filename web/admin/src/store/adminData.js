@@ -33,8 +33,8 @@ function normalizeUser(u) {
     status: u.isBlocked ? "blocked" : "active",
     createdAt: u.createdAt ? u.createdAt.slice(0, 10) : "",
     lastLogin: u.lastLoginAt ? u.lastLoginAt.slice(0, 16).replace("T", " ") : null,
-    isAdmin: ["admin", "super_admin"].includes((u.role || "").toLowerCase()),
-    isPrimary: u.role === "SUPER_ADMIN"
+    isAdmin: (u.role || "").toLowerCase() === "admin",
+    isPrimary: u.role === "ADMIN"
   };
 }
 
@@ -111,10 +111,7 @@ export function AdminDataProvider({ children }) {
         }
         if (adminsRes.status === "fulfilled") {
           const raw = adminsRes.value?.data?.users || adminsRes.value?.data || [];
-          setAdmins((Array.isArray(raw) ? raw : [])
-            .filter(u => u.role !== "SUPER_ADMIN")
-            .map(normalizeUser)
-          );
+          setAdmins((Array.isArray(raw) ? raw : []).map(normalizeUser));
         }
         if (auditRes.status === "fulfilled") {
           const rawLogs = auditRes.value?.data?.logs || auditRes.value?.data || [];
@@ -275,29 +272,10 @@ export function AdminDataProvider({ children }) {
     }
   }
 
-  // ── Grant / Revoke Admin (local only) ────────────────────
-  async function grantAdminToUser(userId) {
-    const user = users.find((u) => u.id === userId);
-    if (!user) return;
-    try {
-      const res = await usersApi.update(userId, { role: "ADMIN" });
-      const updated = normalizeUser(res?.data?.user || res?.data || { ...user, role: "admin" });
-      // Users dan olib tashlash va admins ga qo'shish
-      setUsers((curr) => curr.filter(u => u.id !== userId));
-      setAdmins((curr) => {
-        const exists = curr.find(a => a.id === userId);
-        if (exists) {
-          return curr.map(a => a.id === userId ? { ...a, ...updated, isAdmin: true } : a);
-        }
-        return [{ ...updated, isAdmin: true }, ...curr];
-      });
-      logAudit("Admin huquqi berildi", user.name, "admin", "success");
-      pushToast(`${user.name} ga admin huquqi berildi`);
-    } catch (err) {
-      pushToast(err?.message || "Xatolik yuz berdi", "danger");
-    }
-  }
-
+  // ── Revoke Admin (local only) ────────────────────────────
+  // No grantAdminToUser: there is exactly one ADMIN account system-wide
+  // (owner decision) and the backend only allows assigning it via CLI
+  // (seedAdmin.js) — `PATCH /admin/users/:id` with role=ADMIN now 403s.
   async function revokeAdminFromUser(userId) {
     const adminUser = admins.find((u) => u.id === userId) || users.find((u) => u.id === userId);
     if (!adminUser) return;
@@ -317,18 +295,6 @@ export function AdminDataProvider({ children }) {
       pushToast(`${adminUser.name} dan admin huquqi olindi`, "warning");
     } catch (err) {
       pushToast(err?.message || "Xatolik yuz berdi", "danger");
-    }
-  }
-
-  async function createAdmin(payload) {
-    try {
-      const res = await adminsApi.create(payload);
-      const user = normalizeUser(res.data?.user || res.data || {});
-      setAdmins((curr) => [user, ...curr]);
-      logAudit("Admin yaratildi", user.name, "admin", "success");
-      pushToast(`${user.name} yaratildi`);
-    } catch (err) {
-      pushToast(err?.message || "Yaratishda xatolik", "danger");
     }
   }
 
@@ -415,17 +381,12 @@ export function AdminDataProvider({ children }) {
   }
 
   // ── Settings persistence (generic key-value store) ────────
-  // PUT /settings/:key requires SUPER_ADMIN — a plain ADMIN gets 403, which we
-  // surface as a clear toast instead of faking success.
   async function persistSetting(key, value) {
     try {
       await settingsApi.put(key, value);
       return true;
     } catch (err) {
-      const msg = err?.status === 403
-        ? "Faqat super admin o'zgartira oladi"
-        : (err?.message || "Saqlashda xatolik");
-      pushToast(msg, "danger");
+      pushToast(err?.message || "Saqlashda xatolik", "danger");
       return false;
     }
   }
@@ -545,7 +506,7 @@ export function AdminDataProvider({ children }) {
       pushToast, dismissToast,
       createUser, updateUser, toggleUserStatus, deleteUser,
       grantAdminToUser, revokeAdminFromUser,
-      toggleAdminStatus, createAdmin, updateAdmin,
+      toggleAdminStatus, updateAdmin,
       createContent, updateContentStatus, deleteContent,
       createRole, deleteRole,
       togglePermission, savePermissions,

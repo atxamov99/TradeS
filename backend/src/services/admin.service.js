@@ -150,12 +150,13 @@ const getUserById = async (userId) => {
   return stripPassword(user);
 };
 
-// Only a SUPER_ADMIN may grant elevated (ADMIN/SUPER_ADMIN) roles — prevents a
-// plain ADMIN from escalating a user (or themselves via a second account) to admin.
-const resolveAssignableRole = (requestedRole, actorRole) => {
+// There is exactly one ADMIN account system-wide (owner decision) and no HTTP path
+// grants it — bootstrapping/recovering the admin account is CLI-only (seedAdmin.js).
+// So user-management endpoints can never assign anything but USER.
+const resolveAssignableRole = (requestedRole) => {
   const role = (requestedRole || 'USER').toUpperCase();
-  if (role !== 'USER' && actorRole !== 'SUPER_ADMIN') {
-    throw new ApiError(403, 'Only a super admin can assign admin roles');
+  if (role !== 'USER') {
+    throw new ApiError(403, 'Admin roles cannot be assigned through this endpoint');
   }
   return role;
 };
@@ -181,7 +182,7 @@ const createUserByAdmin = async ({ name, email, password, phone, role }, actorRo
     throw new ApiError(400, 'Parol talab qilinadi');
   }
 
-  const assignedRole = resolveAssignableRole(role, actorRole);
+  const assignedRole = resolveAssignableRole(role);
 
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password, salt);
@@ -202,14 +203,14 @@ const createUserByAdmin = async ({ name, email, password, phone, role }, actorRo
 const updateUserByAdmin = async (userId, data, actorRole) => {
   const { name, email, phone, role, password } = data;
 
-  // A plain ADMIN may not edit a SUPER_ADMIN, nor assign elevated roles (privilege escalation guard)
+  // An ADMIN may not edit another ADMIN account, nor assign elevated roles (privilege escalation guard)
   await assertCanActOn(userId, actorRole);
 
   const updateData = {};
   if (name !== undefined) updateData.name = name;
   if (email !== undefined) updateData.email = email;
   if (phone !== undefined) updateData.phone = phone;
-  if (role !== undefined) updateData.role = resolveAssignableRole(role, actorRole);
+  if (role !== undefined) updateData.role = resolveAssignableRole(role);
   if (password) {
     const salt = await bcrypt.genSalt(10);
     updateData.password = await bcrypt.hash(password, salt);
@@ -226,12 +227,14 @@ const updateUserByAdmin = async (userId, data, actorRole) => {
   }
 };
 
-// A plain ADMIN may not act on a SUPER_ADMIN account — only another SUPER_ADMIN can.
+// An ADMIN may never act on another ADMIN account. With exactly one ADMIN allowed
+// system-wide this should be unreachable in practice — it's a defense-in-depth
+// guard in case that invariant is ever violated (e.g. a data issue), not a tier check.
 const assertCanActOn = async (targetId, actorRole) => {
   const target = await prisma.user.findUnique({ where: { id: targetId }, select: { role: true } });
   if (!target) throw new ApiError(404, 'User not found');
-  if (target.role === 'SUPER_ADMIN' && actorRole !== 'SUPER_ADMIN') {
-    throw new ApiError(403, 'Only a super admin can perform this action on a super admin');
+  if (target.role === 'ADMIN') {
+    throw new ApiError(403, 'Admins cannot perform this action on another admin account');
   }
 };
 
@@ -253,7 +256,7 @@ const blockUser = async (userId, adminId, actorRole) => {
 };
 
 const unblockUser = async (userId, actorRole) => {
-  // A plain ADMIN may not act on a SUPER_ADMIN account (privilege escalation guard)
+  // An ADMIN may not act on another ADMIN account (privilege escalation guard)
   await assertCanActOn(userId, actorRole);
   try {
     const user = await prisma.user.update({
@@ -350,7 +353,7 @@ const deleteUser = async (userId, adminId, actorRole) => {
 const getAllAdmins = async ({ page = 1, limit = 50 } = {}) => {
   const take = clampLimit(limit, 20);
   const skip = (Number(page) - 1) * take;
-  const where = { role: { in: ['ADMIN', 'SUPER_ADMIN'] }, deletedAt: null };
+  const where = { role: 'ADMIN', deletedAt: null };
 
   const [users, total] = await Promise.all([
     prisma.user.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take }),
@@ -362,10 +365,10 @@ const getAllAdmins = async ({ page = 1, limit = 50 } = {}) => {
 
 const toggleAdminStatus = async (userId, adminId, actorRole) => {
   if (userId === adminId) throw new ApiError(400, 'You cannot change your own status');
-  // A plain ADMIN may not suspend/reinstate a SUPER_ADMIN (privilege escalation guard)
+  // An ADMIN may not suspend/reinstate another ADMIN (privilege escalation guard)
   await assertCanActOn(userId, actorRole);
   const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user || !['ADMIN', 'SUPER_ADMIN'].includes(user.role)) {
+  if (!user || user.role !== 'ADMIN') {
     throw new ApiError(404, 'Admin not found');
   }
   const updated = await prisma.user.update({
@@ -395,36 +398,6 @@ const getAllOrders = async ({ page = 1, limit = 20, status } = {}) => {
   return { orders, total, page: Number(page), pages: Math.ceil(total / take) };
 };
 
-const registerSuperAdmin = async ({ name, email, password, setupKey }) => {
-  if (!setupKey || setupKey !== process.env.ADMIN_SETUP_KEY) {
-    throw new ApiError(403, 'Invalid setup key');
-  }
-
-  const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) throw new ApiError(409, 'Email already registered');
-
-  const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(password, salt);
-
-  const user = await prisma.user.create({
-    data: { name, email, password: hashedPassword, role: 'SUPER_ADMIN' },
-  });
-  return stripPassword(user);
-};
-
-const registerAdmin = async ({ name, email, password }) => {
-  const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) throw new ApiError(409, 'Email already registered');
-
-  const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(password, salt);
-
-  const user = await prisma.user.create({
-    data: { name, email, password: hashedPassword, role: 'ADMIN' },
-  });
-  return stripPassword(user);
-};
-
 module.exports = {
   getDashboardStats,
   getAllUsers,
@@ -437,6 +410,4 @@ module.exports = {
   getAllAdmins,
   toggleAdminStatus,
   getAllOrders,
-  registerSuperAdmin,
-  registerAdmin,
 };

@@ -55,7 +55,7 @@ export default function AppLayout() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
 
-  const isAdmin = ['ADMIN', 'SUPER_ADMIN'].includes(user?.role);
+  const isAdmin = user?.role === 'ADMIN';
 
   const navItems = [
     { to: '/dashboard', label: t('dashboard'), icon: Home },

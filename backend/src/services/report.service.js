@@ -220,7 +220,7 @@ const getAdminActivity = async ({ from, to } = {}) => {
   rangeStart.setHours(0, 0, 0, 0);
 
   const admins = await prisma.user.findMany({
-    where: { role: { in: ['ADMIN', 'SUPER_ADMIN'] }, deletedAt: null },
+    where: { role: 'ADMIN', deletedAt: null },
     select: { id: true, name: true, email: true, lastLogin: true, createdAt: true, isBlocked: true },
   });
 

@@ -38,6 +38,6 @@ jobs:
 
       - name: Fail on high/critical
         working-directory: ${{ matrix.pkg-dir }}
-        continue-on-error: true
+      
         run: |
           node -e "const fs=require('fs');const r=JSON.parse(fs.readFileSync('audit-result.json','utf8'));const high=Object.values(r.vulnerabilities||{}).some(v=>['high','critical'].includes(v.severity)); if(high){console.error('High/Critical vulnerabilities found'); process.exit(1);} console.log('No high/critical vulns detected');"

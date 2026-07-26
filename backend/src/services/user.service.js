@@ -127,6 +127,13 @@ const deleteAddress = async (userId, addressId) => {
   return await prisma.address.findMany({ where: { userId } });
 };
 
+const savePushToken = async (userId, pushToken) => {
+  await prisma.user.update({
+    where: { id: userId },
+    data: { expoPushToken: pushToken },
+  });
+};
+
 module.exports = {
   getProfile,
   updateProfile,
@@ -134,4 +141,5 @@ module.exports = {
   addAddress,
   updateAddress,
   deleteAddress,
+  savePushToken,
 };

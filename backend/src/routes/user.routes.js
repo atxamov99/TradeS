@@ -21,4 +21,7 @@ router.post('/addresses', validate(addressSchema), userController.addAddress);
 router.patch('/addresses/:addressId', validate(addressSchema), userController.updateAddress);
 router.delete('/addresses/:addressId', userController.deleteAddress);
 
+// Push notification token
+router.post('/push-token', userController.savePushToken);
+
 module.exports = router;

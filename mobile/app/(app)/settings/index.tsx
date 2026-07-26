@@ -104,7 +104,7 @@ export default function ProfileScreen() {
   async function handleSaveEmail() {
     const trimmed = emailInput.trim().toLowerCase();
     if (trimmed && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
-      Alert.alert(t.common.error, "To'g'ri email manzil kiriting");
+      Alert.alert(t.common.error, t.settings.invalidEmail);
       return;
     }
     setEmailSaving(true);
@@ -115,7 +115,7 @@ export default function ProfileScreen() {
       await setUser({ ...user, email: updated?.email ?? trimmed });
       setEmailModalVisible(false);
     } catch (e: any) {
-      Alert.alert(t.common.error, e.response?.data?.message || "Email saqlashda xatolik");
+      Alert.alert(t.common.error, e.response?.data?.message || t.settings.emailSaveError);
     } finally {
       setEmailSaving(false);
     }
@@ -165,7 +165,7 @@ export default function ProfileScreen() {
       </Section>
 
       {/* Business */}
-      <Section title="Biznes">
+      <Section title={t.settings.business}>
         <Row
           iconName="bar-chart"
           iconBg="#EDE9FE"
@@ -216,8 +216,8 @@ export default function ProfileScreen() {
         <Row
           iconName="mail"
           iconBg="#DBEAFE"
-          label="Email"
-          sub={user?.email || "Qo'shilmagan"}
+          label={t.settings.emailTitle}
+          sub={user?.email || t.settings.emailNotAdded}
           right={<Ionicons name="chevron-forward" size={18} color={c.textMuted} />}
           onPress={openEmailModal}
         />
@@ -235,9 +235,9 @@ export default function ProfileScreen() {
       <Modal visible={emailModalVisible} transparent animationType="slide">
         <View style={{ flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.5)" }}>
           <View style={{ backgroundColor: c.bgCard, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 }}>
-            <Text style={{ color: c.text, fontSize: 18, fontWeight: "800", marginBottom: 6 }}>Email manzil</Text>
+            <Text style={{ color: c.text, fontSize: 18, fontWeight: "800", marginBottom: 6 }}>{t.settings.emailTitle}</Text>
             <Text style={{ color: c.textMuted, fontSize: 12, marginBottom: 16 }}>
-              Ixtiyoriy — parolni tiklash va bildirishnomalar uchun ishlatiladi.
+              {t.settings.emailDesc}
             </Text>
             <TextInput
               style={{ backgroundColor: c.bgMuted, borderRadius: 14, paddingHorizontal: 14, height: 50, fontSize: 15, color: c.text, marginBottom: 16, borderWidth: 1, borderColor: c.border }}

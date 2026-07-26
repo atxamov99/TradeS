@@ -2,6 +2,13 @@ const prisma = require('../config/prisma');
 const ApiError = require('../utils/ApiError');
 const telegramService = require('./telegram.service');
 
+// Minimal HTML-escaping since messages are sent with parse_mode: 'HTML' and
+// user-supplied text could otherwise break formatting or inject tags.
+const escapeHtml = (str) =>
+  String(str).replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])
+  );
+
 const sendSupportMessage = async ({ name, contact, message }, userId) => {
   if (!name?.trim() || !contact?.trim() || !message?.trim()) {
     throw new ApiError(400, 'Name, contact, and message are required');
@@ -27,10 +34,5 @@ const sendSupportMessage = async ({ name, contact, message }, userId) => {
 
   return { message: 'Support message sent' };
 };
-
-// Minimal HTML-escaping since messages are sent with parse_mode: 'HTML' and
-// user-supplied text could otherwise break formatting or inject tags.
-const escapeHtml = (str) =>
-  String(str).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 
 module.exports = { sendSupportMessage };

@@ -37,6 +37,15 @@ const deleteAddress = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, { addresses }, 'Address deleted'));
 });
 
+const savePushToken = asyncHandler(async (req, res) => {
+  const { token } = req.body;
+  if (!token || typeof token !== 'string') {
+    return res.status(400).json(new ApiResponse(400, null, 'Token is required'));
+  }
+  await userService.savePushToken(req.user.id, token);
+  res.status(200).json(new ApiResponse(200, null, 'Push token saved'));
+});
+
 module.exports = {
   getProfile,
   updateProfile,
@@ -44,4 +53,5 @@ module.exports = {
   addAddress,
   updateAddress,
   deleteAddress,
+  savePushToken,
 };

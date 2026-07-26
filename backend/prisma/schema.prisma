@@ -24,6 +24,7 @@ model User {
   telegram        String?
   instagram       String?
   addresses       Address[]
+  expoPushToken   String?        // Expo push token for mobile notifications
   isBlocked       Boolean        @default(false)
   isEmailVerified Boolean        @default(false)
   deletedAt       DateTime?      // soft delete: set when a user with linked history is "deleted"

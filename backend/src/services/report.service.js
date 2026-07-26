@@ -276,6 +276,8 @@ const escapeCsv = (value) => {
   return str;
 };
 
+const MAX_EXPORT_ROWS = 10000;
+
 const exportReport = async ({ type, from, to } = {}) => {
   const rangeStart = from ? new Date(from) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   const rangeEnd = to ? new Date(to) : new Date();
@@ -286,6 +288,7 @@ const exportReport = async ({ type, from, to } = {}) => {
     const users = await prisma.user.findMany({
       where: { createdAt: { gte: rangeStart, lte: rangeEnd }, deletedAt: null },
       orderBy: { createdAt: 'desc' },
+      take: MAX_EXPORT_ROWS,
     });
     const header = 'ID,Name,Email,Role,Status,CreatedAt\n';
     const rows = users.map((u) =>

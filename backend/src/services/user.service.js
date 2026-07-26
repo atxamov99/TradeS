@@ -62,13 +62,18 @@ const changePassword = async (userId, currentPassword, newPassword) => {
   const isMatch = await bcrypt.compare(currentPassword, user.password);
   if (!isMatch) throw new ApiError(400, 'Current password is incorrect');
 
-  const salt = await bcrypt.genSalt(10);
+  const salt = await bcrypt.genSalt(12);
   const hashedPassword = await bcrypt.hash(newPassword, salt);
 
-  await prisma.user.update({
-    where: { id: userId },
-    data: { password: hashedPassword },
-  });
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    }),
+    prisma.refreshToken.deleteMany({
+      where: { userId },
+    }),
+  ]);
 
   return { message: 'Password changed successfully' };
 };
@@ -122,6 +127,13 @@ const deleteAddress = async (userId, addressId) => {
   return await prisma.address.findMany({ where: { userId } });
 };
 
+const savePushToken = async (userId, pushToken) => {
+  await prisma.user.update({
+    where: { id: userId },
+    data: { expoPushToken: pushToken },
+  });
+};
+
 module.exports = {
   getProfile,
   updateProfile,
@@ -129,4 +141,5 @@ module.exports = {
   addAddress,
   updateAddress,
   deleteAddress,
+  savePushToken,
 };

@@ -22,15 +22,15 @@ const PLANS: PlanConfig[] = [
   { key: "biznes", price: "49 900", accentColor: "#7c3aed" },
 ];
 
-function openPayme(url: string) {
-  Linking.openURL(url).catch(() => {
-    Alert.alert("Xatolik", "Payme ilovasi ochilmadi. Brauzer orqali to'lang.");
-  });
-}
-
 export default function SubscriptionScreen() {
   const t = useT();
   const { c } = useTheme();
+
+  function openPayme(url: string) {
+    Linking.openURL(url).catch(() => {
+      Alert.alert(t.common.error, t.subscription.paymeOpenError);
+    });
+  }
   const { plan: currentPlan, upgrade, expiresAt } = useSubscriptionStore();
   const [paying, setPaying] = useState<string | null>(null);
 
@@ -52,15 +52,15 @@ export default function SubscriptionScreen() {
       const res = await api.post("/subscriptions/create-payment", { plan: planKey });
       const data = res.data?.data ?? res.data;
       Alert.alert(
-        "Payme orqali to'lov",
-        `Summa: ${data.amountUzs} so'm\n\nPayme ilovasi ochiladi.`,
+        t.subscription.paymeTitle,
+        t.subscription.paymeConfirm(data.amountUzs),
         [
-          { text: "Bekor qilish", style: "cancel" },
-          { text: "To'lash", onPress: () => openPayme(data.paymeUrl) },
+          { text: t.products.cancel, style: "cancel" },
+          { text: t.subscription.pay, onPress: () => openPayme(data.paymeUrl) },
         ]
       );
     } catch (e: any) {
-      Alert.alert("Xatolik", e?.response?.data?.message || "To'lov yaratilmadi");
+      Alert.alert(t.common.error, e?.response?.data?.message || t.subscription.paymentFailed);
     } finally {
       setPaying(null);
     }
@@ -70,15 +70,15 @@ export default function SubscriptionScreen() {
     if (plan.key === "free") return;
     Alert.alert(
       plan.key.toUpperCase(),
-      `Payme orqali to'lang (${plan.price} so'm/oy) yoki demo sinab ko'ring.`,
+      t.subscription.payOrDemo(plan.price),
       [
-        { text: "Bekor qilish", style: "cancel" },
+        { text: t.products.cancel, style: "cancel" },
         { text: "Payme", onPress: () => handlePay(plan.key) },
         {
-          text: "Demo (30 kun)",
+          text: t.subscription.demo,
           onPress: () => {
             upgrade(plan.key, 30);
-            Alert.alert("Aktiv", `${plan.key.toUpperCase()} 30 kunga yoqildi (demo)`);
+            Alert.alert(t.subscription.active, t.subscription.demoActivated(plan.key.toUpperCase()));
           },
         },
       ]
@@ -102,10 +102,10 @@ export default function SubscriptionScreen() {
       <View style={{ backgroundColor: c.primary, marginHorizontal: 16, borderRadius: 22, padding: 22, marginBottom: 20, marginTop: 8 }}>
         <Ionicons name="rocket" size={32} color="rgba(255,255,255,0.85)" style={{ marginBottom: 10 }} />
         <Text style={{ color: "#fff", fontSize: 20, fontWeight: "800", marginBottom: 4 }}>
-          Biznesingizni o'stiring
+          {t.subscription.heroTitle}
         </Text>
         <Text style={{ color: "rgba(255,255,255,0.75)", fontSize: 14, lineHeight: 20 }}>
-          Hisob-kitob, hisobot va barcha imkoniyatlar — bir joyda
+          {t.subscription.heroSubtitle}
         </Text>
 
         <View style={{ flexDirection: "row", alignItems: "center", marginTop: 14, backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7, alignSelf: "flex-start", gap: 6 }}>
@@ -149,7 +149,7 @@ export default function SubscriptionScreen() {
                     <View>
                       <Text style={{ color: c.text, fontSize: 18, fontWeight: "800" }}>{nameMap[plan.key]}</Text>
                       <Text style={{ color: plan.accentColor, fontSize: 14, fontWeight: "700" }}>
-                        {plan.key === "free" ? plan.price : `${plan.price} so'm/${t.subscription.perMonth}`}
+                        {plan.key === "free" ? t.subscription.freePrice : `${plan.price} so'm/${t.subscription.perMonth}`}
                       </Text>
                     </View>
                   </View>
@@ -161,7 +161,7 @@ export default function SubscriptionScreen() {
                   )}
                   {plan.recommended && !isActive && (
                     <View style={{ backgroundColor: plan.accentColor + "20", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, borderWidth: 1, borderColor: plan.accentColor + "40" }}>
-                      <Text style={{ color: plan.accentColor, fontSize: 11, fontWeight: "800" }}>TAVSIYA</Text>
+                      <Text style={{ color: plan.accentColor, fontSize: 11, fontWeight: "800" }}>{t.subscription.recommended}</Text>
                     </View>
                   )}
                 </View>
@@ -208,7 +208,7 @@ export default function SubscriptionScreen() {
                     style={{ borderRadius: 14, height: 44, alignItems: "center", justifyContent: "center", borderWidth: 1.5, borderColor: c.border }}
                     onPress={() => { upgrade("free", 0); }}
                   >
-                    <Text style={{ color: c.textMuted, fontWeight: "700", fontSize: 14 }}>Bepulga o'tish</Text>
+                    <Text style={{ color: c.textMuted, fontWeight: "700", fontSize: 14 }}>{t.subscription.switchToFree}</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -219,7 +219,7 @@ export default function SubscriptionScreen() {
         <View style={{ backgroundColor: c.bgCard, borderWidth: 1, borderColor: c.border, borderRadius: 14, padding: 14, flexDirection: "row", alignItems: "flex-start", gap: 10 }}>
           <Ionicons name="information-circle" size={18} color={c.textMuted} style={{ marginTop: 1 }} />
           <Text style={{ color: c.textMuted, fontSize: 13, flex: 1, lineHeight: 19 }}>
-            Payme orqali to'lang yoki 30 kun demo sinab ko'ring
+            {t.subscription.infoText}
           </Text>
         </View>
       </View>

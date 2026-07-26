@@ -15,6 +15,16 @@ const OTP_MAX_ATTEMPTS = 5;
 
 const REFRESH_TOKEN_EXPIRES_DAYS = 7;
 
+// Password must be ≥ 8 chars, contain at least one uppercase, one lowercase, and one digit.
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+const PASSWORD_COMPLEXITY_MSG = 'Parol kamida 8 ta belgi, bitta katta harf, bitta kichik harf va bitta raqamdan iborat bo\'lishi kerak';
+
+const validatePassword = (password) => {
+  if (!password || !PASSWORD_REGEX.test(password)) {
+    throw new ApiError(400, PASSWORD_COMPLEXITY_MSG, [], '', 'WEAK_PASSWORD');
+  }
+};
+
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // Issue an access+refresh token pair for a user and persist the refresh token.
@@ -43,6 +53,8 @@ const issueTokens = async (user, meta = {}) => {
  * Register a new user
  */
 const register = async ({ name, email, phone, password }) => {
+  validatePassword(password);
+
   if (email) {
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) throw new ApiError(409, 'Bu email allaqachon ro\'yxatdan o\'tgan', [], '', 'ACCOUNT_EXISTS');
@@ -52,7 +64,7 @@ const register = async ({ name, email, phone, password }) => {
     if (existing) throw new ApiError(409, 'Bu raqam allaqachon ro\'yxatdan o\'tgan', [], '', 'ACCOUNT_EXISTS');
   }
 
-  const salt = await bcrypt.genSalt(10);
+  const salt = await bcrypt.genSalt(12);
   const hashedPassword = await bcrypt.hash(password, salt);
 
   const user = await prisma.user.create({
@@ -72,7 +84,7 @@ const register = async ({ name, email, phone, password }) => {
 const registerTestUser = async (meta = {}) => {
   const now = new Date();
   const password = crypto.randomBytes(16).toString('hex');
-  const hashedPassword = await bcrypt.hash(password, 10);
+  const hashedPassword = await bcrypt.hash(password, 12);
 
   const user = await prisma.user.create({
     data: {
@@ -93,8 +105,9 @@ const registerTestUser = async (meta = {}) => {
 /**
  * Login user and return tokens
  */
-const login = async ({ email, phone, password }, meta = {}) => {
+const login = async ({ email, phone: rawPhone, password }, meta = {}) => {
   const logger = require('../utils/logger');
+  const phone = rawPhone ? `+${telegramService.normalizePhone(rawPhone)}` : null;
   logger.debug(`Login attempt for ${email || phone}`);
   
   let user;
@@ -278,7 +291,7 @@ const googleAuth = async (credential, meta = {}) => {
   if (!user) {
     // Google-only account — password column is required, so store an unusable
     // random hash (they sign in with Google; can set a password via reset later).
-    const randomHash = await bcrypt.hash(crypto.randomBytes(24).toString('hex'), 10);
+    const randomHash = await bcrypt.hash(crypto.randomBytes(24).toString('hex'), 12);
     user = await prisma.user.create({
       data: {
         name: name || email.split('@')[0],
@@ -387,7 +400,8 @@ const verifyOtp = async ({ phone: rawPhone, code, name, password }, meta = {}) =
 
   if (!user) {
     if (!password) throw new ApiError(400, 'Ro\'yxatdan o\'tish uchun parol talab qilinadi');
-    const hashed = await bcrypt.hash(password, 10);
+    validatePassword(password);
+    const hashed = await bcrypt.hash(password, 12);
     user = await prisma.user.create({
       data: {
         name: name || 'Foydalanuvchi',
@@ -467,7 +481,7 @@ const resetPassword = async (rawToken, newPassword) => {
   });
   if (!user) throw new ApiError(400, 'Token yaroqsiz yoki muddati tugagan');
 
-  const hashed = await bcrypt.hash(newPassword, 10);
+  const hashed = await bcrypt.hash(newPassword, 12);
 
   await prisma.$transaction([
     prisma.user.update({
@@ -557,7 +571,7 @@ const resetPasswordByPhone = async (rawPhone, code, newPassword) => {
     data: { otpCode: null, otpExpiresAt: null, attempts: 0 },
   });
 
-  const hashed = await bcrypt.hash(newPassword, 10);
+  const hashed = await bcrypt.hash(newPassword, 12);
   await prisma.$transaction([
     prisma.user.update({ where: { id: user.id }, data: { password: hashed } }),
     // Invalidate every existing session — a reset must lock out anyone holding old tokens.
@@ -634,7 +648,8 @@ const verifyEmailOtp = async ({ email: rawEmail, code, name, password }, meta = 
 
   if (!user) {
     if (!password) throw new ApiError(400, 'Ro\'yxatdan o\'tish uchun parol talab qilinadi');
-    const hashed = await bcrypt.hash(password, 10);
+    validatePassword(password);
+    const hashed = await bcrypt.hash(password, 12);
     user = await prisma.user.create({
       data: { name: name || 'Foydalanuvchi', email, password: hashed, isEmailVerified: true },
     });

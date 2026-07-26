@@ -19,31 +19,31 @@ export default function Dashboard() {
 
   function StatCard({ label, value, icon: Icon, color }) {
     const colorMap = {
-      blue: 'bg-blue-50 text-blue-600',
-      green: 'bg-green-50 text-green-600',
-      amber: 'bg-amber-50 text-amber-600',
+      blue: 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-300',
+      green: 'bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-300',
+      amber: 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-300',
     };
     return (
-      <div className="bg-white rounded-2xl border border-[#E2E8F0] p-5 flex flex-col gap-3">
+      <div className="bg-white dark:bg-[#1E293B] rounded-2xl border border-[#E2E8F0] dark:border-[#334155] p-5 flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-[#64748B]">{label}</span>
+          <span className="text-sm font-medium text-[#64748B] dark:text-slate-400">{label}</span>
           <div className={`p-2 rounded-xl ${colorMap[color] || colorMap.green}`}>
             <Icon size={18} />
           </div>
         </div>
-        <p className="text-2xl font-extrabold text-[#0F172A] leading-tight">{value}</p>
+        <p className="text-2xl font-extrabold text-[#0F172A] dark:text-slate-100 leading-tight">{value}</p>
       </div>
     );
   }
 
   function SkeletonCard() {
     return (
-      <div className="bg-white rounded-2xl border border-[#E2E8F0] p-5 flex flex-col gap-3 animate-pulse">
+      <div className="bg-white dark:bg-[#1E293B] rounded-2xl border border-[#E2E8F0] dark:border-[#334155] p-5 flex flex-col gap-3 animate-pulse">
         <div className="flex justify-between">
-          <div className="h-4 w-28 bg-slate-200 rounded" />
-          <div className="h-8 w-8 bg-slate-200 rounded-xl" />
+          <div className="h-4 w-28 bg-slate-200 dark:bg-slate-700 rounded" />
+          <div className="h-8 w-8 bg-slate-200 dark:bg-slate-700 rounded-xl" />
         </div>
-        <div className="h-8 w-36 bg-slate-200 rounded" />
+        <div className="h-8 w-36 bg-slate-200 dark:bg-slate-700 rounded" />
       </div>
     );
   }
@@ -85,15 +85,15 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0F172A]">
       {/* Header */}
-      <header className="bg-white border-b border-[#E2E8F0] px-5 py-4 flex items-center justify-between sticky top-0 z-20">
+      <header className="bg-white dark:bg-[#1E293B] border-b border-[#E2E8F0] dark:border-[#334155] px-5 py-4 flex items-center justify-between sticky top-0 z-20">
         <div className="flex items-center gap-3">
           <span className="text-xl font-extrabold text-green-500">TradeS</span>
-          <span className="hidden sm:block text-sm text-[#64748B]">{todayDate}</span>
+          <span className="hidden sm:block text-sm text-[#64748B] dark:text-slate-400">{todayDate}</span>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-sm font-semibold text-[#0F172A]">{user?.name}</span>
+          <span className="text-sm font-semibold text-[#0F172A] dark:text-slate-100">{user?.name}</span>
           <button
             onClick={handleLogout}
             className="flex items-center gap-1.5 text-sm text-red-500 hover:text-red-600 font-medium transition px-2 py-1 rounded-lg hover:bg-red-50"

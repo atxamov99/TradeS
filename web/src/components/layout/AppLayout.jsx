@@ -38,7 +38,7 @@ function NavItem({ item, mobile = false }) {
         `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
           isActive
             ? 'bg-green-500 text-white shadow-sm'
-            : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'
+            : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-slate-100'
         }`
       }
     >
@@ -76,12 +76,12 @@ export default function AppLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex">
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0F172A] flex">
 
       {/* ── Desktop Sidebar ──────────────────────── */}
-      <aside className="hidden md:flex flex-col w-[220px] min-h-screen bg-white border-r border-[#E2E8F0] fixed left-0 top-0 bottom-0 z-30">
+      <aside className="hidden md:flex flex-col w-[220px] min-h-screen bg-white dark:bg-[#1E293B] border-r border-[#E2E8F0] dark:border-[#334155] fixed left-0 top-0 bottom-0 z-30">
         {/* Logo */}
-        <div className="px-5 py-6 border-b border-[#E2E8F0] flex items-center gap-2.5">
+        <div className="px-5 py-6 border-b border-[#E2E8F0] dark:border-[#334155] flex items-center gap-2.5">
           <img src="/logo.png" alt="TradeS" className="h-10 w-10 rounded-lg object-contain flex-shrink-0" />
           <div className="min-w-0">
             <span className="text-2xl font-extrabold text-green-500 tracking-tight">TradeS</span>
@@ -90,13 +90,13 @@ export default function AppLayout() {
         </div>
 
         {/* User info */}
-        <div className="px-4 py-3 border-b border-[#E2E8F0] flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold text-sm flex-shrink-0">
+        <div className="px-4 py-3 border-b border-[#E2E8F0] dark:border-[#334155] flex items-center gap-2">
+          <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-500/20 flex items-center justify-center text-green-700 dark:text-green-300 font-bold text-sm flex-shrink-0">
             {user?.name?.[0]?.toUpperCase() || 'U'}
           </div>
           <div className="min-w-0">
-            <p className="text-xs font-semibold text-slate-700 truncate">{user?.name}</p>
-            <p className="text-[10px] text-slate-400 truncate">{user?.role}</p>
+            <p className="text-xs font-semibold text-slate-700 dark:text-slate-100 truncate">{user?.name}</p>
+            <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate">{user?.role}</p>
           </div>
         </div>
 
@@ -130,10 +130,10 @@ export default function AppLayout() {
         </nav>
 
         {/* Logout */}
-        <div className="px-3 py-3 border-t border-[#E2E8F0]">
+        <div className="px-3 py-3 border-t border-[#E2E8F0] dark:border-[#334155]">
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-500 hover:bg-red-50 hover:text-red-500 transition-all"
+            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-500 dark:text-slate-400 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-500 transition-all"
           >
             <LogOut size={18} strokeWidth={2} />
             <span>{t('logout')}</span>
@@ -148,7 +148,7 @@ export default function AppLayout() {
       </main>
 
       {/* ── Mobile Bottom Tab Bar ────────────────── */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[#E2E8F0] z-30 flex items-center justify-around px-1 py-1 safe-area-pb">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-[#1E293B] border-t border-[#E2E8F0] dark:border-[#334155] z-30 flex items-center justify-around px-1 py-1 safe-area-pb">
         {navItems.slice(0, 5).map((item) => (
           <NavItem key={item.to} item={item} mobile />
         ))}

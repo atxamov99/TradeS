@@ -14,8 +14,12 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       '/api': {
-        // Backend runs on 5050 — port 5000 is taken by macOS AirPlay Receiver (returns 403).
-        target: 'http://localhost:5050',
+        // Backend's own default is 5000 (backend/.env PORT, server.js). On a Mac where
+        // AirPlay Receiver already holds 5000, set BACKEND_PORT=5050 (or whatever) and
+        // change backend/.env's PORT to match — don't hardcode a workaround for one
+        // machine as everyone else's default (this exact mismatch silently broke the
+        // whole web app's API calls before).
+        target: `http://localhost:${process.env.BACKEND_PORT || 5000}`,
         changeOrigin: true,
       },
     },

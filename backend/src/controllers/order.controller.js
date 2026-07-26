@@ -26,10 +26,4 @@ const cancelOrder = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, { order }, 'Order cancelled'));
 });
 
-// Admin only
-const updateOrderStatus = asyncHandler(async (req, res) => {
-  const order = await orderService.updateOrderStatus(req.params.id, req.body);
-  res.status(200).json(new ApiResponse(200, { order }, 'Order status updated'));
-});
-
-module.exports = { createOrder, getMyOrders, getOrderById, cancelOrder, updateOrderStatus };
+module.exports = { createOrder, getMyOrders, getOrderById, cancelOrder };

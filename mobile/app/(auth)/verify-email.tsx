@@ -27,8 +27,9 @@ export default function VerifyEmailScreen() {
     }
     setLoading(true);
     try {
-      const res = await api.post("/auth/verify-email", { email, code });
-      await saveEmailCredentials(email, "", res.data.accessToken, res.data.refreshToken);
+      const res = await api.post("/auth/verify-email-otp", { email, code });
+      const data = res.data?.data ?? res.data;
+      await saveEmailCredentials(email, "", data.accessToken, data.refreshToken);
     } catch {
       Alert.alert(t.common.error, t.auth.wrongCode);
     } finally {

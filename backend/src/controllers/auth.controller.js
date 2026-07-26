@@ -1,4 +1,5 @@
 const authService = require('../services/auth.service');
+const shopService = require('../services/shop.service');
 const asyncHandler = require('../utils/asyncHandler');
 const ApiResponse = require('../utils/ApiResponse');
 const ApiError = require('../utils/ApiError');
@@ -88,7 +89,10 @@ const logoutAll = asyncHandler(async (req, res) => {
 const getMe = asyncHandler(async (req, res) => {
   const user = req.user;
   if (user?.isTestUser) user.testActionCap = TEST_USER_ACTION_CAP;
-  res.status(200).json(new ApiResponse(200, { user }, 'User retrieved'));
+  // Shop-scoped role (OWNER/CASHIER) lives separately from the platform-wide
+  // User.role — clients need both to know what a user can actually do.
+  const shopMemberships = await shopService.getMyShops(user.id);
+  res.status(200).json(new ApiResponse(200, { user, shopMemberships }, 'User retrieved'));
 });
 
 // Mobile app is already logged in (holds a Bearer accessToken) and wants to
@@ -131,14 +135,14 @@ const requestOtp = asyncHandler(async (req, res) => {
 
 const verifyOtp = asyncHandler(async (req, res) => {
   const meta = { userAgent: req.headers['user-agent'] || '', ip: req.ip };
-  const { user, accessToken, refreshToken } = await authService.verifyOtp(req.body, meta);
+  const { user, accessToken, refreshToken, shop } = await authService.verifyOtp(req.body, meta);
   if (user.isTestUser) user.testActionCap = TEST_USER_ACTION_CAP;
 
   res.cookie('accessToken', accessToken, COOKIE_OPTIONS);
   res.cookie('refreshToken', refreshToken, COOKIE_OPTIONS);
 
   res.status(200).json(
-    new ApiResponse(200, { user, accessToken, refreshToken }, 'Kirish muvaffaqiyatli')
+    new ApiResponse(200, { user, accessToken, refreshToken, shop }, 'Kirish muvaffaqiyatli')
   );
 });
 
@@ -151,14 +155,14 @@ const requestEmailOtp = asyncHandler(async (req, res) => {
 
 const verifyEmailOtp = asyncHandler(async (req, res) => {
   const meta = { userAgent: req.headers['user-agent'] || '', ip: req.ip };
-  const { user, accessToken, refreshToken } = await authService.verifyEmailOtp(req.body, meta);
+  const { user, accessToken, refreshToken, shop } = await authService.verifyEmailOtp(req.body, meta);
   if (user.isTestUser) user.testActionCap = TEST_USER_ACTION_CAP;
 
   res.cookie('accessToken', accessToken, COOKIE_OPTIONS);
   res.cookie('refreshToken', refreshToken, COOKIE_OPTIONS);
 
   res.status(200).json(
-    new ApiResponse(200, { user, accessToken, refreshToken }, 'Kirish muvaffaqiyatli')
+    new ApiResponse(200, { user, accessToken, refreshToken, shop }, 'Kirish muvaffaqiyatli')
   );
 });
 

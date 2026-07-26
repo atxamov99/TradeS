@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { Home, Package, ShoppingCart, BarChart2, Settings, User, ShieldCheck, LogOut } from 'lucide-react';
+import { Home, Package, ShoppingCart, BarChart2, Settings, User, ShieldCheck, LogOut, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import useAuthStore from '../../store/authStore';
 import TestUserBanner from '../common/TestUserBanner';
@@ -62,6 +62,7 @@ export default function AppLayout() {
     { to: '/dashboard/products', label: t('products'),  icon: Package },
     { to: '/dashboard/sales',    label: t('sales'),     icon: ShoppingCart },
     { to: '/dashboard/reports',  label: t('reports'),   icon: BarChart2 },
+    { to: '/dashboard/employees', label: t('employees', 'Xodimlar'), icon: Users },
     { to: '/dashboard/settings', label: t('settings'),  icon: Settings },
     { to: '/dashboard/profile',  label: t('profile'),   icon: User },
   ];

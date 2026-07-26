@@ -15,6 +15,17 @@ const OTP_MAX_ATTEMPTS = 5;
 
 const REFRESH_TOKEN_EXPIRES_DAYS = 7;
 
+// A brand-new registrant who chose "OWNER" gets their own Shop + OWNER
+// membership right away. Plain USER signups (the default) stay shopless
+// until an existing shop owner adds them as a cashier via shop.service.js's
+// addMember. No-op unless accountType === 'OWNER'.
+const createOwnerShopIfRequested = async (user, accountType, shopName) => {
+  if (accountType !== 'OWNER') return null;
+  return prisma.shop.create({
+    data: { name: shopName, ownerId: user.id, members: { create: { userId: user.id, role: 'OWNER' } } },
+  });
+};
+
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // Issue an access+refresh token pair for a user and persist the refresh token.
@@ -355,7 +366,7 @@ const requestOtp = async (rawPhone, reason = 'register') => {
  * Verify the OTP and register-or-login the user by phone.
  * New users provide name + password; returning users just get logged in.
  */
-const verifyOtp = async ({ phone: rawPhone, code, name, password }, meta = {}) => {
+const verifyOtp = async ({ phone: rawPhone, code, name, password, accountType, shopName }, meta = {}) => {
   const phone = telegramService.normalizePhone(rawPhone);
   if (!phone || !code) throw new ApiError(400, 'Telefon va kod talab qilinadi');
 
@@ -385,6 +396,7 @@ const verifyOtp = async ({ phone: rawPhone, code, name, password }, meta = {}) =
   const canonicalPhone = `+${phone}`;
   let user = await prisma.user.findFirst({ where: { phone: canonicalPhone, deletedAt: null } });
 
+  let shop = null;
   if (!user) {
     if (!password) throw new ApiError(400, 'Ro\'yxatdan o\'tish uchun parol talab qilinadi');
     const hashed = await bcrypt.hash(password, 10);
@@ -396,6 +408,7 @@ const verifyOtp = async ({ phone: rawPhone, code, name, password }, meta = {}) =
         isEmailVerified: false,
       },
     });
+    shop = await createOwnerShopIfRequested(user, accountType, shopName);
   } else if (password) {
     // The account already exists, yet the caller supplied a password — this is a
     // registration attempt for an already-registered phone. Refuse instead of
@@ -411,7 +424,7 @@ const verifyOtp = async ({ phone: rawPhone, code, name, password }, meta = {}) =
 
   const userResponse = { ...user };
   delete userResponse.password;
-  return { user: userResponse, accessToken, refreshToken };
+  return { user: userResponse, accessToken, refreshToken, shop };
 };
 
 const PASSWORD_RESET_EXPIRES_MIN = 30;
@@ -605,7 +618,7 @@ const requestEmailOtp = async (rawEmail) => {
  * receives a password is a re-registration attempt and is refused (409), mirroring
  * the phone guard. Verifying the code proves ownership, so isEmailVerified is set.
  */
-const verifyEmailOtp = async ({ email: rawEmail, code, name, password }, meta = {}) => {
+const verifyEmailOtp = async ({ email: rawEmail, code, name, password, accountType, shopName }, meta = {}) => {
   const email = String(rawEmail || '').trim().toLowerCase();
   if (!email || !code) throw new ApiError(400, 'Email va kod talab qilinadi');
 
@@ -632,12 +645,14 @@ const verifyEmailOtp = async ({ email: rawEmail, code, name, password }, meta = 
 
   let user = await prisma.user.findFirst({ where: { email, deletedAt: null } });
 
+  let shop = null;
   if (!user) {
     if (!password) throw new ApiError(400, 'Ro\'yxatdan o\'tish uchun parol talab qilinadi');
     const hashed = await bcrypt.hash(password, 10);
     user = await prisma.user.create({
       data: { name: name || 'Foydalanuvchi', email, password: hashed, isEmailVerified: true },
     });
+    shop = await createOwnerShopIfRequested(user, accountType, shopName);
   } else if (password) {
     throw new ApiError(409, 'Bu email allaqachon ro\'yxatdan o\'tgan. Kirish sahifasi orqali kiring.');
   } else if (!user.isEmailVerified) {
@@ -652,7 +667,7 @@ const verifyEmailOtp = async ({ email: rawEmail, code, name, password }, meta = 
 
   const userResponse = { ...user };
   delete userResponse.password;
-  return { user: userResponse, accessToken, refreshToken };
+  return { user: userResponse, accessToken, refreshToken, shop };
 };
 
 module.exports = { register, registerTestUser, login, refreshTokens, logout, logoutAll, googleAuth, requestOtp, verifyOtp, issueTokens, forgotPassword, resetPassword, forgotPasswordByPhone, resetPasswordByPhone, requestEmailOtp, verifyEmailOtp };

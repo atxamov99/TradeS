@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Eye, EyeOff, UserPlus, CheckCircle2, XCircle,
-  ShoppingBag, Globe, ChevronDown, Send, ArrowLeft, KeyRound, Smartphone, Mail
+  ShoppingBag, Globe, ChevronDown, Send, ArrowLeft, KeyRound, Smartphone, Mail,
+  Store, User
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
@@ -19,6 +20,13 @@ const TX = {
     login:          "Kirish",
     tab_phone:      "Telefon",
     tab_email:      "Email",
+    role_label:     "Kim bo'lib ro'yxatdan o'tasiz?",
+    role_user:      "Oddiy foydalanuvchi",
+    role_user_sub:  "Kimningdir do'konida ishlayman (kassir)",
+    role_owner:     "Do'kon egasi",
+    role_owner_sub: "O'z do'konimni ochaman",
+    shop_name_label:"Do'kon nomi",
+    shop_name_ph:   "Masalan: \"Aziz Market\"",
     name_label:     "To'liq ism",
     name_ph:        "Ism va familiyangiz",
     phone_label:    "Telefon raqam",
@@ -45,6 +53,13 @@ const TX = {
     login:          "Войти",
     tab_phone:      "Телефон",
     tab_email:      "Email",
+    role_label:     "Кем регистрируетесь?",
+    role_user:      "Обычный пользователь",
+    role_user_sub:  "Буду работать у кого-то (кассир)",
+    role_owner:     "Владелец магазина",
+    role_owner_sub: "Открываю свой магазин",
+    shop_name_label:"Название магазина",
+    shop_name_ph:   "Например: «Aziz Market»",
     name_label:     "Полное имя",
     name_ph:        "Ваше имя и фамилия",
     phone_label:    "Номер телефона",
@@ -71,6 +86,13 @@ const TX = {
     login:          "Sign In",
     tab_phone:      "Phone",
     tab_email:      "Email",
+    role_label:     "What are you signing up as?",
+    role_user:      "Regular user",
+    role_user_sub:  "I'll work for someone (cashier)",
+    role_owner:     "Shop owner",
+    role_owner_sub: "I'm opening my own shop",
+    shop_name_label:"Shop name",
+    shop_name_ph:   "e.g. \"Aziz Market\"",
     name_label:     "Full Name",
     name_ph:        "Your full name",
     phone_label:    "Phone Number",
@@ -123,7 +145,7 @@ export default function Register() {
 
   const [step, setStep] = useState('form'); // 'form' | 'connect' | 'otp'
   const [method, setMethod] = useState('phone'); // 'phone' | 'email'
-  const [form, setForm] = useState({ name: '', phone: '+998 ', email: '', password: '' });
+  const [form, setForm] = useState({ name: '', phone: '+998 ', email: '', password: '', accountType: 'USER', shopName: '' });
   const [code, setCode] = useState('');
   const [showPwd, setShowPwd] = useState(false);
   const [pwdTouched, setPwdTouched] = useState(false);
@@ -148,6 +170,8 @@ export default function Register() {
     }
     if (!form.password)             e.password = t('password_required');
     else if (!pwdValid)             e.password = t('rule_length');
+    if (form.accountType === 'OWNER' && !form.shopName.trim())
+      e.shopName = t('shop_name_required') || 'Do\'kon nomini kiriting';
     return e;
   };
 
@@ -184,12 +208,17 @@ export default function Register() {
     e.preventDefault();
     if (code.replace(/\D/g, '').length !== 6) return;
     try {
+      const rolePayload = {
+        accountType: form.accountType,
+        ...(form.accountType === 'OWNER' ? { shopName: form.shopName.trim() } : {}),
+      };
       if (method === 'email') {
         await verifyEmailOtp({
           email: form.email.trim().toLowerCase(),
           code: code.replace(/\D/g, ''),
           name: form.name.trim(),
           password: form.password,
+          ...rolePayload,
         });
       } else {
         await verifyOtp({
@@ -197,6 +226,7 @@ export default function Register() {
           code: code.replace(/\D/g, ''),
           name: form.name.trim(),
           password: form.password,
+          ...rolePayload,
         });
       }
       toast.success(t('toast_welcome_back', { name: form.name.trim() }));
@@ -302,6 +332,50 @@ export default function Register() {
               </div>
 
               <form onSubmit={handleFormSubmit} noValidate className="flex flex-col gap-5">
+                {/* Account type: plain user (future cashier) vs shop owner */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">{tx.role_label}</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setForm((p) => ({ ...p, accountType: 'USER' }))}
+                      className={`flex flex-col items-start gap-1 rounded-xl border p-3 text-left transition-all ${
+                        form.accountType === 'USER' ? 'border-[#2ECC71] bg-[#2ECC71]/10' : 'border-[#2ECC71]/10 hover:border-[#2ECC71]/20'
+                      }`}
+                    >
+                      <User size={18} className={form.accountType === 'USER' ? 'text-[#2ECC71]' : 'text-slate-400'} />
+                      <span className="text-sm font-bold text-white">{tx.role_user}</span>
+                      <span className="text-xs text-slate-400">{tx.role_user_sub}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setForm((p) => ({ ...p, accountType: 'OWNER' }))}
+                      className={`flex flex-col items-start gap-1 rounded-xl border p-3 text-left transition-all ${
+                        form.accountType === 'OWNER' ? 'border-[#2ECC71] bg-[#2ECC71]/10' : 'border-[#2ECC71]/10 hover:border-[#2ECC71]/20'
+                      }`}
+                    >
+                      <Store size={18} className={form.accountType === 'OWNER' ? 'text-[#2ECC71]' : 'text-slate-400'} />
+                      <span className="text-sm font-bold text-white">{tx.role_owner}</span>
+                      <span className="text-xs text-slate-400">{tx.role_owner_sub}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Shop name — only when registering as owner */}
+                {form.accountType === 'OWNER' && (
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">{tx.shop_name_label}</label>
+                    <input
+                      type="text"
+                      value={form.shopName}
+                      onChange={onChange('shopName')}
+                      placeholder={tx.shop_name_ph}
+                      className={inputCls('shopName')}
+                    />
+                    {errors.shopName && <p className="text-red-400 text-xs mt-0.5">{errors.shopName}</p>}
+                  </div>
+                )}
+
                 {/* Name */}
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">{tx.name_label}</label>

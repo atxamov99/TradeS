@@ -35,12 +35,20 @@ const requestOtpSchema = Joi.object({
   phone: Joi.string().trim().required(),
 });
 
+// New-registrant account type: OWNER creates their own Shop right away; USER
+// (default) stays shopless until an existing shop owner adds them as a cashier.
+const accountTypeSchema = Joi.string().valid('USER', 'OWNER').default('USER');
+const shopNameSchema = Joi.string().trim().min(2).max(100)
+  .when('accountType', { is: 'OWNER', then: Joi.required(), otherwise: Joi.optional() });
+
 // Register-or-login by phone OTP: new users supply name + password, returning ones don't.
 const verifyOtpSchema = Joi.object({
   phone: Joi.string().trim().required(),
   code: Joi.string().trim().required(),
   name: Joi.string().trim().min(2).max(100).allow('', null),
   password: Joi.string().min(6).max(128).allow('', null),
+  accountType: accountTypeSchema,
+  shopName: shopNameSchema,
 });
 
 const requestEmailOtpSchema = Joi.object({
@@ -52,6 +60,8 @@ const verifyEmailOtpSchema = Joi.object({
   code: Joi.string().trim().required(),
   name: Joi.string().trim().min(2).max(100).allow('', null),
   password: Joi.string().min(6).max(128).allow('', null),
+  accountType: accountTypeSchema,
+  shopName: shopNameSchema,
 });
 
 // Either email (token flow) or phone (Telegram OTP flow) must be present.

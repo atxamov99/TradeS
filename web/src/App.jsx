@@ -27,6 +27,7 @@ import Products from './pages/Products';
 import Sales from './pages/Sales';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
+import Employees from './pages/Employees';
 import Profile from './pages/Profile';
 import Landing from './pages/Landing';
 
@@ -107,6 +108,7 @@ export default function App() {
           <Route path="sales" element={<Sales />} />
           <Route path="reports" element={<Reports />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="employees" element={<Employees />} />
           <Route path="profile" element={<Profile />} />
 
           {/* Admin-only routes */}

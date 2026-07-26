@@ -151,6 +151,12 @@ const en: Translations = {
     subscription: "Subscription plan",
     logout: "Logout",
     logoutConfirm: "Do you want to log out?",
+    logoutDataLossTitle: "Data will be lost",
+    logoutDataLossBody:
+      "After logging out, the following records on this device are deleted permanently:",
+    logoutPendingSync: "Products/sales not yet sent to the server",
+    logoutLocalOnly: "Debt ledger and employees (this device only)",
+    logoutAnyway: "Log out anyway",
     version: "Version",
     theme: "Theme",
     appearance: "Appearance",

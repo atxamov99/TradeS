@@ -149,6 +149,12 @@ const uz = {
     subscription: "Tarif rejasi",
     logout: "Chiqish",
     logoutConfirm: "Chiqmoqchimisiz?",
+    logoutDataLossTitle: "Ma'lumot yo'qoladi",
+    logoutDataLossBody:
+      "Chiqilgandan so'ng bu qurilmadagi quyidagi yozuvlar butunlay o'chadi va tiklab bo'lmaydi:",
+    logoutPendingSync: "Serverga yuborilmagan tovar/sotuvlar",
+    logoutLocalOnly: "Qarz daftari va xodimlar (faqat shu qurilmada)",
+    logoutAnyway: "Baribir chiqish",
     version: "Versiya",
     theme: "Mavzu",
     appearance: "Ko'rinish",

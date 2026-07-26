@@ -6,9 +6,11 @@ import toast from 'react-hot-toast';
 import * as salesApi from '../api/sales.api';
 import * as productsApi from '../api/products.api';
 import Dropdown from '../components/ui/Dropdown';
+import useAuthStore from '../store/authStore';
 
 export default function Sales() {
   const { t, i18n } = useTranslation();
+  const canSeeFinancials = useAuthStore((s) => s.canSeeShopFinancials());
   const locale = i18n.language.startsWith('uz') ? 'uz-UZ' : i18n.language.startsWith('ru') ? 'ru-RU' : 'en-US';
 
   function fmt(n) {
@@ -194,10 +196,12 @@ export default function Sales() {
                   <span className="text-[#64748B] dark:text-slate-400">{t('sale_preview_revenue')}</span>
                   <span className="font-semibold text-[#0F172A] dark:text-slate-100">{fmt(total)}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-[#64748B] dark:text-slate-400">{t('sale_preview_profit')}</span>
-                  <span className={`font-bold ${profit >= 0 ? 'text-green-600' : 'text-red-500'}`}>{fmt(profit)}</span>
-                </div>
+                {canSeeFinancials && (
+                  <div className="flex justify-between">
+                    <span className="text-[#64748B] dark:text-slate-400">{t('sale_preview_profit')}</span>
+                    <span className={`font-bold ${profit >= 0 ? 'text-green-600' : 'text-red-500'}`}>{fmt(profit)}</span>
+                  </div>
+                )}
               </div>
             )}
 
@@ -260,16 +264,23 @@ export default function Sales() {
         />
 
         {!isLoading && sales.length > 0 && (
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-white dark:bg-[#1E293B] rounded-2xl border border-[#E2E8F0] dark:border-[#334155] p-4 flex flex-col gap-1">
-              <span className="text-xs font-medium text-[#64748B] dark:text-slate-400">{t('total_sales')}</span>
-              <p className="text-lg font-extrabold text-[#0F172A] dark:text-slate-100">{fmt(totalRevenue)}</p>
+          canSeeFinancials ? (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-white dark:bg-[#1E293B] rounded-2xl border border-[#E2E8F0] dark:border-[#334155] p-4 flex flex-col gap-1">
+                <span className="text-xs font-medium text-[#64748B] dark:text-slate-400">{t('total_sales')}</span>
+                <p className="text-lg font-extrabold text-[#0F172A] dark:text-slate-100">{fmt(totalRevenue)}</p>
+              </div>
+              <div className="bg-white dark:bg-[#1E293B] rounded-2xl border border-[#E2E8F0] dark:border-[#334155] p-4 flex flex-col gap-1">
+                <span className="text-xs font-medium text-[#64748B] dark:text-slate-400">{t('total_profit')}</span>
+                <p className="text-lg font-extrabold text-green-600">{fmt(totalProfit)}</p>
+              </div>
             </div>
+          ) : (
             <div className="bg-white dark:bg-[#1E293B] rounded-2xl border border-[#E2E8F0] dark:border-[#334155] p-4 flex flex-col gap-1">
-              <span className="text-xs font-medium text-[#64748B] dark:text-slate-400">{t('total_profit')}</span>
-              <p className="text-lg font-extrabold text-green-600">{fmt(totalProfit)}</p>
+              <span className="text-xs font-medium text-[#64748B] dark:text-slate-400">{t('today_sales')}</span>
+              <p className="text-lg font-extrabold text-[#0F172A] dark:text-slate-100">{sales.length}</p>
             </div>
-          </div>
+          )
         )}
 
         {isError ? (
@@ -321,10 +332,12 @@ export default function Sales() {
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-bold text-green-600">
-                        +{Number(sale.profit || 0).toLocaleString(locale)} {t('currency')}
-                      </p>
-                      <p className="text-xs text-[#64748B] dark:text-slate-400">
+                      {canSeeFinancials && (
+                        <p className="text-sm font-bold text-green-600">
+                          +{Number(sale.profit || 0).toLocaleString(locale)} {t('currency')}
+                        </p>
+                      )}
+                      <p className={canSeeFinancials ? "text-xs text-[#64748B] dark:text-slate-400" : "text-sm font-bold text-[#0F172A] dark:text-slate-100"}>
                         {Number(sale.totalRevenue || 0).toLocaleString(locale)} {t('currency')}
                       </p>
                     </div>

@@ -8,6 +8,7 @@ const useAuthStore = create(
   persist(
     (set, get) => ({
       user: null,
+      shopMemberships: [],
       isLoading: false,
 
       setTokens: () => {
@@ -66,6 +67,7 @@ const useAuthStore = create(
           const res = await authApi.verifyOtp(data);
           const { user } = res.data.data;
           set({ user, isLoading: false });
+          get().fetchMe();
           return user;
         } catch (err) {
           set({ isLoading: false });
@@ -91,6 +93,7 @@ const useAuthStore = create(
           const res = await authApi.verifyEmailOtp(data);
           const { user } = res.data.data;
           set({ user, isLoading: false });
+          get().fetchMe();
           return user;
         } catch (err) {
           set({ isLoading: false });
@@ -104,6 +107,7 @@ const useAuthStore = create(
           const res = await authApi.login(credentials);
           const { user } = res.data.data;
           set({ user, isLoading: false });
+          get().fetchMe();
           toast.success(i18n.t('toast_welcome_back', { name: user.name }));
           return user;
         } catch (err) {
@@ -151,7 +155,7 @@ const useAuthStore = create(
       fetchMe: async () => {
         try {
           const res = await authApi.getMe();
-          set({ user: res.data.data.user });
+          set({ user: res.data.data.user, shopMemberships: res.data.data.shopMemberships || [] });
         } catch (err) {
           // Only drop the session on a real auth failure (401/403). A network
           // error or 5xx must NOT log the user out — keep the persisted user.
@@ -166,11 +170,17 @@ const useAuthStore = create(
 
       isAuthenticated: () => !!get().user,
       isAdmin: () => get().user?.role === 'ADMIN',
+      // Financial reporting (revenue/profit) is owner/admin-only — a CASHIER
+      // scans products and records sales, nothing about money. Platform ADMIN
+      // or being OWNER of at least one shop both qualify.
+      canSeeShopFinancials: () =>
+        get().user?.role === 'ADMIN' || get().shopMemberships.some((m) => m.myRole === 'OWNER'),
     }),
     {
       name: 'savdo-auth',
       partialize: (state) => ({
         user: state.user,
+        shopMemberships: state.shopMemberships,
       }),
     }
   )

@@ -45,6 +45,13 @@ function AdminRoute({ children }) {
   return children;
 }
 
+// Reports = financial reporting (revenue/profit) — owner/admin only.
+function FinancialsRoute({ children }) {
+  const canSeeFinancials = useAuthStore((s) => s.canSeeShopFinancials());
+  if (!canSeeFinancials) return <Navigate to="/dashboard" replace />;
+  return children;
+}
+
 export default function App() {
   const fetchMe = useAuthStore((s) => s.fetchMe);
   const user = useAuthStore((s) => s.user);
@@ -106,7 +113,7 @@ export default function App() {
           <Route index element={<Dashboard />} />
           <Route path="products" element={<Products />} />
           <Route path="sales" element={<Sales />} />
-          <Route path="reports" element={<Reports />} />
+          <Route path="reports" element={<FinancialsRoute><Reports /></FinancialsRoute>} />
           <Route path="settings" element={<Settings />} />
           <Route path="employees" element={<Employees />} />
           <Route path="profile" element={<Profile />} />

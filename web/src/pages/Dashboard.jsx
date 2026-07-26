@@ -10,6 +10,7 @@ export default function Dashboard() {
   const { t, i18n } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  const canSeeFinancials = useAuthStore((s) => s.canSeeShopFinancials());
   const navigate = useNavigate();
 
   function fmt(n) {
@@ -107,10 +108,10 @@ export default function Dashboard() {
         {/* Today's date mobile */}
         <p className="sm:hidden text-sm text-[#64748B] capitalize">{todayDate}</p>
 
-        {/* Stats row */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {/* Stats row — revenue/profit are owner/admin-only, a cashier just sells */}
+        <div className={`grid grid-cols-1 gap-3 ${canSeeFinancials ? 'sm:grid-cols-3' : ''}`}>
           {summaryLoading ? (
-            [1, 2, 3].map((i) => <SkeletonCard key={i} />)
+            (canSeeFinancials ? [1, 2, 3] : [1]).map((i) => <SkeletonCard key={i} />)
           ) : summaryError ? (
             <div className="col-span-3 bg-white rounded-2xl border border-red-100 p-5 flex flex-col items-center gap-2 text-center">
               <AlertCircle size={28} className="text-red-400" />
@@ -120,8 +121,12 @@ export default function Dashboard() {
           ) : (
             <>
               <StatCard label={t('today_sales')} value={todayStats.salesCount ?? 0} icon={ShoppingCart} color="blue" />
-              <StatCard label={t('today_revenue')} value={fmt(todayStats.totalRevenue)} icon={DollarSign} color="amber" />
-              <StatCard label={t('today_profit')} value={fmt(todayStats.totalProfit)} icon={TrendingUp} color="green" />
+              {canSeeFinancials && (
+                <>
+                  <StatCard label={t('today_revenue')} value={fmt(todayStats.totalRevenue)} icon={DollarSign} color="amber" />
+                  <StatCard label={t('today_profit')} value={fmt(todayStats.totalProfit)} icon={TrendingUp} color="green" />
+                </>
+              )}
             </>
           )}
         </div>
@@ -208,14 +213,16 @@ export default function Dashboard() {
                         {sale.quantity} {t(`unit_${sale.unit || 'pcs'}`)} · {timeStr}
                       </p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold text-green-600">
-                        +{Number(sale.profit || 0).toLocaleString(locale)} {t('currency')}
-                      </p>
-                      <p className="text-xs text-[#64748B]">
-                        {Number(sale.totalRevenue || 0).toLocaleString(locale)} {t('currency')}
-                      </p>
-                    </div>
+                    {canSeeFinancials && (
+                      <div className="text-right">
+                        <p className="text-sm font-bold text-green-600">
+                          +{Number(sale.profit || 0).toLocaleString(locale)} {t('currency')}
+                        </p>
+                        <p className="text-xs text-[#64748B]">
+                          {Number(sale.totalRevenue || 0).toLocaleString(locale)} {t('currency')}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 );
               })}

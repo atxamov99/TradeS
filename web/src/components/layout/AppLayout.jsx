@@ -56,12 +56,15 @@ export default function AppLayout() {
   const logout = useAuthStore((s) => s.logout);
 
   const isAdmin = user?.role === 'ADMIN';
+  const canSeeFinancials = useAuthStore((s) => s.canSeeShopFinancials());
 
   const navItems = [
     { to: '/dashboard', label: t('dashboard'), icon: Home },
     { to: '/dashboard/products', label: t('products'),  icon: Package },
     { to: '/dashboard/sales',    label: t('sales'),     icon: ShoppingCart },
-    { to: '/dashboard/reports',  label: t('reports'),   icon: BarChart2 },
+    // Reports = financial reporting (revenue/profit) — owner/admin only, a
+    // cashier just scans products and records sales.
+    ...(canSeeFinancials ? [{ to: '/dashboard/reports', label: t('reports'), icon: BarChart2 }] : []),
     { to: '/dashboard/employees', label: t('employees', 'Xodimlar'), icon: Users },
     { to: '/dashboard/settings', label: t('settings'),  icon: Settings },
     { to: '/dashboard/profile',  label: t('profile'),   icon: User },

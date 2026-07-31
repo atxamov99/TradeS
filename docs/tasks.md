@@ -23,8 +23,15 @@
 - [ ] `Prisma: Timed out fetching a new connection from the connection pool` — вылетело один раз на `POST /auth/forgot-password` (pool limit 21, timeout 10s) во время ручного e2e-теста, второй запрос сразу после отработал нормально. Похоже на временный затор (возможно, nodemon-рестарт оставил висящий клиент), но стоит последить — если повторится под реальной нагрузкой, это узкое место.
 - [ ] `docs/README.md`, `docs/architecture.md`, `docs/MARKETING.md` — всё ещё называют проект "Savdo-E" и описывают MongoDB-стек; реальный код (`backend/prisma/schema.prisma`) — Postgres+Prisma, бренд — TradeS. Доки не переименованы после ребрендинга, вводят в заблуждение.
 
+## Старый фидбек из корневого файла `savdo-mobile@1.0.0` (2026-07-02, спасён перед удалением файла 2026-07-31)
+⚠️ Дата ДО mobile-rewrite (mobile_old_20260709) — возможно уже неактуально, нужно перепроверить на текущем `mobile/`, не предполагать вслепую.
+- [ ] Register: убрать кнопку "Demo rejimda davom etish (Offline)"
+- [ ] Profile edit не работает по-настоящему — жмёшь и просто выскакивает "profil yangilandi", без реального изменения. Нужно: редактирование имени, добавление/изменение email, кнопка смены пароля должна быть ВНУТРИ экрана редактирования профиля (не отдельно), плюс поля Telegram/Instagram (username или ссылка) — для будущего in-app чата
+- [ ] Register выдаёт "Xatolik --- Ro'yhatdan o'tishda xatolik. Qayta urinib ko'ring" — по словам автора, тогда и sign-in тоже не работал (нужно перепроверить, актуально ли до сих пор)
+- [ ] Мелочь: анимация при сохранении профиля (не баг, просто просьба сделать приятнее)
+
 ## Возможно позже
-- [ ] Убрать неиспользуемый второй i18n (I18nProvider/useI18n в `web/src/i18n/index.jsx`) — используется только мёртвыми/неподключёнными страницами
-- [ ] `SMS_DEMO=true` в backend/.env — мёртвая настройка, нигде не используется в коде (старый SMS-OTP флоу, заменён на Telegram-OTP)
-- [ ] `forgot_password` — на Login.jsx ссылка показывает необработанный ключ перевода вместо текста (нет строки `forgot_password` в i18n resources)
-- [ ] Мусорные файлы в корне репо (`nul`, `expo`, `savdo-mobile@1.0.0`, `package-lock.json` в корне, папка `«`) — похоже на обломки случайных команд, ждём подтверждения на удаление
+- [x] Убрать неиспользуемый второй i18n (I18nProvider/useI18n в `web/src/i18n/index.jsx`) — 2026-07-31: удалён целиком (`i18n/index.jsx`, `labels.js`, `translations.*.js`), вместе с 9 мёртвыми страницами, которые его использовали и никуда не были подключены (`RolesPage`, `PermissionsPage`, `AuditLogsPage`, `ContentPage`, `ReportsPage`, `AdminsPage`, `UsersPage`, `UserDetailPage`, `ProfilePage`, `Modal.jsx` — ни одна не встречалась в `App.jsx`, `Modal.jsx` тоже нигде не импортировался). `<I18nProvider>` убран из `main.jsx`. `npx vite build` прошёл чисто.
+- [x] `SMS_DEMO=true` в backend/.env — мёртвая настройка, нигде не используется в коде (старый SMS-OTP флоу, заменён на Telegram-OTP) — убрана из `.env.example` и `docs/ENV_AND_GITIGNORE.md`, в реальном `backend/.env` её и не было
+- [x] `forgot_password` — 2026-07-31 проверено: ключ уже есть в реальном (активном) i18n-конфиге, который использует `Login.jsx` (`useTranslation` из `react-i18next` → `src/i18n.js`, там `forgot_password` присутствует для uz/ru/en). Баг был про ВТОРОЙ (уже удалённый) i18n — уже неактуален.
+- [x] Мусорные файлы в корне репо — удалены: `expo` (пустой файл), `package-lock.json` (пустышка, реальные лок-файлы в подпапках), `savdo-mobile@1.0.0` (см. секцию выше — фидбек спасён перед удалением), папка `«.../vercel.json»` (сломанный путь от случайной команды). `nul` уже отсутствовал.

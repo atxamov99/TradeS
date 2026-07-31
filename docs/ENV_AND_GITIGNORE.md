@@ -127,11 +127,6 @@ CORS_ORIGIN=http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,ht
 # Client URL (for password reset links)
 CLIENT_URL=http://localhost:5173
 
-# SMS OTP — dev rejimda OTP kodlari log'ga chiqadi (real SMS yuborilmaydi).
-# Production'da SMS_DEMO=false va ESKIZ_TOKEN=... qo'yiladi.
-SMS_DEMO=true
-# ESKIZ_TOKEN=***REDACTED_IF_SET***
-
 
 # MailDev — локальный SMTP, письма видны на http://localhost:1080
 SMTP_HOST=127.0.0.1
@@ -165,8 +160,6 @@ ADMIN_SETUP_KEY
 GOOGLE_CLIENT_ID
 CORS_ORIGIN
 CLIENT_URL
-SMS_DEMO
-ESKIZ_TOKEN
 SMTP_HOST
 SMTP_PORT
 SMTP_SECURE
@@ -199,10 +192,6 @@ ADMIN_SETUP_KEY=change_me_to_random_64hex
 CORS_ORIGIN=http://localhost:5173,http://localhost:5174
 CLIENT_URL=http://localhost:5173
 
-# ── SMS (dev) ──
-SMS_DEMO=true
-# ESKIZ_TOKEN=
-
 # ── SMTP (MailDev) ──
 SMTP_HOST=127.0.0.1
 SMTP_PORT=1025
@@ -226,8 +215,6 @@ BCRYPT_SALT_ROUNDS
 ADMIN_SETUP_KEY
 CORS_ORIGIN
 CLIENT_URL
-SMS_DEMO
-ESKIZ_TOKEN
 SMTP_HOST
 SMTP_PORT
 SMTP_SECURE

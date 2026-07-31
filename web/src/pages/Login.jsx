@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
-  Eye, EyeOff, LogIn, ShoppingBag, Globe, ChevronDown, Mail, KeyRound, ArrowLeft
+  Eye, EyeOff, LogIn, Globe, ChevronDown, Mail, KeyRound, ArrowLeft
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
@@ -196,9 +196,7 @@ export default function Login() {
       {/* Navbar */}
       <nav className="relative z-10 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between border-b border-[#2ECC71]/10">
         <Link to="/" className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#2ECC71] to-[#1ABC9C] flex items-center justify-center">
-            <ShoppingBag className="w-5 h-5 text-slate-950" />
-          </div>
+          <img src="/logo-dark.png" alt="TradeS" className="w-10 h-10 object-contain" />
           <span className="text-xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-slate-400">
             TradeS
           </span>
@@ -391,9 +389,7 @@ export default function Login() {
       <footer className="border-t border-[#2ECC71]/10 bg-[#0E150F] py-8 text-center text-slate-500 text-xs relative z-10">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-[#2ECC71] flex items-center justify-center">
-              <ShoppingBag className="w-3.5 h-3.5 text-slate-950" />
-            </div>
+            <img src="/logo-dark.png" alt="TradeS" className="w-6 h-6 object-contain" />
             <span className="font-bold text-slate-400">TradeS</span>
           </div>
           <div className="flex items-center gap-4">

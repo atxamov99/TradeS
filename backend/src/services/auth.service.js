@@ -17,6 +17,35 @@ const REFRESH_TOKEN_EXPIRES_DAYS = 7;
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
+// Record/refresh the calling device's identity. The first device a user ever
+// authenticates from becomes isPrimary — the only device later allowed to
+// revoke other sessions (see revokeSession). Silently skipped when the
+// client didn't send a deviceId (older mobile builds, registerTestUser),
+// since a session can't be attributed to "no device".
+const recordKnownDevice = async (userId, meta = {}) => {
+  if (!meta.deviceId) return;
+  const existing = await prisma.knownDevice.findUnique({
+    where: { userId_deviceId: { userId, deviceId: meta.deviceId } },
+  });
+  if (existing) {
+    await prisma.knownDevice.update({
+      where: { id: existing.id },
+      data: { lastSeenAt: new Date(), userAgent: meta.userAgent || existing.userAgent, ip: meta.ip || existing.ip },
+    });
+    return;
+  }
+  const deviceCount = await prisma.knownDevice.count({ where: { userId } });
+  await prisma.knownDevice.create({
+    data: {
+      userId,
+      deviceId: meta.deviceId,
+      userAgent: meta.userAgent || '',
+      ip: meta.ip || '',
+      isPrimary: deviceCount === 0,
+    },
+  });
+};
+
 // Issue an access+refresh token pair for a user and persist the refresh token.
 const issueTokens = async (user, meta = {}) => {
   const tokenPayload = { id: user.id, role: user.role };
@@ -33,8 +62,14 @@ const issueTokens = async (user, meta = {}) => {
       expiresAt,
       userAgent: meta.userAgent || '',
       ip: meta.ip || '',
+      // A fresh login/register always starts a new session family — the
+      // caller passes one forward only when rotating an existing session
+      // (see refreshTokens below).
+      ...(meta.familyId ? { familyId: meta.familyId } : {}),
     },
   });
+
+  await recordKnownDevice(user.id, meta);
 
   return { accessToken, refreshToken: refreshTokenValue };
 };
@@ -90,6 +125,85 @@ const registerTestUser = async (meta = {}) => {
   return { user: userResponse, accessToken, refreshToken };
 };
 
+// ── New-device login confirmation ───────────────────────────────────────────
+// A device is only gated once the account already HAS at least one known
+// device — a brand-new account's very first login must never be blocked (it
+// becomes the primary device, see recordKnownDevice). Gating only applies
+// when meta.deviceId is present (older mobile builds without the header
+// aren't gated — fail-open rather than locking out clients we can't check).
+const isUnrecognizedDevice = async (userId, deviceId) => {
+  if (!deviceId) return false;
+  const existingCount = await prisma.knownDevice.count({ where: { userId } });
+  if (existingCount === 0) return false;
+  const known = await prisma.knownDevice.findUnique({
+    where: { userId_deviceId: { userId, deviceId } },
+  });
+  return !known;
+};
+
+// Sends a confirmation code to the phone's linked Telegram chat. If the user
+// has no phone or hasn't linked Telegram yet, there's no channel to challenge
+// through — fail-open (allow the login) rather than lock the account out.
+const challengeNewDevice = async (user) => {
+  if (!user.phone) return null;
+  const phone = telegramService.normalizePhone(user.phone);
+  const record = phone ? await prisma.phoneAuth.findUnique({ where: { phone } }) : null;
+  if (!record || !record.telegramChatId) return null;
+
+  const code = String(crypto.randomInt(100000, 1000000));
+  const otpExpiresAt = new Date(Date.now() + OTP_EXPIRES_MIN * 60 * 1000);
+  await prisma.phoneAuth.update({
+    where: { phone },
+    data: { otpCode: code, otpExpiresAt, attempts: 0 },
+  });
+
+  await telegramService.sendMessage(
+    record.telegramChatId,
+    `⚠️ <b>TradeS</b> — yangi qurilmadan kirish\n\nTanilmagan qurilmadan hisobingizga kirishga urinish qayd etildi. Agar bu siz bo'lsangiz, tasdiqlash kodi:\n\n<code>${code}</code>\n\nKod ${OTP_EXPIRES_MIN} daqiqa amal qiladi. Bu siz emasligini bilsangiz, parolingizni darhol o'zgartiring.`
+  );
+
+  return { requiresDeviceConfirmation: true, message: 'Yangi qurilma aniqlandi — Telegramga yuborilgan kodni kiriting' };
+};
+
+// Second step of the new-device flow — re-checks the password (no session
+// state was kept between the two calls) then verifies the code before
+// finally issuing tokens, which also registers this device as known.
+const verifyNewDeviceLogin = async ({ email, phone, password, code }, meta = {}) => {
+  let user;
+  if (email) user = await prisma.user.findFirst({ where: { email, deletedAt: null } });
+  else if (phone) user = await prisma.user.findFirst({ where: { phone, deletedAt: null } });
+  if (!user) throw new ApiError(401, 'Login yoki parol noto\'g\'ri', [], '', 'INVALID_CREDENTIALS');
+
+  const isPasswordMatch = await bcrypt.compare(password, user.password);
+  if (!isPasswordMatch) throw new ApiError(401, 'Login yoki parol noto\'g\'ri', [], '', 'INVALID_CREDENTIALS');
+  if (user.isBlocked) throw new ApiError(403, 'Your account has been blocked', [], '', 'ACCOUNT_BLOCKED');
+
+  const normalizedPhone = telegramService.normalizePhone(user.phone);
+  const record = normalizedPhone ? await prisma.phoneAuth.findUnique({ where: { phone: normalizedPhone } }) : null;
+  if (!record || !record.otpCode || !record.otpExpiresAt) {
+    throw new ApiError(400, 'Avval kod so\'rang');
+  }
+  if (record.otpExpiresAt < new Date()) {
+    throw new ApiError(400, 'Kod muddati tugagan. Qaytadan kiring');
+  }
+  if (record.otpCode !== String(code).trim()) {
+    await prisma.phoneAuth.update({ where: { phone: normalizedPhone }, data: { attempts: { increment: 1 } } });
+    throw new ApiError(400, 'Kod noto\'g\'ri');
+  }
+
+  await prisma.phoneAuth.update({
+    where: { phone: normalizedPhone },
+    data: { otpCode: null, otpExpiresAt: null, attempts: 0 },
+  });
+
+  const { accessToken, refreshToken } = await issueTokens(user, meta);
+  await prisma.user.update({ where: { id: user.id }, data: { lastLogin: new Date() } });
+
+  const userResponse = { ...user };
+  delete userResponse.password;
+  return { user: userResponse, accessToken, refreshToken };
+};
+
 /**
  * Login user and return tokens
  */
@@ -134,23 +248,17 @@ const login = async ({ email, phone, password }, meta = {}) => {
     throw new ApiError(403, 'Your account has been blocked', [], '', 'ACCOUNT_BLOCKED');
   }
 
+  if (await isUnrecognizedDevice(user.id, meta.deviceId)) {
+    const challenge = await challengeNewDevice(user);
+    if (challenge) {
+      logger.warn(`Login from unrecognized device for ${email || phone} — OTP challenge sent`);
+      return challenge;
+    }
+    // No Telegram channel to challenge through — fall through and log in normally.
+  }
+
   logger.info(`Login successful for ${email || phone} (${user.role})`);
-  const tokenPayload = { id: user.id, role: user.role };
-  const accessToken = generateAccessToken(tokenPayload);
-  const refreshTokenValue = generateRefreshToken(tokenPayload);
-
-  const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + REFRESH_TOKEN_EXPIRES_DAYS);
-
-  await prisma.refreshToken.create({
-    data: {
-      userId: user.id,
-      token: refreshTokenValue,
-      expiresAt,
-      userAgent: meta.userAgent || '',
-      ip: meta.ip || '',
-    },
-  });
+  const { accessToken, refreshToken: refreshTokenValue } = await issueTokens(user, meta);
 
   await prisma.user.update({
     where: { id: user.id },
@@ -221,6 +329,7 @@ const refreshTokens = async (incomingRefreshToken) => {
         expiresAt,
         userAgent: storedToken.userAgent,
         ip: storedToken.ip,
+        familyId: storedToken.familyId, // same session lineage, new token
       },
     });
   });
@@ -251,6 +360,50 @@ const logoutAll = async (userId) => {
     where: { userId, isRevoked: false },
     data: { isRevoked: true },
   });
+};
+
+// ── Multi-device sessions ────────────────────────────────────────────────
+// One active RefreshToken row = one logged-in device, thanks to the rotation
+// invariant in refreshTokens(): at any moment there's exactly one non-revoked
+// row per familyId. currentRefreshToken (from the caller's own cookie/body)
+// flags which row in the list is "this device".
+const listSessions = async (userId, currentRefreshToken, callerDeviceId) => {
+  const sessions = await prisma.refreshToken.findMany({
+    where: { userId, isRevoked: false, expiresAt: { gt: new Date() } },
+    orderBy: { createdAt: 'desc' },
+  });
+  const callerDevice = callerDeviceId
+    ? await prisma.knownDevice.findUnique({ where: { userId_deviceId: { userId, deviceId: callerDeviceId } } })
+    : null;
+  return {
+    sessions: sessions.map((s) => ({
+      id: s.id,
+      userAgent: s.userAgent,
+      ip: s.ip,
+      createdAt: s.createdAt,
+      isCurrent: s.token === currentRefreshToken,
+    })),
+    isPrimaryDevice: !!callerDevice?.isPrimary,
+  };
+};
+
+// Only the primary device (KnownDevice.isPrimary) may revoke ANOTHER
+// session — anyone can always revoke their own (that's just logout).
+const revokeSession = async (userId, sessionId, currentRefreshToken, callerDeviceId) => {
+  const target = await prisma.refreshToken.findFirst({ where: { id: sessionId, userId } });
+  if (!target) throw new ApiError(404, 'Session topilmadi');
+
+  const isSelf = target.token === currentRefreshToken;
+  if (!isSelf) {
+    const callerDevice = callerDeviceId
+      ? await prisma.knownDevice.findUnique({ where: { userId_deviceId: { userId, deviceId: callerDeviceId } } })
+      : null;
+    if (!callerDevice?.isPrimary) {
+      throw new ApiError(403, 'Faqat asosiy qurilma boshqa sessiyalarni tugata oladi');
+    }
+  }
+
+  await prisma.refreshToken.update({ where: { id: sessionId }, data: { isRevoked: true } });
 };
 
 /**
@@ -655,4 +808,4 @@ const verifyEmailOtp = async ({ email: rawEmail, code, name, password }, meta = 
   return { user: userResponse, accessToken, refreshToken };
 };
 
-module.exports = { register, registerTestUser, login, refreshTokens, logout, logoutAll, googleAuth, requestOtp, verifyOtp, issueTokens, forgotPassword, resetPassword, forgotPasswordByPhone, resetPasswordByPhone, requestEmailOtp, verifyEmailOtp };
+module.exports = { register, registerTestUser, login, verifyNewDeviceLogin, refreshTokens, logout, logoutAll, listSessions, revokeSession, googleAuth, requestOtp, verifyOtp, issueTokens, forgotPassword, resetPassword, forgotPasswordByPhone, resetPasswordByPhone, requestEmailOtp, verifyEmailOtp };

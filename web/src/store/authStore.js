@@ -102,6 +102,26 @@ const useAuthStore = create(
         set({ isLoading: true });
         try {
           const res = await authApi.login(credentials);
+          if (res.data.data.requiresDeviceConfirmation) {
+            set({ isLoading: false });
+            return { requiresDeviceConfirmation: true };
+          }
+          const { user } = res.data.data;
+          set({ user, isLoading: false });
+          toast.success(i18n.t('toast_welcome_back', { name: user.name }));
+          return user;
+        } catch (err) {
+          set({ isLoading: false });
+          throw err;
+        }
+      },
+
+      // Second step after login() returns requiresDeviceConfirmation — same
+      // credentials plus the Telegram code, completes the login.
+      verifyNewDeviceLogin: async (data) => {
+        set({ isLoading: true });
+        try {
+          const res = await authApi.verifyNewDeviceLogin(data);
           const { user } = res.data.data;
           set({ user, isLoading: false });
           toast.success(i18n.t('toast_welcome_back', { name: user.name }));

@@ -18,7 +18,7 @@ const register = asyncHandler(async (req, res) => {
 });
 
 const registerTestUser = asyncHandler(async (req, res) => {
-  const meta = { userAgent: req.headers['user-agent'] || '', ip: req.ip };
+  const meta = { userAgent: req.headers['user-agent'] || '', ip: req.ip, deviceId: req.headers['x-device-id'] };
   const { user, accessToken, refreshToken } = await authService.registerTestUser(meta);
   if (user.isTestUser) user.testActionCap = TEST_USER_ACTION_CAP;
 
@@ -32,13 +32,39 @@ const login = asyncHandler(async (req, res) => {
   const meta = {
     userAgent: req.headers['user-agent'] || '',
     ip: req.ip,
+    deviceId: req.headers['x-device-id'],
   };
-  const { user, accessToken, refreshToken } = await authService.login(req.body, meta);
+  const result = await authService.login(req.body, meta);
+
+  // Unrecognized device — no tokens yet, frontend must collect the Telegram
+  // code and call /auth/verify-new-device to actually complete the login.
+  if (result.requiresDeviceConfirmation) {
+    return res.status(200).json(new ApiResponse(200, result, result.message));
+  }
+
+  const { user, accessToken, refreshToken } = result;
   if (user.isTestUser) user.testActionCap = TEST_USER_ACTION_CAP;
 
   // Web/admin use the httpOnly cookies; native mobile (no cookie jar) reads the
   // tokens from the body and sends them as a Bearer header. Returning both keeps
   // one login endpoint working for every client.
+  res.cookie('accessToken', accessToken, COOKIE_OPTIONS);
+  res.cookie('refreshToken', refreshToken, COOKIE_OPTIONS);
+
+  res.status(200).json(
+    new ApiResponse(200, { user, accessToken, refreshToken }, 'Login successful')
+  );
+});
+
+const verifyNewDeviceLogin = asyncHandler(async (req, res) => {
+  const meta = {
+    userAgent: req.headers['user-agent'] || '',
+    ip: req.ip,
+    deviceId: req.headers['x-device-id'],
+  };
+  const { user, accessToken, refreshToken } = await authService.verifyNewDeviceLogin(req.body, meta);
+  if (user.isTestUser) user.testActionCap = TEST_USER_ACTION_CAP;
+
   res.cookie('accessToken', accessToken, COOKIE_OPTIONS);
   res.cookie('refreshToken', refreshToken, COOKIE_OPTIONS);
 
@@ -85,6 +111,20 @@ const logoutAll = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, null, 'Logged out from all devices'));
 });
 
+const listSessions = asyncHandler(async (req, res) => {
+  const currentRefreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
+  const deviceId = req.headers['x-device-id'];
+  const result = await authService.listSessions(req.user.id, currentRefreshToken, deviceId);
+  res.status(200).json(new ApiResponse(200, result, 'Sessions retrieved'));
+});
+
+const revokeSession = asyncHandler(async (req, res) => {
+  const currentRefreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
+  const deviceId = req.headers['x-device-id'];
+  await authService.revokeSession(req.user.id, req.params.id, currentRefreshToken, deviceId);
+  res.status(200).json(new ApiResponse(200, null, 'Session tugatildi'));
+});
+
 const getMe = asyncHandler(async (req, res) => {
   const user = req.user;
   if (user?.isTestUser) user.testActionCap = TEST_USER_ACTION_CAP;
@@ -100,7 +140,7 @@ const ssoAdopt = asyncHandler(async (req, res) => {
     throw new ApiError(403, 'Admin panelga kirish uchun ruxsat yo\'q');
   }
 
-  const meta = { userAgent: req.headers['user-agent'] || '', ip: req.ip };
+  const meta = { userAgent: req.headers['user-agent'] || '', ip: req.ip, deviceId: req.headers['x-device-id'] };
   const { accessToken, refreshToken } = await authService.issueTokens(req.user, meta);
 
   res.cookie('accessToken', accessToken, COOKIE_OPTIONS);
@@ -110,7 +150,7 @@ const ssoAdopt = asyncHandler(async (req, res) => {
 });
 
 const googleAuth = asyncHandler(async (req, res) => {
-  const meta = { userAgent: req.headers['user-agent'] || '', ip: req.ip };
+  const meta = { userAgent: req.headers['user-agent'] || '', ip: req.ip, deviceId: req.headers['x-device-id'] };
   const { user, accessToken, refreshToken } = await authService.googleAuth(req.body.credential, meta);
   if (user.isTestUser) user.testActionCap = TEST_USER_ACTION_CAP;
 
@@ -130,7 +170,7 @@ const requestOtp = asyncHandler(async (req, res) => {
 });
 
 const verifyOtp = asyncHandler(async (req, res) => {
-  const meta = { userAgent: req.headers['user-agent'] || '', ip: req.ip };
+  const meta = { userAgent: req.headers['user-agent'] || '', ip: req.ip, deviceId: req.headers['x-device-id'] };
   const { user, accessToken, refreshToken } = await authService.verifyOtp(req.body, meta);
   if (user.isTestUser) user.testActionCap = TEST_USER_ACTION_CAP;
 
@@ -150,7 +190,7 @@ const requestEmailOtp = asyncHandler(async (req, res) => {
 });
 
 const verifyEmailOtp = asyncHandler(async (req, res) => {
-  const meta = { userAgent: req.headers['user-agent'] || '', ip: req.ip };
+  const meta = { userAgent: req.headers['user-agent'] || '', ip: req.ip, deviceId: req.headers['x-device-id'] };
   const { user, accessToken, refreshToken } = await authService.verifyEmailOtp(req.body, meta);
   if (user.isTestUser) user.testActionCap = TEST_USER_ACTION_CAP;
 
@@ -197,4 +237,4 @@ const resetPassword = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, null, result.message));
 });
 
-module.exports = { register, registerTestUser, login, refreshToken, logout, logoutAll, getMe, forgotPassword, resetPassword, googleAuth, requestOtp, verifyOtp, requestEmailOtp, verifyEmailOtp, ssoAdopt };
+module.exports = { register, registerTestUser, login, verifyNewDeviceLogin, refreshToken, logout, logoutAll, listSessions, revokeSession, getMe, forgotPassword, resetPassword, googleAuth, requestOtp, verifyOtp, requestEmailOtp, verifyEmailOtp, ssoAdopt };

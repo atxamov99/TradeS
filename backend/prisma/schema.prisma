@@ -43,6 +43,7 @@ model User {
   cart            Cart?
   wishlist        Wishlist?
   refreshTokens   RefreshToken[]
+  knownDevices    KnownDevice[]
   inventoryBatches InventoryBatch[]
   syncQueues      SyncQueue[]
 }
@@ -240,6 +241,10 @@ model RefreshToken {
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   token     String   @unique
+  // Stable across the whole rotation chain (copied forward on every refresh,
+  // generated fresh only at register/login) — one "session" as the user
+  // understands it is really N RefreshToken rows sharing one familyId.
+  familyId  String   @default(cuid())
   expiresAt DateTime
   isRevoked Boolean  @default(false)
   userAgent String   @default("")
@@ -248,6 +253,29 @@ model RefreshToken {
   updatedAt DateTime @updatedAt
 
   @@index([expiresAt])
+  @@index([userId, isRevoked])
+  @@index([familyId])
+}
+
+// A device the user has completed at least one successful login/register
+// from. First device ever seen for a user is isPrimary — only it may revoke
+// another device's sessions (see auth.service.js revokeSession). Recognition
+// is keyed on a client-generated deviceId (localStorage/SecureStore), not
+// userAgent/ip alone, since those can coincidentally match across different
+// real devices or change for the same device (mobile network IP churn).
+model KnownDevice {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deviceId   String
+  userAgent  String   @default("")
+  ip         String   @default("")
+  isPrimary  Boolean  @default(false)
+  firstSeenAt DateTime @default(now())
+  lastSeenAt  DateTime @default(now())
+
+  @@unique([userId, deviceId])
+  @@index([userId])
 }
 
 model SyncQueue {

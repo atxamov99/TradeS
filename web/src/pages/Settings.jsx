@@ -1,8 +1,29 @@
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Check, LogOut, Sun, Moon } from 'lucide-react';
+import { Check, LogOut, Sun, Moon, Smartphone, Monitor } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import useThemeStore from '../store/themeStore';
+import { getSessions, revokeSession } from '../api/auth.api';
+
+// Rough device label from the stored User-Agent — good enough to tell two
+// sessions apart in a list, not meant to be a precise UA parser.
+function describeDevice(userAgent) {
+  const ua = userAgent || '';
+  const isMobile = /Mobile|Android|iPhone|iPad/i.test(ua);
+  let browser = 'Noma\'lum brauzer';
+  if (/Edg\//.test(ua)) browser = 'Edge';
+  else if (/Chrome\//.test(ua)) browser = 'Chrome';
+  else if (/Firefox\//.test(ua)) browser = 'Firefox';
+  else if (/Safari\//.test(ua)) browser = 'Safari';
+  let os = '';
+  if (/Windows/.test(ua)) os = 'Windows';
+  else if (/Mac OS X/.test(ua)) os = 'macOS';
+  else if (/Android/.test(ua)) os = 'Android';
+  else if (/iPhone|iPad/.test(ua)) os = 'iOS';
+  else if (/Linux/.test(ua)) os = 'Linux';
+  return { isMobile, label: [browser, os].filter(Boolean).join(' · ') || 'Noma\'lum qurilma' };
+}
 
 function getInitials(name) {
   if (!name) return '?';
@@ -39,6 +60,35 @@ export default function Settings() {
   const logout = useAuthStore((s) => s.logout);
   const { theme, toggleTheme } = useThemeStore();
   const navigate = useNavigate();
+
+  const [sessions, setSessions] = useState([]);
+  const [sessionsLoading, setSessionsLoading] = useState(true);
+  const [isPrimaryDevice, setIsPrimaryDevice] = useState(false);
+  const [revokingId, setRevokingId] = useState(null);
+
+  const loadSessions = () => {
+    getSessions()
+      .then((res) => {
+        setSessions(res.data?.data?.sessions || []);
+        setIsPrimaryDevice(!!res.data?.data?.isPrimaryDevice);
+      })
+      .catch(() => setSessions([]))
+      .finally(() => setSessionsLoading(false));
+  };
+
+  useEffect(() => { loadSessions(); }, []);
+
+  const handleRevoke = async (id) => {
+    setRevokingId(id);
+    try {
+      await revokeSession(id);
+      setSessions((curr) => curr.filter((s) => s.id !== id));
+    } catch {
+      // silently ignore — list will self-correct on next load if something changed
+    } finally {
+      setRevokingId(null);
+    }
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -191,6 +241,61 @@ export default function Settings() {
               );
             })}
           </div>
+        </div>
+
+        {/* ── Faol qurilmalar ───────────────────────── */}
+        <div className="bg-white dark:bg-[#1E293B] rounded-2xl border border-[#E2E8F0] dark:border-[#334155] overflow-hidden">
+          <div className="px-5 py-3 border-b border-[#E2E8F0] dark:border-[#334155]">
+            <p className="text-xs font-semibold text-[#94A3B8] dark:text-slate-400 uppercase tracking-wider">
+              Faol qurilmalar
+            </p>
+          </div>
+          <div className="divide-y divide-[#E2E8F0] dark:divide-[#334155]">
+            {sessionsLoading ? (
+              <div className="px-5 py-6 text-center text-sm text-[#64748B] dark:text-slate-400">Yuklanmoqda...</div>
+            ) : sessions.length === 0 ? (
+              <div className="px-5 py-6 text-center text-sm text-[#64748B] dark:text-slate-400">Sessiyalar topilmadi</div>
+            ) : (
+              sessions.map((s) => {
+                const { isMobile, label } = describeDevice(s.userAgent);
+                const Icon = isMobile ? Smartphone : Monitor;
+                return (
+                  <div key={s.id} className="flex items-center gap-3 px-5 py-4">
+                    <div className="w-10 h-10 rounded-xl bg-[#F1F5F9] dark:bg-[#334155] flex items-center justify-center flex-shrink-0">
+                      <Icon size={18} className="text-[#64748B] dark:text-slate-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-[#0F172A] dark:text-slate-100 truncate">
+                        {label}
+                        {s.isCurrent && (
+                          <span className="ml-2 px-2 py-0.5 rounded-md bg-green-100 dark:bg-green-500/15 text-green-700 dark:text-green-400 text-[10px] font-bold uppercase tracking-wide align-middle">
+                            Bu qurilma
+                          </span>
+                        )}
+                      </p>
+                      <p className="text-xs text-[#64748B] dark:text-slate-400 mt-0.5">
+                        {s.ip || '—'} · {new Date(s.createdAt).toLocaleString('uz-UZ')}
+                      </p>
+                    </div>
+                    {isPrimaryDevice && !s.isCurrent && (
+                      <button
+                        onClick={() => handleRevoke(s.id)}
+                        disabled={revokingId === s.id}
+                        className="text-xs font-bold text-red-500 hover:text-red-600 disabled:opacity-50 flex-shrink-0 px-2 py-1"
+                      >
+                        {revokingId === s.id ? '...' : 'Tugatish'}
+                      </button>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+          {isPrimaryDevice && sessions.length > 1 && (
+            <div className="px-5 py-3 border-t border-[#E2E8F0] dark:border-[#334155] text-xs text-[#64748B] dark:text-slate-400">
+              Asosiy qurilma sifatida boshqa sessiyalarni tugata olasiz.
+            </div>
+          )}
         </div>
 
         {/* ── About ─────────────────────────────────── */}

@@ -6,7 +6,9 @@ const sidebarMenu = [
   { key: "orders",    path: "/orders",    icon: "shopping_cart", label: "Buyurtmalar" },
   { key: "reports",   path: "/reports",   icon: "payments",      label: "Sotuvlar" },
   { key: "users",     path: "/users",     icon: "group",         label: "Foydalanuvchilar" },
-  { key: "content",   path: "/content",   icon: "description",   label: "Kontent" }
+  { key: "support",   path: "/support",   icon: "support_agent", label: "Murojaatlar" },
+  { key: "content",   path: "/content",   icon: "description",   label: "Kontent" },
+  { key: "notifications", path: "/notifications", icon: "notifications", label: "Bildirishnomalar" }
 ];
 
 // Settings sits pinned to the bottom of the sidebar.

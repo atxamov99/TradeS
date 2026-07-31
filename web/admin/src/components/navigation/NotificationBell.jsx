@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAdminData } from "../../store/adminData";
 import { useI18n } from "../../i18n";
+import { useNotificationRead } from "../../hooks/useNotificationRead";
 import { Icon } from "../shared/Icon";
 
 const priorityStyle = {
@@ -19,8 +20,8 @@ const toneIcon = {
 export function NotificationBell() {
   const { notificationFeed, recentActivity } = useAdminData();
   const { t } = useI18n();
+  const { isRead, markAllRead } = useNotificationRead();
   const [open, setOpen] = useState(false);
-  const [seenCount, setSeenCount] = useState(0);
   const ref = useRef(null);
 
   const items = useMemo(() => {
@@ -31,8 +32,10 @@ export function NotificationBell() {
       detail: n.detail || (n.detailKey ? t(n.detailKey, {}, "") : ""),
       priority: n.priority || "low"
     }));
-    const activity = (recentActivity || []).slice(0, 8).map((a, i) => ({
-      key: `act-${i}`,
+    // Same content-derived key as NotificationsPage — must match so read
+    // state marked on one is reflected in the other.
+    const activity = (recentActivity || []).slice(0, 8).map((a) => ({
+      key: `act-${a.title || ""}-${a.detail || ""}-${a.time || ""}`,
       kind: "activity",
       title: a.title || "Amal",
       detail: a.detail || "",
@@ -42,7 +45,7 @@ export function NotificationBell() {
     return [...alerts, ...activity];
   }, [notificationFeed, recentActivity, t]);
 
-  const unread = Math.max(0, items.length - seenCount);
+  const unread = items.filter((it) => !isRead(it.key)).length;
 
   // Close on outside click / Escape
   useEffect(() => {
@@ -64,7 +67,7 @@ export function NotificationBell() {
   function toggle() {
     const next = !open;
     setOpen(next);
-    if (next) setSeenCount(items.length); // mark all as seen when opening
+    if (next) markAllRead(items.map((it) => it.key)); // mark all as read when opening
   }
 
   return (

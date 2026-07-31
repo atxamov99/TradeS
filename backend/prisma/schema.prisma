@@ -280,19 +280,29 @@ model Content {
   updatedAt DateTime @updatedAt
 }
 
-// A one-way "contact support" message from the app, forwarded to a fixed
-// Telegram chat (ADMIN_SUPPORT_CHAT_ID). Not a two-way chat — the admin
-// replies personally via Telegram DM outside this system. Auto-deleted
-// after 24h by a cleanup sweep (see server.js) so these never accumulate.
+// A "contact support" message, either from the app's Contact Support form
+// (source "web") or the Telegram bot's /support command (source "bot").
+// Admins review/reply from the admin panel; a reply to a "bot" ticket is
+// also sent back to the user via the Telegram bot (telegramChatId). "open"
+// tickets are kept indefinitely so none disappear before being answered;
+// "answered" ones are auto-deleted 24h later by the cleanup sweep in
+// server.js (kept briefly for reference, not accumulated forever).
 model SupportMessage {
-  id        String   @id @default(cuid())
-  userId    String?
-  name      String
-  contact   String
-  message   String
-  createdAt DateTime @default(now())
+  id             String    @id @default(cuid())
+  userId         String?
+  name           String
+  contact        String
+  message        String
+  source         String    @default("web") // "web" | "bot"
+  telegramChatId String?
+  status         String    @default("open") // "open" | "answered"
+  adminReply     String?
+  repliedAt      DateTime?
+  repliedBy      String?
+  createdAt      DateTime  @default(now())
 
   @@index([createdAt])
+  @@index([status])
 }
 
 model AuditLog {

@@ -2,8 +2,8 @@
 
 ## Сейчас
 - [x] Получить TELEGRAM_BOT_TOKEN от @BotFather для `trades_uz_bot` и добавить в `backend/.env` — готово, бот `@trades_uz_bot`, токен рабочий (подтверждено через `getMe`)
-- [ ] Проверить регистрацию end-to-end вживую: написать `/start` боту `@trades_uz_bot`, поделиться контактом, запросить код в приложении, ввести код — долгий поллинг уже подключён и стартует автоматически (`telegramService.startPolling()`), осталось пройти сценарий руками
-- [ ] Решить, как сделать бота "постоянным" в проде — деплой backend на Render (render.yaml уже есть) + `setWebhook` на стабильный Render URL вместо long-polling (long-polling — только для локальной разработки)
+- [x] Проверить регистрацию end-to-end вживую — 2026-07-30: `/start` боту `@trades_uz_bot` + шаринг контакта → лог `Telegram linked phone 998940335044 -> chat 5921238772`; т.к. номер уже был зарегистрирован (тест 2026-07-03), прогнали через `forgot-password` (тот же Telegram-OTP механизм) — код пришёл, пароль обновлён, логин → `/dashboard` открылся с реальными данными. Полный цикл подтверждён рабочим.
+- [x] Решить, как сделать бота "постоянным" в проде — 2026-07-30: вызван `setWebhook` вручную на `https://trades-backend-m2a6.onrender.com/api/v1/telegram/webhook/<TELEGRAM_BOT_TOKEN>` (путь берёт токен из `TELEGRAM_BOT_TOKEN` — см. `src/routes/telegram.routes.js:7`). `getWebhookInfo` подтвердил: `ok:true`, `pending_update_count:0`, `ip_address` резолвится, `max_connections:40`. Локальные dev-серверы (backend/web) остановлены, чтобы long-polling не конфликтовал с вебхуком. **Проверено вживую 2026-07-30:** Абдулазиз написал `/start` боту — сработало, `getWebhookInfo` после этого показал `last_error_message: null`, `pending_update_count: 0`. Прод-вебхук подтверждён рабочим.
 
 ## Безопасность — многоустройственные сессии (описано пользователем, не реализовано)
 - [ ] Пользователь должен видеть список активных устройств/сессий на своём аккаунте (2-3 устройства и т.д.)
@@ -18,6 +18,10 @@
 - [x] Landing: смягчить переход hero → features — добавлен scroll-mt-20 на секции-якоря + scroll-reveal анимации (whileInView) на Features/Stats/FAQ + плавные transition на dropdown (язык) и раскрытие FAQ
 - [ ] Ручной клик-тест реального сценария: регистрация с телефона (mobile) → логин с тем же номером/паролем на сайте (web)
 - [ ] Запустить mobile (Expo) и web одновременно для ручной проверки пользователем
+
+## Найдено при тестировании 2026-07-30 (требует внимания)
+- [ ] `Prisma: Timed out fetching a new connection from the connection pool` — вылетело один раз на `POST /auth/forgot-password` (pool limit 21, timeout 10s) во время ручного e2e-теста, второй запрос сразу после отработал нормально. Похоже на временный затор (возможно, nodemon-рестарт оставил висящий клиент), но стоит последить — если повторится под реальной нагрузкой, это узкое место.
+- [ ] `docs/README.md`, `docs/architecture.md`, `docs/MARKETING.md` — всё ещё называют проект "Savdo-E" и описывают MongoDB-стек; реальный код (`backend/prisma/schema.prisma`) — Postgres+Prisma, бренд — TradeS. Доки не переименованы после ребрендинга, вводят в заблуждение.
 
 ## Возможно позже
 - [ ] Убрать неиспользуемый второй i18n (I18nProvider/useI18n в `web/src/i18n/index.jsx`) — используется только мёртвыми/неподключёнными страницами

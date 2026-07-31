@@ -2,6 +2,11 @@ const prisma = require('../config/prisma');
 const ApiError = require('../utils/ApiError');
 const telegramService = require('./telegram.service');
 
+// Minimal HTML-escaping since messages are sent with parse_mode: 'HTML' and
+// user-supplied text could otherwise break formatting or inject tags.
+const escapeHtml = (str) =>
+  String(str).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+
 const sendSupportMessage = async ({ name, contact, message }, userId) => {
   if (!name?.trim() || !contact?.trim() || !message?.trim()) {
     throw new ApiError(400, 'Name, contact, and message are required');
@@ -28,9 +33,46 @@ const sendSupportMessage = async ({ name, contact, message }, userId) => {
   return { message: 'Support message sent' };
 };
 
-// Minimal HTML-escaping since messages are sent with parse_mode: 'HTML' and
-// user-supplied text could otherwise break formatting or inject tags.
-const escapeHtml = (str) =>
-  String(str).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+// ── Admin inbox ──────────────────────────────────────────────────────────────
 
-module.exports = { sendSupportMessage };
+const listSupportMessages = async ({ status, page = 1, limit = 20 } = {}) => {
+  const where = status ? { status } : {};
+  const take = Math.min(Number(limit) || 20, 100);
+  const skip = (Math.max(Number(page) || 1, 1) - 1) * take;
+
+  const [items, total] = await Promise.all([
+    prisma.supportMessage.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take }),
+    prisma.supportMessage.count({ where }),
+  ]);
+
+  return { items, total, page: Number(page) || 1, limit: take };
+};
+
+const replySupportMessage = async (id, replyText, adminId) => {
+  if (!replyText?.trim()) throw new ApiError(400, 'Reply text is required');
+
+  const ticket = await prisma.supportMessage.findUnique({ where: { id } });
+  if (!ticket) throw new ApiError(404, 'Support message not found');
+
+  // Only a "bot" ticket has somewhere to deliver the reply to — a "web" one
+  // was submitted anonymously/via app and has no return channel here.
+  if (ticket.source === 'bot' && ticket.telegramChatId) {
+    await telegramService.sendMessage(
+      ticket.telegramChatId,
+      `💬 <b>Jamoadan javob:</b>\n\n${escapeHtml(replyText.trim())}`
+    );
+  }
+
+  return prisma.supportMessage.update({
+    where: { id },
+    data: { adminReply: replyText.trim(), status: 'answered', repliedAt: new Date(), repliedBy: adminId },
+  });
+};
+
+const deleteSupportMessage = async (id) => {
+  const ticket = await prisma.supportMessage.findUnique({ where: { id } });
+  if (!ticket) throw new ApiError(404, 'Support message not found');
+  await prisma.supportMessage.delete({ where: { id } });
+};
+
+module.exports = { sendSupportMessage, listSupportMessages, replySupportMessage, deleteSupportMessage };

@@ -63,15 +63,83 @@ const stopPolling = () => {
   pollingActive = false;
 };
 
-const WELCOME =
-  'Assalomu alaykum! <b>TradeS</b> ga xush kelibsiz.\n\n' +
-  'Ro\'yxatdan o\'tish / kirish uchun tasdiqlash kodini shu yerga yuboramiz.\n' +
-  'Boshlash uchun pastdagi <b>«📱 Raqamni ulashish»</b> tugmasini bosing.';
+// ── Language selection ───────────────────────────────────────────────────────
+// First /start asks UZ/RU before anything else, for users who don't read
+// Uzbek. In-memory only (chatId -> 'uz' | 'ru'), same trade-off as the other
+// ephemeral flags in this file (awaitingSupportMessage etc.) — resets on
+// redeploy, acceptable since it's a UX nicety, not durable account data.
+const chatLanguage = new Map();
 
-const CONTACT_KEYBOARD = {
-  keyboard: [[{ text: '📱 Raqamni ulashish', request_contact: true }]],
+const LANG_KEYBOARD = {
+  keyboard: [['🇺🇿 O\'zbekcha', '🇷🇺 Русский']],
   resize_keyboard: true,
   one_time_keyboard: true,
+};
+
+const LANGUAGE_PROMPT = 'Tilni tanlang / Выберите язык:';
+
+const STRINGS = {
+  uz: {
+    welcome:
+      'Assalomu alaykum! <b>TradeS</b> ga xush kelibsiz.\n\n' +
+      'Ro\'yxatdan o\'tish / kirish uchun tasdiqlash kodini shu yerga yuboramiz.\n' +
+      'Boshlash uchun pastdagi <b>«📱 Raqamni ulashish»</b> tugmasini bosing.',
+    contactButton: '📱 Raqamni ulashish',
+    invalidContact:
+      '⚠️ Iltimos, faqat <b>o\'zingizning</b> raqamingizni «📱 Raqamni ulashish» tugmasi orqali yuboring. Boshqa kontaktni ulash mumkin emas.',
+    linked:
+      '✅ Raqamingiz ulandi! Endi ilovaga qayting va <b>«Kod olish»</b> tugmasini bosing — kod shu yerga keladi.',
+    supportPrompt: 'Yordam kerakmi? Muammoingizni bitta xabar qilib yozing — jamoamiz ko\'rib chiqadi.',
+    supportSentAck: '✅ Xabaringiz qabul qilindi. Tez orada javob beramiz.',
+    supportCooldown: 'Iltimos, biroz kuting va keyin qayta yozing.',
+    help:
+      '<b>TradeS bot</b> — ilovaga kirish/ro\'yxatdan o\'tish uchun tasdiqlash kodlarini shu yerga yuboradi.\n\n' +
+      'Buyruqlar:\n' +
+      '/start — qaytadan boshlash (til tanlash)\n' +
+      '/language — tilni o\'zgartirish\n' +
+      '/support — jamoaga yordam so\'rab yozish\n' +
+      '/cancel — joriy amalni bekor qilish',
+    cancelled: 'Bekor qilindi.',
+    cancelNothing: 'Bekor qilinadigan narsa yo\'q edi.',
+  },
+  ru: {
+    welcome:
+      'Здравствуйте! Добро пожаловать в <b>TradeS</b>.\n\n' +
+      'Для регистрации/входа мы отправим код подтверждения сюда.\n' +
+      'Чтобы начать, нажмите кнопку <b>«📱 Поделиться номером»</b> внизу.',
+    contactButton: '📱 Поделиться номером',
+    invalidContact:
+      '⚠️ Пожалуйста, отправьте <b>только свой</b> номер через кнопку «📱 Поделиться номером». Чужой контакт привязать нельзя.',
+    linked:
+      '✅ Ваш номер подключён! Вернитесь в приложение и нажмите <b>«Получить код»</b> — код придёт сюда.',
+    supportPrompt: 'Нужна помощь? Опишите проблему одним сообщением — наша команда рассмотрит его.',
+    supportSentAck: '✅ Ваше сообщение принято. Скоро ответим.',
+    supportCooldown: 'Пожалуйста, подождите немного и напишите снова.',
+    help:
+      '<b>TradeS бот</b> — присылает коды подтверждения для входа/регистрации в приложении.\n\n' +
+      'Команды:\n' +
+      '/start — начать заново (выбор языка)\n' +
+      '/language — сменить язык\n' +
+      '/support — написать в поддержку\n' +
+      '/cancel — отменить текущее действие',
+    cancelled: 'Отменено.',
+    cancelNothing: 'Нечего было отменять.',
+  },
+};
+
+// Defaults to 'uz' until the chat has picked a language (matches prior behavior).
+const t = (chatId) => STRINGS[chatLanguage.get(chatId) === 'ru' ? 'ru' : 'uz'];
+
+const contactKeyboard = (chatId) => ({
+  keyboard: [[{ text: t(chatId).contactButton, request_contact: true }]],
+  resize_keyboard: true,
+  one_time_keyboard: true,
+});
+
+const isLanguagePick = (text) => text === '🇺🇿 O\'zbekcha' || text === '🇷🇺 Русский';
+
+const applyLanguagePick = (chatId, text) => {
+  chatLanguage.set(chatId, text === '🇷🇺 Русский' ? 'ru' : 'uz');
 };
 
 // ── Contact Support via direct bot message ──────────────────────────────────
@@ -129,10 +197,6 @@ const sendToSupportAdmins = (text) =>
     )
   );
 
-const SUPPORT_PROMPT = 'Yordam kerakmi? Muammoingizni bitta xabar qilib yozing — jamoamiz ko\'rib chiqadi.';
-const SUPPORT_SENT_ACK = '✅ Xabaringiz qabul qilindi. Tez orada javob beramiz.';
-const SUPPORT_COOLDOWN_MSG = 'Iltimos, biroz kuting va keyin qayta yozing.';
-
 /**
  * Handle one Telegram update (called from the webhook).
  * - /start  → welcome + "share contact" button
@@ -144,6 +208,12 @@ const handleUpdate = async (update) => {
   const chatId = msg.chat.id;
 
   try {
+    if (msg.text && isLanguagePick(msg.text)) {
+      applyLanguagePick(chatId, msg.text);
+      await sendMessage(chatId, t(chatId).welcome, { reply_markup: contactKeyboard(chatId) });
+      return;
+    }
+
     if (msg.contact) {
       // Only accept the sender's OWN number. Telegram sets contact.user_id === from.id
       // exclusively for the "request_contact" button (the sender's own contact). A
@@ -151,11 +221,7 @@ const handleUpdate = async (update) => {
       // otherwise an attacker could link a victim's phone to their own chat and receive
       // the victim's password-reset code (account takeover).
       if (!msg.contact.user_id || !msg.from || msg.contact.user_id !== msg.from.id) {
-        await sendMessage(
-          chatId,
-          '⚠️ Iltimos, faqat <b>o\'zingizning</b> raqamingizni «📱 Raqamni ulashish» tugmasi orqali yuboring. Boshqa kontaktni ulash mumkin emas.',
-          { reply_markup: CONTACT_KEYBOARD }
-        );
+        await sendMessage(chatId, t(chatId).invalidContact, { reply_markup: contactKeyboard(chatId) });
         return;
       }
       const phone = normalizePhone(msg.contact.phone_number);
@@ -165,39 +231,77 @@ const handleUpdate = async (update) => {
         create: { phone, telegramChatId: String(chatId) },
         update: { telegramChatId: String(chatId) },
       });
-      await sendMessage(
-        chatId,
-        '✅ Raqamingiz ulandi! Endi ilovaga qayting va <b>«Kod olish»</b> tugmasini bosing — kod shu yerga keladi.',
-        { reply_markup: { remove_keyboard: true } }
-      );
+      await sendMessage(chatId, t(chatId).linked, { reply_markup: { remove_keyboard: true } });
       logger.info(`Telegram linked phone ${phone} -> chat ${chatId}`);
       return;
     }
 
-    if (msg.text && msg.text.startsWith('/start support')) {
+    if (msg.text && (msg.text.startsWith('/start support') || msg.text.startsWith('/support'))) {
       awaitingSupportMessage.add(chatId);
-      await sendMessage(chatId, SUPPORT_PROMPT);
+      await sendMessage(chatId, t(chatId).supportPrompt);
       return;
     }
 
     if (msg.text && msg.text.startsWith('/start')) {
-      await sendMessage(chatId, WELCOME, { reply_markup: CONTACT_KEYBOARD });
+      // Always re-ask on /start (not just the first time) — it's the natural
+      // "restart" command, and a user who picked the wrong language by mistake
+      // needs a way back in without messaging support.
+      await sendMessage(chatId, LANGUAGE_PROMPT, { reply_markup: LANG_KEYBOARD });
+      return;
+    }
+
+    if (msg.text && msg.text.startsWith('/language')) {
+      await sendMessage(chatId, LANGUAGE_PROMPT, { reply_markup: LANG_KEYBOARD });
+      return;
+    }
+
+    if (msg.text && msg.text.startsWith('/help')) {
+      await sendMessage(chatId, t(chatId).help);
+      return;
+    }
+
+    if (msg.text && msg.text.startsWith('/cancel')) {
+      if (awaitingSupportMessage.has(chatId)) {
+        awaitingSupportMessage.delete(chatId);
+        await sendMessage(chatId, t(chatId).cancelled, { reply_markup: { remove_keyboard: true } });
+      } else {
+        await sendMessage(chatId, t(chatId).cancelNothing);
+      }
       return;
     }
 
     if (msg.text && awaitingSupportMessage.has(chatId)) {
       const lastAt = lastSupportMessageAt.get(chatId);
       if (lastAt && Date.now() - lastAt < SUPPORT_COOLDOWN_MS) {
-        await sendMessage(chatId, SUPPORT_COOLDOWN_MSG);
+        await sendMessage(chatId, t(chatId).supportCooldown);
         return;
       }
       awaitingSupportMessage.delete(chatId);
       lastSupportMessageAt.set(chatId, Date.now());
 
+      const from = msg.from || {};
+      const who = [from.first_name, from.last_name].filter(Boolean).join(' ') || 'Noma\'lum';
+      const username = from.username ? `@${from.username}` : '(username yo\'q)';
+
+      // Persist to the admin-panel inbox so the ticket survives even if the
+      // Telegram forward below fails/is unconfigured — the source of truth
+      // for "did we get this?" is the DB row, not the best-effort DM.
+      const linkedPhone = await prisma.phoneAuth
+        .findFirst({ where: { telegramChatId: String(chatId) } })
+        .catch(() => null);
+      await prisma.supportMessage
+        .create({
+          data: {
+            name: who,
+            contact: linkedPhone ? `+${linkedPhone.phone}` : username,
+            message: msg.text,
+            source: 'bot',
+            telegramChatId: String(chatId),
+          },
+        })
+        .catch((err) => logger.error(`Failed to save bot support message: ${err.message}`));
+
       if (ADMIN_SUPPORT_CHAT_IDS.length) {
-        const from = msg.from || {};
-        const who = [from.first_name, from.last_name].filter(Boolean).join(' ') || 'Noma\'lum';
-        const username = from.username ? `@${from.username}` : '(username yo\'q)';
         const text =
           `🆘 <b>Yangi murojaat (Telegram bot)</b>\n\n` +
           `<b>Ism:</b> ${escapeHtml(who)}\n` +
@@ -206,12 +310,16 @@ const handleUpdate = async (update) => {
           `${escapeHtml(msg.text)}`;
         await sendToSupportAdmins(text);
       }
-      await sendMessage(chatId, SUPPORT_SENT_ACK);
+      await sendMessage(chatId, t(chatId).supportSentAck);
       return;
     }
 
-    // Any other message — nudge to share contact
-    await sendMessage(chatId, WELCOME, { reply_markup: CONTACT_KEYBOARD });
+    // Any other message — ask language first if unknown, else nudge to share contact
+    if (!chatLanguage.has(chatId)) {
+      await sendMessage(chatId, LANGUAGE_PROMPT, { reply_markup: LANG_KEYBOARD });
+      return;
+    }
+    await sendMessage(chatId, t(chatId).welcome, { reply_markup: contactKeyboard(chatId) });
   } catch (err) {
     logger.error(`Telegram handleUpdate error: ${err.message}`);
   }

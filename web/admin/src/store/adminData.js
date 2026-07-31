@@ -17,6 +17,7 @@ import { adminsApi } from "../services/api/admins.api";
 import { auditLogsApi } from "../services/api/auditLogs.api";
 import { contentApi } from "../services/api/content.api";
 import { ordersApi } from "../services/api/orders.api";
+import { supportApi } from "../services/api/support.api";
 import { settingsApi } from "../services/api/settings.api";
 import { useAuth } from "./index";
 
@@ -70,6 +71,7 @@ export function AdminDataProvider({ children }) {
   const [users, setUsers] = useState([]);
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [supportMessages, setSupportMessages] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // ── Local-only state (no backend endpoints yet) ──────────
@@ -90,14 +92,15 @@ export function AdminDataProvider({ children }) {
 
     async function load() {
       try {
-        const [usersRes, productsRes, adminsRes, auditRes, contentRes, ordersRes, settingsRes] = await Promise.allSettled([
+        const [usersRes, productsRes, adminsRes, auditRes, contentRes, ordersRes, settingsRes, supportRes] = await Promise.allSettled([
           usersApi.getAll({ limit: 100 }),
           productsApi.getAll({ limit: 100 }),
           adminsApi.getAll(),
           auditLogsApi.getAll({ limit: 10 }),
           contentApi.getAll({ limit: 100 }),
           ordersApi.getAll({ limit: 100 }),
-          settingsApi.getAll()
+          settingsApi.getAll(),
+          supportApi.getAll({ limit: 100 })
         ]);
 
         let rawUsers = [];
@@ -141,6 +144,10 @@ export function AdminDataProvider({ children }) {
         if (ordersRes.status === "fulfilled") {
           const rawOrders = ordersRes.value?.data?.orders || ordersRes.value?.data || [];
           setOrders(Array.isArray(rawOrders) ? rawOrders : []);
+        }
+        if (supportRes.status === "fulfilled") {
+          const rawSupport = supportRes.value?.data?.items || supportRes.value?.data || [];
+          setSupportMessages(Array.isArray(rawSupport) ? rawSupport : []);
         }
         // Settings-backed roles/permissions — load once so the 30s poll never
         // clobbers unsaved in-memory permission edits.
@@ -480,6 +487,30 @@ export function AdminDataProvider({ children }) {
     }
   }
 
+  // ── Support ──────────────────────────────────────────────
+  async function replySupportTicket(id, replyText) {
+    try {
+      const res = await supportApi.reply(id, replyText);
+      const updated = res.data?.ticket || res.data;
+      setSupportMessages((curr) => curr.map((s) => (s.id === id ? { ...s, ...updated } : s)));
+      logAudit("Murojaatga javob berildi", id, "support", "success");
+      pushToast("Javob yuborildi");
+    } catch (err) {
+      pushToast(err?.message || "Javob yuborishda xatolik", "danger");
+    }
+  }
+
+  async function deleteSupportTicket(id) {
+    try {
+      await supportApi.remove(id);
+      setSupportMessages((curr) => curr.filter((s) => s.id !== id));
+      logAudit("Murojaat o'chirildi", id, "support", "danger");
+      pushToast("Murojaat o'chirildi", "danger");
+    } catch (err) {
+      pushToast(err?.message || "O'chirishda xatolik", "danger");
+    }
+  }
+
   // ── Products ──────────────────────────────────────────────
   async function createProduct(payload) {
     try {
@@ -542,6 +573,7 @@ export function AdminDataProvider({ children }) {
       roles, permissionMatrix,
       products,
       orders, setOrders,
+      supportMessages, replySupportTicket, deleteSupportTicket,
       pushToast, dismissToast,
       createUser, updateUser, toggleUserStatus, deleteUser,
       grantAdminToUser, revokeAdminFromUser,
@@ -552,7 +584,7 @@ export function AdminDataProvider({ children }) {
       createProduct, updateProduct, deleteProduct, toggleProductStatus,
       updateOrderStatus
     }),
-    [users, admins, contentRows, auditLogs, recentActivity, toasts, roles, permissionMatrix, products, orders, loading]
+    [users, admins, contentRows, auditLogs, recentActivity, toasts, roles, permissionMatrix, products, orders, supportMessages, loading]
   );
 
   return createElement(AdminDataContext.Provider, { value }, children);

@@ -274,53 +274,53 @@ function ProductModal({ product, onClose, t, fmt, UNITS }) {
   };
 
   const inputCls = (field) =>
-    `w-full h-12 rounded-xl border px-4 text-base text-[#0F172A] placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition ${errors[field] ? 'border-red-400 bg-red-50' : 'border-[#E2E8F0] bg-white'
+    `w-full h-12 rounded-xl border px-4 text-base text-[#0F172A] dark:text-slate-100 placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition ${errors[field] ? 'border-red-400 bg-red-50 dark:bg-red-500/10' : 'border-[#E2E8F0] dark:border-[#334155] bg-white dark:bg-[#0F172A]'
     }`;
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
       <div
-        className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-6 max-h-[90vh] overflow-y-auto"
+        className="bg-white dark:bg-[#1E293B] w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-6 max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-bold text-[#0F172A]">
+          <h2 className="text-lg font-bold text-[#0F172A] dark:text-slate-100">
             {product ? t('edit_product') : t('add_new_product')}
           </h2>
-          <button onClick={onClose} className="p-2 rounded-xl hover:bg-slate-100 transition">
+          <button onClick={onClose} className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 dark:text-slate-300 transition">
             <X size={20} />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <label className="block text-sm font-semibold text-[#0F172A] mb-2">{t('product_name')}</label>
+            <label className="block text-sm font-semibold text-[#0F172A] dark:text-slate-100 mb-2">{t('product_name')}</label>
             <input type="text" value={form.name} onChange={handleChange('name')} placeholder={t('example_product_name')} className={inputCls('name')} />
             {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-semibold text-[#0F172A] mb-2">{t('buy_price_label')} ({t('currency')})</label>
+              <label className="block text-sm font-semibold text-[#0F172A] dark:text-slate-100 mb-2">{t('buy_price_label')} ({t('currency')})</label>
               <input type="number" value={form.buyPrice} onChange={handleChange('buyPrice')} placeholder="0" min="0" className={inputCls('buyPrice')} />
               {errors.buyPrice && <p className="text-red-500 text-sm mt-1">{errors.buyPrice}</p>}
             </div>
             <div>
-              <label className="block text-sm font-semibold text-[#0F172A] mb-2">{t('sell_price_label')} ({t('currency')})</label>
+              <label className="block text-sm font-semibold text-[#0F172A] dark:text-slate-100 mb-2">{t('sell_price_label')} ({t('currency')})</label>
               <input type="number" value={form.sellPrice} onChange={handleChange('sellPrice')} placeholder="0" min="0" className={inputCls('sellPrice')} />
               {errors.sellPrice && <p className="text-red-500 text-sm mt-1">{errors.sellPrice}</p>}
             </div>
           </div>
 
           {form.buyPrice && form.sellPrice && Number(form.sellPrice) > Number(form.buyPrice) && (
-            <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm text-green-700">
+            <div className="bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/20 rounded-xl px-4 py-3 text-sm text-green-700 dark:text-green-400">
               {t('profit')} <span className="font-bold">{fmt(Number(form.sellPrice - form.buyPrice))}</span> per {t(`unit_${form.unit}`)}
             </div>
           )}
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-semibold text-[#0F172A] mb-2">{t('quantity')}</label>
+              <label className="block text-sm font-semibold text-[#0F172A] dark:text-slate-100 mb-2">{t('quantity')}</label>
               <input type="number" value={form.stock} onChange={handleChange('stock')} placeholder="0" min="0" className={inputCls('stock')} />
               {errors.stock && <p className="text-red-500 text-sm mt-1">{errors.stock}</p>}
             </div>
@@ -382,7 +382,7 @@ function ProductModal({ product, onClose, t, fmt, UNITS }) {
           )}
 
           <div className="flex gap-3 mt-2">
-            <button type="button" onClick={onClose} className="flex-1 h-12 rounded-xl border border-[#E2E8F0] text-[#64748B] font-semibold hover:bg-slate-50 transition">
+            <button type="button" onClick={onClose} className="flex-1 h-12 rounded-xl border border-[#E2E8F0] dark:border-[#334155] text-[#64748B] dark:text-slate-400 font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition">
               {t('cancel')}
             </button>
             <button
@@ -414,13 +414,13 @@ function DeleteConfirm({ product, onClose, t }) {
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl p-6 max-w-sm w-full" onClick={(e) => e.stopPropagation()}>
-        <h2 className="text-lg font-bold text-[#0F172A] mb-2">{t('delete_product')}</h2>
-        <p className="text-[#64748B] text-sm mb-6">
+      <div className="bg-white dark:bg-[#1E293B] rounded-2xl p-6 max-w-sm w-full" onClick={(e) => e.stopPropagation()}>
+        <h2 className="text-lg font-bold text-[#0F172A] dark:text-slate-100 mb-2">{t('delete_product')}</h2>
+        <p className="text-[#64748B] dark:text-slate-400 text-sm mb-6">
           <strong>{product.name}</strong> {t('delete_confirm_msg')}
         </p>
         <div className="flex gap-3">
-          <button onClick={onClose} className="flex-1 h-12 rounded-xl border border-[#E2E8F0] text-[#64748B] font-semibold hover:bg-slate-50 transition">
+          <button onClick={onClose} className="flex-1 h-12 rounded-xl border border-[#E2E8F0] dark:border-[#334155] text-[#64748B] dark:text-slate-400 font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition">
             {t('cancel')}
           </button>
           <button

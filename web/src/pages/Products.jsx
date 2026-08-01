@@ -54,10 +54,10 @@ export default function Products() {
     : [];
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0F172A]">
       {/* Page header */}
-      <div className="bg-white border-b border-[#E2E8F0] px-5 py-4 flex items-center justify-between sticky top-0 z-10">
-        <h1 className="text-lg font-bold text-[#0F172A]">{t('products')}</h1>
+      <div className="bg-white dark:bg-[#1E293B] border-b border-[#E2E8F0] dark:border-[#334155] px-5 py-4 flex items-center justify-between sticky top-0 z-10">
+        <h1 className="text-lg font-bold text-[#0F172A] dark:text-slate-100">{t('products')}</h1>
         <button
           onClick={() => setModal('add')}
           className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white font-bold px-4 py-2.5 rounded-xl transition"
@@ -77,7 +77,7 @@ export default function Products() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t('search_products')}
-            className="w-full h-12 rounded-xl border border-[#E2E8F0] bg-white pl-11 pr-4 text-base text-[#0F172A] placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition"
+            className="w-full h-12 rounded-xl border border-[#E2E8F0] dark:border-[#334155] bg-white dark:bg-[#1E293B] pl-11 pr-4 text-base text-[#0F172A] dark:text-slate-100 placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition"
           />
           {search && (
             <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-[#94A3B8] hover:text-[#64748B]">
@@ -96,12 +96,12 @@ export default function Products() {
         ) : isLoading ? (
           <div className="flex flex-col gap-3">
             {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="bg-white rounded-2xl border border-[#E2E8F0] p-4 animate-pulse flex justify-between">
+              <div key={i} className="bg-white dark:bg-[#1E293B] rounded-2xl border border-[#E2E8F0] dark:border-[#334155] p-4 animate-pulse flex justify-between">
                 <div className="flex flex-col gap-2">
-                  <div className="h-4 w-36 bg-slate-200 rounded" />
-                  <div className="h-3 w-24 bg-slate-100 rounded" />
+                  <div className="h-4 w-36 bg-slate-200 dark:bg-slate-700 rounded" />
+                  <div className="h-3 w-24 bg-slate-100 dark:bg-slate-800 rounded" />
                 </div>
-                <div className="h-8 w-16 bg-slate-200 rounded-lg" />
+                <div className="h-8 w-16 bg-slate-200 dark:bg-slate-700 rounded-lg" />
               </div>
             ))}
           </div>
@@ -126,7 +126,7 @@ export default function Products() {
               <div key={product.id} className="bg-white dark:bg-[#1E293B] rounded-2xl border border-[#E2E8F0] dark:border-[#334155] p-4 flex items-center justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <p className="font-bold text-[#0F172A] truncate">{product.name}</p>
+                    <p className="font-bold text-[#0F172A] dark:text-slate-100 truncate">{product.name}</p>
                     <StockBadge stock={product.stock} />
                   </div>
                   {product.unit === 'box' && product.bagWeightKg ? (
@@ -148,14 +148,14 @@ export default function Products() {
                     </button>
                     <button
                       onClick={() => setModal(product)}
-                      className="p-2.5 rounded-xl hover:bg-slate-100 text-[#64748B] hover:text-[#0F172A] transition"
+                      className="p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-[#64748B] dark:text-slate-400 hover:text-[#0F172A] dark:hover:text-slate-100 transition"
                       title={t('edit_product')}
                     >
                       <Pencil size={18} />
                     </button>
                     <button
                       onClick={() => setDeleteTarget(product)}
-                      className="p-2.5 rounded-xl hover:bg-red-50 text-[#64748B] hover:text-red-500 transition"
+                      className="p-2.5 rounded-xl hover:bg-red-50 dark:hover:bg-red-500/10 text-[#64748B] dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition"
                       title={t('delete')}
                     >
                       <Trash2 size={18} />

@@ -79,6 +79,15 @@ export default function ProfileScreen() {
   const [emailInput, setEmailInput] = useState("");
   const [emailSaving, setEmailSaving] = useState(false);
 
+  const [nameModalVisible, setNameModalVisible] = useState(false);
+  const [nameInput, setNameInput] = useState("");
+  const [nameSaving, setNameSaving] = useState(false);
+
+  const [pwModalVisible, setPwModalVisible] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [pwSaving, setPwSaving] = useState(false);
+
   function handleLogout() {
     Alert.alert(t.settings.logout, t.settings.logoutConfirm, [
       { text: t.products.cancel, style: "cancel" },
@@ -121,13 +130,71 @@ export default function ProfileScreen() {
     }
   }
 
+  function openNameModal() {
+    setNameInput(user?.name || "");
+    setNameModalVisible(true);
+  }
+
+  async function handleSaveName() {
+    const trimmed = nameInput.trim();
+    if (!trimmed) {
+      Alert.alert(t.common.error, "Ismni kiriting");
+      return;
+    }
+    setNameSaving(true);
+    try {
+      const res = await api.patch("/users/profile", { name: trimmed });
+      const data = res.data?.data ?? res.data;
+      const updated = data?.user ?? data;
+      await setUser({ ...user, name: updated?.name ?? trimmed });
+      setNameModalVisible(false);
+    } catch (e: any) {
+      Alert.alert(t.common.error, e.response?.data?.message || "Ism saqlashda xatolik");
+    } finally {
+      setNameSaving(false);
+    }
+  }
+
+  function openPwModal() {
+    setCurrentPassword("");
+    setNewPassword("");
+    setPwModalVisible(true);
+  }
+
+  async function handleChangePassword() {
+    if (!currentPassword || !newPassword) {
+      Alert.alert(t.common.error, "Ikkala maydonni ham to'ldiring");
+      return;
+    }
+    if (newPassword.length < 6) {
+      Alert.alert(t.common.error, "Yangi parol kamida 6 belgidan iborat bo'lishi kerak");
+      return;
+    }
+    setPwSaving(true);
+    try {
+      await api.patch("/users/change-password", { currentPassword, newPassword });
+      setPwModalVisible(false);
+      setCurrentPassword("");
+      setNewPassword("");
+      Alert.alert("Tayyor", "Parol muvaffaqiyatli o'zgartirildi");
+    } catch (e: any) {
+      Alert.alert(t.common.error, e.response?.data?.message || "Parolni o'zgartirishda xatolik");
+    } finally {
+      setPwSaving(false);
+    }
+  }
+
   return (
     <ScrollView style={{ flex: 1, backgroundColor: c.bg }} showsVerticalScrollIndicator={false}>
 
       {/* Profile Header */}
       <View style={{ backgroundColor: c.bg, paddingHorizontal: 16, paddingTop: 48, paddingBottom: 16 }}>
         <Text style={{ color: c.text, fontSize: 22, fontWeight: "800", marginBottom: 14 }}>{t.nav.profile}</Text>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: c.bgCard, borderRadius: 16, padding: 14, borderWidth: 1, borderColor: c.border }}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={openNameModal}
+          style={{ flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: c.bgCard, borderRadius: 16, padding: 14, borderWidth: 1, borderColor: c.border }}
+        >
           <View style={{ width: 52, height: 52, backgroundColor: c.primary + "20", borderRadius: 26, alignItems: "center", justifyContent: "center" }}>
             <Ionicons name="person" size={24} color={c.primary} />
           </View>
@@ -136,7 +203,7 @@ export default function ProfileScreen() {
             <Text style={{ color: c.textMuted, fontSize: 12, marginTop: 2 }}>{user?.phone || "v1.0.0"}</Text>
           </View>
           <Ionicons name="chevron-forward" size={16} color={c.border} />
-        </View>
+        </TouchableOpacity>
       </View>
 
 
@@ -222,6 +289,14 @@ export default function ProfileScreen() {
           onPress={openEmailModal}
         />
         <Divider />
+        <Row
+          iconName="lock-closed"
+          iconBg="#FEE2E2"
+          label="Parolni o'zgartirish"
+          right={<Ionicons name="chevron-forward" size={18} color={c.textMuted} />}
+          onPress={openPwModal}
+        />
+        <Divider />
         <Row iconName="log-out" label={t.settings.logout} danger onPress={handleLogout} />
       </Section>
 
@@ -256,6 +331,63 @@ export default function ProfileScreen() {
               </TouchableOpacity>
               <TouchableOpacity onPress={handleSaveEmail} disabled={emailSaving} style={{ flex: 2, height: 50, borderRadius: 14, backgroundColor: c.primary, alignItems: "center", justifyContent: "center" }}>
                 <Text style={{ color: "#fff", fontWeight: "800" }}>{emailSaving ? "..." : t.customers.save}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={nameModalVisible} transparent animationType="slide">
+        <View style={{ flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <View style={{ backgroundColor: c.bgCard, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 }}>
+            <Text style={{ color: c.text, fontSize: 18, fontWeight: "800", marginBottom: 16 }}>Ismni tahrirlash</Text>
+            <TextInput
+              style={{ backgroundColor: c.bgMuted, borderRadius: 14, paddingHorizontal: 14, height: 50, fontSize: 15, color: c.text, marginBottom: 16, borderWidth: 1, borderColor: c.border }}
+              placeholder="Ismingiz"
+              placeholderTextColor={c.textMuted}
+              value={nameInput}
+              onChangeText={setNameInput}
+              autoFocus
+            />
+            <View style={{ flexDirection: "row", gap: 10 }}>
+              <TouchableOpacity onPress={() => setNameModalVisible(false)} style={{ flex: 1, height: 50, borderRadius: 14, backgroundColor: c.bgMuted, alignItems: "center", justifyContent: "center" }}>
+                <Text style={{ color: c.textSub, fontWeight: "700" }}>{t.customers.cancel}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleSaveName} disabled={nameSaving} style={{ flex: 2, height: 50, borderRadius: 14, backgroundColor: c.primary, alignItems: "center", justifyContent: "center" }}>
+                <Text style={{ color: "#fff", fontWeight: "800" }}>{nameSaving ? "..." : t.customers.save}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={pwModalVisible} transparent animationType="slide">
+        <View style={{ flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <View style={{ backgroundColor: c.bgCard, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 }}>
+            <Text style={{ color: c.text, fontSize: 18, fontWeight: "800", marginBottom: 16 }}>Parolni o'zgartirish</Text>
+            <TextInput
+              style={{ backgroundColor: c.bgMuted, borderRadius: 14, paddingHorizontal: 14, height: 50, fontSize: 15, color: c.text, marginBottom: 12, borderWidth: 1, borderColor: c.border }}
+              placeholder="Joriy parol"
+              placeholderTextColor={c.textMuted}
+              value={currentPassword}
+              onChangeText={setCurrentPassword}
+              secureTextEntry
+              autoFocus
+            />
+            <TextInput
+              style={{ backgroundColor: c.bgMuted, borderRadius: 14, paddingHorizontal: 14, height: 50, fontSize: 15, color: c.text, marginBottom: 16, borderWidth: 1, borderColor: c.border }}
+              placeholder="Yangi parol"
+              placeholderTextColor={c.textMuted}
+              value={newPassword}
+              onChangeText={setNewPassword}
+              secureTextEntry
+            />
+            <View style={{ flexDirection: "row", gap: 10 }}>
+              <TouchableOpacity onPress={() => setPwModalVisible(false)} style={{ flex: 1, height: 50, borderRadius: 14, backgroundColor: c.bgMuted, alignItems: "center", justifyContent: "center" }}>
+                <Text style={{ color: c.textSub, fontWeight: "700" }}>{t.customers.cancel}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleChangePassword} disabled={pwSaving} style={{ flex: 2, height: 50, borderRadius: 14, backgroundColor: c.primary, alignItems: "center", justifyContent: "center" }}>
+                <Text style={{ color: "#fff", fontWeight: "800" }}>{pwSaving ? "..." : t.customers.save}</Text>
               </TouchableOpacity>
             </View>
           </View>

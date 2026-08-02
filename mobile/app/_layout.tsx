@@ -9,6 +9,7 @@ import { useThemeStore } from "@/store/themeStore";
 import { useSubscriptionStore } from "@/store/subscriptionStore";
 import { useRoleStore } from "@/store/roleStore";
 import { runSync } from "@/services/syncEngine";
+import { loadDeviceId } from "@/utils/deviceId";
 import "../global.css";
 
 export default function RootLayout() {
@@ -24,7 +25,7 @@ export default function RootLayout() {
   useEffect(() => {
     // First paint faqat tez lokal o'qishlarga bog'lansin — tarmoq chaqiruvi (loadSubscription)
     // ni bu yerga qo'shsak, backend "cold start" bo'lsa 10s gacha qora ekran ko'rinadi.
-    Promise.all([loadToken(), loadUser(), loadLang(), loadTheme(), loadRole()])
+    Promise.all([loadToken(), loadUser(), loadLang(), loadTheme(), loadRole(), loadDeviceId()])
       .then(() => setReady(true))
       .catch(() => setReady(true));
     // Obuna ma'lumoti tarmoq orqali keladi — fon rejimida yuklanadi, renderni bloklamaydi.

@@ -43,6 +43,7 @@ model User {
   cart            Cart?
   wishlist        Wishlist?
   refreshTokens   RefreshToken[]
+  knownDevices    KnownDevice[]
   inventoryBatches InventoryBatch[]
   syncQueues      SyncQueue[]
 }
@@ -241,6 +242,10 @@ model RefreshToken {
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   token     String   @unique
+  // Stable across the whole rotation chain (copied forward on every refresh,
+  // generated fresh only at register/login) — one "session" as the user
+  // understands it is really N RefreshToken rows sharing one familyId.
+  familyId  String   @default(cuid())
   expiresAt DateTime
   isRevoked Boolean  @default(false)
   userAgent String   @default("")
@@ -249,6 +254,29 @@ model RefreshToken {
   updatedAt DateTime @updatedAt
 
   @@index([expiresAt])
+  @@index([userId, isRevoked])
+  @@index([familyId])
+}
+
+// A device the user has completed at least one successful login/register
+// from. First device ever seen for a user is isPrimary — only it may revoke
+// another device's sessions (see auth.service.js revokeSession). Recognition
+// is keyed on a client-generated deviceId (localStorage/SecureStore), not
+// userAgent/ip alone, since those can coincidentally match across different
+// real devices or change for the same device (mobile network IP churn).
+model KnownDevice {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deviceId   String
+  userAgent  String   @default("")
+  ip         String   @default("")
+  isPrimary  Boolean  @default(false)
+  firstSeenAt DateTime @default(now())
+  lastSeenAt  DateTime @default(now())
+
+  @@unique([userId, deviceId])
+  @@index([userId])
 }
 
 model SyncQueue {
@@ -281,19 +309,29 @@ model Content {
   updatedAt DateTime @updatedAt
 }
 
-// A one-way "contact support" message from the app, forwarded to a fixed
-// Telegram chat (ADMIN_SUPPORT_CHAT_ID). Not a two-way chat — the admin
-// replies personally via Telegram DM outside this system. Auto-deleted
-// after 24h by a cleanup sweep (see server.js) so these never accumulate.
+// A "contact support" message, either from the app's Contact Support form
+// (source "web") or the Telegram bot's /support command (source "bot").
+// Admins review/reply from the admin panel; a reply to a "bot" ticket is
+// also sent back to the user via the Telegram bot (telegramChatId). "open"
+// tickets are kept indefinitely so none disappear before being answered;
+// "answered" ones are auto-deleted 24h later by the cleanup sweep in
+// server.js (kept briefly for reference, not accumulated forever).
 model SupportMessage {
-  id        String   @id @default(cuid())
-  userId    String?
-  name      String
-  contact   String
-  message   String
-  createdAt DateTime @default(now())
+  id             String    @id @default(cuid())
+  userId         String?
+  name           String
+  contact        String
+  message        String
+  source         String    @default("web") // "web" | "bot"
+  telegramChatId String?
+  status         String    @default("open") // "open" | "answered"
+  adminReply     String?
+  repliedAt      DateTime?
+  repliedBy      String?
+  createdAt      DateTime  @default(now())
 
   @@index([createdAt])
+  @@index([status])
 }
 
 model AuditLog {

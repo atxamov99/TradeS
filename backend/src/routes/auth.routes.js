@@ -8,6 +8,7 @@ const { authLimiter } = require('../middlewares/rateLimiter.middleware');
 const {
   registerSchema,
   loginSchema,
+  verifyNewDeviceSchema,
   refreshTokenSchema,
   googleSchema,
   requestOtpSchema,
@@ -22,7 +23,7 @@ const {
 router.post('/register', authLimiter, validate(registerSchema), authController.register);
 router.post('/register-test', authLimiter, authController.registerTestUser);
 router.post('/login', authLimiter, validate(loginSchema), authController.login);
-router.post('/verify-new-device', authLimiter, authController.verifyNewDeviceLogin);
+router.post('/verify-new-device', authLimiter, validate(verifyNewDeviceSchema), authController.verifyNewDeviceLogin);
 router.post('/google', authLimiter, validate(googleSchema), authController.googleAuth);
 router.post('/request-otp', authLimiter, validate(requestOtpSchema), authController.requestOtp);
 router.post('/verify-otp', authLimiter, validate(verifyOtpSchema), authController.verifyOtp);

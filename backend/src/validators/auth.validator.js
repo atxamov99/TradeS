@@ -21,6 +21,16 @@ const loginSchema = Joi.object({
   password: Joi.string().required(),
 }).or('email', 'phone');
 
+// Second step of the new-device login: same credentials as loginSchema plus the
+// Telegram code. Typed explicitly because `where: { email }` in Prisma treats an
+// object as a filter — an unvalidated `{"not": null}` would match an arbitrary user.
+const verifyNewDeviceSchema = Joi.object({
+  email: Joi.string().email().lowercase(),
+  phone: Joi.string().trim(),
+  password: Joi.string().required(),
+  code: Joi.string().trim().required(),
+}).or('email', 'phone');
+
 const refreshTokenSchema = Joi.object({
   refreshToken: Joi.string().optional(),
 });
@@ -132,6 +142,7 @@ const registerSuperAdminSchema = Joi.object({
 module.exports = {
   registerSchema,
   loginSchema,
+  verifyNewDeviceSchema,
   refreshTokenSchema,
   googleSchema,
   requestOtpSchema,

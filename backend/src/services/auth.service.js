@@ -128,13 +128,19 @@ const registerTestUser = async (meta = {}) => {
 // ── New-device login confirmation ───────────────────────────────────────────
 // A device is only gated once the account already HAS at least one known
 // device — a brand-new account's very first login must never be blocked (it
-// becomes the primary device, see recordKnownDevice). Gating only applies
-// when meta.deviceId is present (older mobile builds without the header
-// aren't gated — fail-open rather than locking out clients we can't check).
+// becomes the primary device, see recordKnownDevice).
+//
+// A MISSING deviceId counts as unrecognized, not as exempt: the header is
+// client-supplied, so treating its absence as "trusted" let anyone with a
+// stolen password skip the whole challenge by simply dropping the header.
+// A client that cannot identify itself gets the same OTP challenge as an
+// unknown device — and challengeNewDevice() still falls through to a normal
+// login when there is no Telegram channel to challenge through, so old
+// builds degrade to today's behaviour instead of being locked out.
 const isUnrecognizedDevice = async (userId, deviceId) => {
-  if (!deviceId) return false;
   const existingCount = await prisma.knownDevice.count({ where: { userId } });
   if (existingCount === 0) return false;
+  if (!deviceId) return true;
   const known = await prisma.knownDevice.findUnique({
     where: { userId_deviceId: { userId, deviceId } },
   });
@@ -182,6 +188,12 @@ const verifyNewDeviceLogin = async ({ email, phone, password, code }, meta = {})
   const record = normalizedPhone ? await prisma.phoneAuth.findUnique({ where: { phone: normalizedPhone } }) : null;
   if (!record || !record.otpCode || !record.otpExpiresAt) {
     throw new ApiError(400, 'Avval kod so\'rang');
+  }
+  // Same cap as every other OTP path (verifyOtp / resetPasswordByPhone /
+  // verifyEmailOtp) — without it the 6-digit code is only protected by the
+  // route rate limiter, which resets while the code stays valid.
+  if (record.attempts >= OTP_MAX_ATTEMPTS) {
+    throw new ApiError(429, 'Juda ko\'p urinish. Yangi kod so\'rang');
   }
   if (record.otpExpiresAt < new Date()) {
     throw new ApiError(400, 'Kod muddati tugagan. Qaytadan kiring');

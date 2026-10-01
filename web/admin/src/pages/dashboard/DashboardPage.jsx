@@ -10,11 +10,11 @@ import { Icon } from "../../components/shared/Icon";
 const fallbackMonthly = [];
 
 const ORDER_STATUS_BADGE = {
-  pending:    { label: "Kutilmoqda",   cls: "bg-[#FEF7E0] text-[#B06000]" },
-  processing: { label: "Tayyorlanmoqda", cls: "bg-[#E8F0FE] text-[#1967D2]" },
-  shipped:    { label: "Yo'lda",       cls: "bg-[#F3E8FD] text-[#7B1FA2]" },
-  delivered:  { label: "Yetkazildi",   cls: "bg-[#E6F4EA] text-[#137333]" },
-  cancelled:  { label: "Bekor qilindi", cls: "bg-[#FCE8E6] text-[#C5221F]" }
+  pending:    { key: "pending",    cls: "bg-[#FEF7E0] text-[#B06000]" },
+  processing: { key: "processing", cls: "bg-[#E8F0FE] text-[#1967D2]" },
+  shipped:    { key: "shipped",    cls: "bg-[#F3E8FD] text-[#7B1FA2]" },
+  delivered:  { key: "delivered",  cls: "bg-[#E6F4EA] text-[#137333]" },
+  cancelled:  { key: "cancelled",  cls: "bg-[#FCE8E6] text-[#C5221F]" }
 };
 
 function formatMoney(n) {
@@ -104,9 +104,9 @@ export function DashboardPage() {
       {/* Page header */}
       <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-4">
         <div>
-          <h2 className="font-headline-md text-headline-md font-bold text-on-surface">Boshqaruv paneli</h2>
+          <h2 className="font-headline-md text-headline-md font-bold text-on-surface">{t("dashboard.header.title", {}, "Boshqaruv paneli")}</h2>
           <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">
-            Salom, {profile?.name} — bugungi holat va umumiy statistika
+            {t("dashboard.header.greeting", { name: profile?.name }, `Salom, ${profile?.name} — bugungi holat va umumiy statistika`)}
           </p>
         </div>
       </div>
@@ -114,25 +114,25 @@ export function DashboardPage() {
       {/* Stat cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter">
         <StatCard
-          label="Jami savdo"
+          label={t("dashboard.cards.totalRevenue", {}, "Jami savdo")}
           value={`${formatMoney(dashboardStats.totalRevenue)} so'm`}
           icon="payments"
           iconWrap="bg-primary-container/15 text-primary-container"
         />
         <StatCard
-          label="Buyurtmalar"
+          label={t("dashboard.cards.totalOrders", {}, "Buyurtmalar")}
           value={formatMoney(dashboardStats.totalOrders)}
           icon="shopping_bag"
           iconWrap="bg-secondary-container/15 text-secondary"
         />
         <StatCard
-          label="Mahsulotlar"
+          label={t("dashboard.cards.totalProducts", {}, "Mahsulotlar")}
           value={formatMoney(dashboardStats.totalProducts)}
           icon="inventory_2"
           iconWrap="bg-surface-variant text-on-surface-variant"
         />
         <StatCard
-          label="Foydalanuvchilar"
+          label={t("dashboard.cards.totalUsers", {}, "Foydalanuvchilar")}
           value={formatMoney(dashboardStats.totalUsers)}
           icon="group"
           iconWrap="bg-tertiary-container/25 text-tertiary"
@@ -147,12 +147,12 @@ export function DashboardPage() {
 
         <div className="bg-surface-container-lowest rounded-xl border border-outline-variant p-padding-card flex flex-col">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="font-title-sm text-title-sm text-on-surface">Kam qolgan mahsulotlar</h3>
-            <Link to="/products" className="text-body-sm text-primary-container hover:text-primary font-medium">Barchasi</Link>
+            <h3 className="font-title-sm text-title-sm text-on-surface">{t("dashboard.lowStock.title", {}, "Kam qolgan mahsulotlar")}</h3>
+            <Link to="/products" className="text-body-sm text-primary-container hover:text-primary font-medium">{t("dashboard.lowStock.viewAll", {}, "Barchasi")}</Link>
           </div>
           <ul className="space-y-2 flex-1">
             {lowStock.length === 0 && (
-              <li className="text-body-sm text-on-surface-variant py-6 text-center">Ma'lumot yo'q</li>
+              <li className="text-body-sm text-on-surface-variant py-6 text-center">{t("dashboard.lowStock.empty", {}, "Ma'lumot yo'q")}</li>
             )}
             {lowStock.map((p) => {
               const critical = p.stock <= 5;
@@ -167,10 +167,10 @@ export function DashboardPage() {
                   </div>
                   <div className="text-right shrink-0">
                     <span className={`block text-body-sm font-bold ${critical ? "text-error" : "text-tertiary"}`}>
-                      {p.stock} dona
+                      {p.stock} {t("dashboard.lowStock.unit", {}, "dona")}
                     </span>
                     <span className={`font-label-caps text-label-caps px-2 py-0.5 rounded mt-1 inline-block ${critical ? "text-error bg-error-container" : "text-tertiary bg-tertiary-container/30"}`}>
-                      {critical ? "Zudlik bilan" : "Ogohlantirish"}
+                      {critical ? t("dashboard.lowStock.critical", {}, "Zudlik bilan") : t("dashboard.lowStock.warning", {}, "Ogohlantirish")}
                     </span>
                   </div>
                 </li>
@@ -183,31 +183,32 @@ export function DashboardPage() {
       {/* Recent orders */}
       <div className="bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden">
         <div className="p-padding-card border-b border-outline-variant flex justify-between items-center bg-surface-bright">
-          <h3 className="font-title-sm text-title-sm text-on-surface">Oxirgi buyurtmalar</h3>
+          <h3 className="font-title-sm text-title-sm text-on-surface">{t("dashboard.recentOrders.title", {}, "Oxirgi buyurtmalar")}</h3>
           <Link to="/orders" className="text-body-sm text-primary-container hover:text-primary font-medium flex items-center gap-1">
-            Barchasi <Icon name="arrow_forward" className="text-[18px]" />
+            {t("dashboard.recentOrders.viewAll", {}, "Barchasi")} <Icon name="arrow_forward" className="text-[18px]" />
           </Link>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-surface-container-lowest border-b border-outline-variant font-label-caps text-label-caps text-on-surface-variant uppercase">
-                <th className="p-4 font-semibold">№</th>
-                <th className="p-4 font-semibold">Mijoz</th>
-                <th className="p-4 font-semibold">Sana</th>
-                <th className="p-4 font-semibold text-right">Summa</th>
-                <th className="p-4 font-semibold text-center">Holat</th>
+                <th className="p-4 font-semibold">{t("dashboard.recentOrders.tableId", {}, "№")}</th>
+                <th className="p-4 font-semibold">{t("dashboard.recentOrders.tableCustomer", {}, "Mijoz")}</th>
+                <th className="p-4 font-semibold">{t("dashboard.recentOrders.tableDate", {}, "Sana")}</th>
+                <th className="p-4 font-semibold text-right">{t("dashboard.recentOrders.tableTotal", {}, "Summa")}</th>
+                <th className="p-4 font-semibold text-center">{t("dashboard.recentOrders.tableStatus", {}, "Holat")}</th>
               </tr>
             </thead>
             <tbody className="font-body-sm text-body-sm divide-y divide-outline-variant/50">
               {recentOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="p-8 text-center text-on-surface-variant">Buyurtmalar topilmadi</td>
+                  <td colSpan={5} className="p-8 text-center text-on-surface-variant">{t("dashboard.recentOrders.empty", {}, "Buyurtmalar topilmadi")}</td>
                 </tr>
               ) : (
                 recentOrders.map((o) => {
-                  const badge = ORDER_STATUS_BADGE[o.orderStatus] || { label: o.orderStatus, cls: "bg-surface-variant text-on-surface-variant" };
-                  const name = o.user?.name || "Noma'lum";
+                  const badge = ORDER_STATUS_BADGE[o.orderStatus] || { key: null, cls: "bg-surface-variant text-on-surface-variant" };
+                  const badgeLabel = badge.key ? t(`dashboard.orderStatus.${badge.key}`, {}, o.orderStatus) : o.orderStatus;
+                  const name = o.user?.name || t("dashboard.recentOrders.unknownCustomer", {}, "Noma'lum");
                   return (
                     <tr key={o.id} className="hover:bg-surface-container-low/50 transition-colors">
                       <td className="p-4 text-primary-container font-medium">{o.orderNumber}</td>
@@ -225,7 +226,7 @@ export function DashboardPage() {
                       <td className="p-4 text-right font-medium text-on-surface whitespace-nowrap">{formatMoney(o.totalPrice)} so'm</td>
                       <td className="p-4 text-center">
                         <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-full font-label-caps text-[11px] font-bold ${badge.cls}`}>
-                          {badge.label}
+                          {badgeLabel}
                         </span>
                       </td>
                     </tr>
@@ -241,7 +242,7 @@ export function DashboardPage() {
       {recentActivity.length > 0 && (
         <div className="bg-surface-container-lowest rounded-xl border border-outline-variant p-padding-card">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-title-sm text-title-sm text-on-surface">So'nggi faoliyat</h3>
+            <h3 className="font-title-sm text-title-sm text-on-surface">{t("dashboard.recentActivity", {}, "So'nggi faoliyat")}</h3>
             <span className="text-xs text-primary-container bg-primary-container/10 px-2.5 py-1 rounded-full">{t("common.live", {}, "Jonli")}</span>
           </div>
           <div className="space-y-3">

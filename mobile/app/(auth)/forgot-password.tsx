@@ -26,7 +26,7 @@ export default function ForgotPasswordScreen() {
 
   // ── Telefon oqimi (asosiy) ──
   const [phoneStep, setPhoneStep] = useState<PhoneStep>("form");
-  const [phone, setPhone] = useState("");
+  const [phone, setPhone] = useState("+998 ");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [code, setCode] = useState("");

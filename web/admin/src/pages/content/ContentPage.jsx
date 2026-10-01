@@ -5,24 +5,25 @@ import { useAdminData } from "../../store/adminData";
 import { useAuth } from "../../store";
 import { useI18n } from "../../i18n";
 
-const statusStyle = {
-  published: { label: "Nashr etilgan", cls: "bg-green-100 text-green-800 border border-green-200", dot: "bg-green-500" },
-  draft:     { label: "Qoralama",      cls: "bg-gray-100 text-gray-800 border border-gray-200",   dot: "bg-gray-500" },
-  archived:  { label: "Arxiv",         cls: "bg-yellow-100 text-yellow-800 border border-yellow-200", dot: "bg-yellow-500" }
-};
-
-const typeStyle = {
-  landing_page:   { label: "Landing",      cls: "bg-blue-100 text-blue-800 border border-blue-200" },
-  knowledge_base: { label: "Bilim bazasi", cls: "bg-purple-100 text-purple-800 border border-purple-200" },
-  media_asset:    { label: "Media",        cls: "bg-orange-100 text-orange-800 border border-orange-200" }
-};
-
 const empty = { name: "", type: "landing_page", status: "draft", owner: "", body: "" };
 
 export function ContentPage() {
   const { contentRows, createContent, updateContentStatus, deleteContent } = useAdminData();
   const { profile } = useAuth();
   const { t } = useI18n();
+
+  const statusStyle = {
+    published: { label: t("content.statusPublished", {}, "Nashr etilgan"), cls: "bg-green-100 text-green-800 border border-green-200", dot: "bg-green-500" },
+    draft:     { label: t("content.statusDraft", {}, "Qoralama"),      cls: "bg-gray-100 text-gray-800 border border-gray-200",   dot: "bg-gray-500" },
+    archived:  { label: t("content.statusArchived", {}, "Arxiv"),         cls: "bg-yellow-100 text-yellow-800 border border-yellow-200", dot: "bg-yellow-500" }
+  };
+
+  const typeStyle = {
+    landing_page:   { label: t("content.typeLanding", {}, "Landing"),      cls: "bg-blue-100 text-blue-800 border border-blue-200" },
+    knowledge_base: { label: t("content.typeKnowledgeBase", {}, "Bilim bazasi"), cls: "bg-purple-100 text-purple-800 border border-purple-200" },
+    media_asset:    { label: t("content.typeMedia", {}, "Media"),        cls: "bg-orange-100 text-orange-800 border border-orange-200" }
+  };
+
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState(empty);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -65,9 +66,9 @@ export function ContentPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
         <div>
-          <h2 className="font-headline-md text-headline-md text-on-surface">Kontent</h2>
+          <h2 className="font-headline-md text-headline-md text-on-surface">{t("content.pageTitle", {}, "Kontent")}</h2>
           <p className="text-on-surface-variant font-body-sm text-body-sm mt-1">
-            Platforma uchun maqolalar, sahifalar va media resurslarni boshqarish
+            {t("content.pageDescription", {}, "Platforma uchun maqolalar, sahifalar va media resurslarni boshqarish")}
           </p>
         </div>
         <button
@@ -76,7 +77,7 @@ export function ContentPage() {
           className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-on-primary font-medium px-5 py-2.5 rounded-lg transition-colors shadow-sm shrink-0"
         >
           <Icon name="add" className="text-[20px]" />
-          Yangi kontent
+          {t("content.createButton", {}, "Yangi kontent")}
         </button>
       </div>
 
@@ -86,7 +87,7 @@ export function ContentPage() {
           <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]" />
           <input
             type="search"
-            placeholder="Kontent qidirish..."
+            placeholder={t("content.searchPlaceholder", {}, "Kontent qidirish...")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-2 bg-surface border border-outline-variant rounded-lg font-body-sm text-on-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
@@ -98,20 +99,20 @@ export function ContentPage() {
             onChange={(e) => setTypeFilter(e.target.value)}
             className="w-full md:w-auto bg-surface border border-outline-variant rounded-lg px-4 py-2 font-body-sm text-on-surface focus:outline-none focus:border-primary cursor-pointer"
           >
-            <option value="all">Barcha turlar</option>
-            <option value="landing_page">Landing</option>
-            <option value="knowledge_base">Bilim bazasi</option>
-            <option value="media_asset">Media</option>
+            <option value="all">{t("content.allTypes", {}, "Barcha turlar")}</option>
+            <option value="landing_page">{t("content.typeLanding", {}, "Landing")}</option>
+            <option value="knowledge_base">{t("content.typeKnowledgeBase", {}, "Bilim bazasi")}</option>
+            <option value="media_asset">{t("content.typeMedia", {}, "Media")}</option>
           </select>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             className="w-full md:w-auto bg-surface border border-outline-variant rounded-lg px-4 py-2 font-body-sm text-on-surface focus:outline-none focus:border-primary cursor-pointer"
           >
-            <option value="all">Barcha holatlar</option>
-            <option value="draft">Qoralama</option>
-            <option value="published">Nashr etilgan</option>
-            <option value="archived">Arxiv</option>
+            <option value="all">{t("content.allStatuses", {}, "Barcha holatlar")}</option>
+            <option value="draft">{t("content.statusDraft", {}, "Qoralama")}</option>
+            <option value="published">{t("content.statusPublished", {}, "Nashr etilgan")}</option>
+            <option value="archived">{t("content.statusArchived", {}, "Arxiv")}</option>
           </select>
         </div>
       </div>
@@ -123,17 +124,17 @@ export function ContentPage() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-outline-variant bg-surface-bright font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">
-                  <th className="py-4 px-6 font-semibold">Nomi</th>
-                  <th className="py-4 px-6 font-semibold">Tur</th>
-                  <th className="py-4 px-6 font-semibold">Holat</th>
-                  <th className="py-4 px-6 font-semibold">Muallif</th>
-                  <th className="py-4 px-6 font-semibold hidden md:table-cell">Yangilangan</th>
-                  <th className="py-4 px-6 font-semibold text-right">Amallar</th>
+                  <th className="py-4 px-6 font-semibold">{t("content.tableName", {}, "Nomi")}</th>
+                  <th className="py-4 px-6 font-semibold">{t("content.tableType", {}, "Tur")}</th>
+                  <th className="py-4 px-6 font-semibold">{t("content.tableStatus", {}, "Holat")}</th>
+                  <th className="py-4 px-6 font-semibold">{t("content.tableOwner", {}, "Muallif")}</th>
+                  <th className="py-4 px-6 font-semibold hidden md:table-cell">{t("content.tableUpdated", {}, "Yangilangan")}</th>
+                  <th className="py-4 px-6 font-semibold text-right">{t("content.tableActions", {}, "Amallar")}</th>
                 </tr>
               </thead>
               <tbody className="font-body-sm text-body-sm text-on-surface divide-y divide-outline-variant">
                 {filtered.length === 0 ? (
-                  <tr><td colSpan={6} className="py-12 text-center text-on-surface-variant">Kontent topilmadi</td></tr>
+                  <tr><td colSpan={6} className="py-12 text-center text-on-surface-variant">{t("content.noContentFound", {}, "Kontent topilmadi")}</td></tr>
                 ) : (
                   filtered.map((row) => {
                     const ts = typeStyle[row.type] || { label: row.type, cls: "bg-surface-variant text-on-surface" };
@@ -155,16 +156,16 @@ export function ContentPage() {
                         <td className="py-4 px-6 text-right">
                           <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                             {row.status !== "published" && (
-                              <button type="button" onClick={() => updateContentStatus(row.id, "published")} className="p-1.5 text-on-surface-variant hover:text-primary transition-colors" title="Nashr etish">
+                              <button type="button" onClick={() => updateContentStatus(row.id, "published")} className="p-1.5 text-on-surface-variant hover:text-primary transition-colors" title={t("content.publish", {}, "Nashr qilish")}>
                                 <Icon name="publish" className="text-[20px]" />
                               </button>
                             )}
                             {row.status !== "archived" && (
-                              <button type="button" onClick={() => updateContentStatus(row.id, "archived")} className="p-1.5 text-on-surface-variant hover:text-secondary transition-colors" title="Arxivlash">
+                              <button type="button" onClick={() => updateContentStatus(row.id, "archived")} className="p-1.5 text-on-surface-variant hover:text-secondary transition-colors" title={t("content.archive", {}, "Arxivlash")}>
                                 <Icon name="archive" className="text-[20px]" />
                               </button>
                             )}
-                            <button type="button" onClick={() => setDeleteTarget(row)} className="p-1.5 text-on-surface-variant hover:text-error transition-colors" title="O'chirish">
+                            <button type="button" onClick={() => setDeleteTarget(row)} className="p-1.5 text-on-surface-variant hover:text-error transition-colors" title={t("content.deleteTooltip", {}, "O'chirish")}>
                               <Icon name="delete" className="text-[20px]" />
                             </button>
                           </div>
@@ -177,7 +178,7 @@ export function ContentPage() {
             </table>
           </div>
           <div className="mt-auto border-t border-outline-variant p-4 bg-surface-container-lowest">
-            <span className="font-body-sm text-body-sm text-on-surface-variant">Jami {contentRows.length} ta natijadan {filtered.length} ko'rsatilmoqda</span>
+            <span className="font-body-sm text-body-sm text-on-surface-variant">{t("content.showingSummary", { total: contentRows.length, count: filtered.length }, `Jami ${contentRows.length} ta natijadan ${filtered.length} ko'rsatilmoqda`)}</span>
           </div>
         </div>
 
@@ -186,7 +187,7 @@ export function ContentPage() {
           <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 shadow-sm relative overflow-hidden">
             <div className="absolute -right-4 -top-4 w-24 h-24 bg-primary-container/20 rounded-full blur-2xl" />
             <div className="flex justify-between items-start mb-4 relative z-10">
-              <h3 className="font-title-sm text-title-sm text-on-surface-variant">Nashr etilganlar</h3>
+              <h3 className="font-title-sm text-title-sm text-on-surface-variant">{t("content.publishedStatLabel", {}, "Nashr etilganlar")}</h3>
               <span className="p-2 bg-primary-container/10 rounded-lg text-primary-container"><Icon name="publish" /></span>
             </div>
             <div className="relative z-10">
@@ -196,7 +197,7 @@ export function ContentPage() {
           <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 shadow-sm relative overflow-hidden">
             <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-secondary-container/20 rounded-full blur-2xl" />
             <div className="flex justify-between items-start mb-4 relative z-10">
-              <h3 className="font-title-sm text-title-sm text-on-surface-variant">Qoralamalar</h3>
+              <h3 className="font-title-sm text-title-sm text-on-surface-variant">{t("content.draftStatLabel", {}, "Qoralamalar")}</h3>
               <span className="p-2 bg-secondary-container/10 rounded-lg text-secondary-container"><Icon name="draft" /></span>
             </div>
             <div className="relative z-10">
@@ -209,68 +210,68 @@ export function ContentPage() {
       {/* Create modal */}
       <Modal
         open={modalOpen}
-        title="Yangi kontent yaratish"
+        title={t("content.createModalTitle", {}, "Yangi kontent yaratish")}
         size="lg"
         onClose={closeModal}
         footer={
           <>
-            <button type="button" onClick={closeModal} className="px-5 py-2.5 text-body-sm border border-outline-variant rounded-lg hover:bg-surface-container-low text-on-surface">Bekor qilish</button>
+            <button type="button" onClick={closeModal} className="px-5 py-2.5 text-body-sm border border-outline-variant rounded-lg hover:bg-surface-container-low text-on-surface">{t("content.cancelButton", {}, "Bekor qilish")}</button>
             <button type="submit" form="content-form" disabled={submitting} className="px-5 py-2.5 bg-primary text-on-primary text-body-sm font-medium rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-60">
-              {submitting ? "Saqlanmoqda..." : "Saqlash"}
+              {submitting ? t("content.savingButton", {}, "Saqlanmoqda...") : t("content.saveButton", {}, "Saqlash")}
             </button>
           </>
         }
       >
         <form id="content-form" onSubmit={handleSubmit} className="space-y-5">
           <div className="flex flex-col gap-1.5">
-            <label className="font-body-sm text-body-sm font-medium text-on-surface">Nom</label>
+            <label className="font-body-sm text-body-sm font-medium text-on-surface">{t("content.nameFieldLabel", {}, "Nom")}</label>
             <input
               type="text"
               name="name"
               value={form.name}
               required
               onChange={(e) => setForm((c) => ({ ...c, name: e.target.value }))}
-              placeholder="Masalan: Qanday qilib xarid qilish mumkin?"
+              placeholder={t("content.namePlaceholder", {}, "Masalan: Qanday qilib xarid qilish mumkin?")}
               className="w-full px-4 py-2.5 bg-surface border border-outline-variant rounded-lg text-on-surface font-body-md focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
             />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div className="flex flex-col gap-1.5">
-              <label className="font-body-sm text-body-sm font-medium text-on-surface">Tur</label>
+              <label className="font-body-sm text-body-sm font-medium text-on-surface">{t("content.typeFieldLabel", {}, "Tur")}</label>
               <select
                 value={form.type}
                 onChange={(e) => setForm((c) => ({ ...c, type: e.target.value }))}
                 className="w-full bg-surface border border-outline-variant rounded-lg px-4 py-2.5 text-on-surface font-body-md focus:outline-none focus:border-primary cursor-pointer"
               >
-                <option value="landing_page">Landing</option>
-                <option value="knowledge_base">Bilim bazasi</option>
-                <option value="media_asset">Media</option>
+                <option value="landing_page">{t("content.typeLanding", {}, "Landing")}</option>
+                <option value="knowledge_base">{t("content.typeKnowledgeBase", {}, "Bilim bazasi")}</option>
+                <option value="media_asset">{t("content.typeMedia", {}, "Media")}</option>
               </select>
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="font-body-sm text-body-sm font-medium text-on-surface">Holat</label>
+              <label className="font-body-sm text-body-sm font-medium text-on-surface">{t("content.statusFieldLabel", {}, "Holat")}</label>
               <select
                 value={form.status}
                 onChange={(e) => setForm((c) => ({ ...c, status: e.target.value }))}
                 className="w-full bg-surface border border-outline-variant rounded-lg px-4 py-2.5 text-on-surface font-body-md focus:outline-none focus:border-primary cursor-pointer"
               >
-                <option value="draft">Qoralama</option>
-                <option value="published">Nashr etilgan</option>
-                <option value="archived">Arxiv</option>
+                <option value="draft">{t("content.statusDraft", {}, "Qoralama")}</option>
+                <option value="published">{t("content.statusPublished", {}, "Nashr etilgan")}</option>
+                <option value="archived">{t("content.statusArchived", {}, "Arxiv")}</option>
               </select>
             </div>
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="font-body-sm text-body-sm font-medium text-on-surface flex justify-between">
-              Matn
-              <span className="text-on-surface-variant font-normal text-xs">Markdown qo'llab-quvvatlanadi</span>
+              {t("content.bodyFieldLabel", {}, "Matn")}
+              <span className="text-on-surface-variant font-normal text-xs">{t("content.markdownHint", {}, "Markdown qo'llab-quvvatlanadi")}</span>
             </label>
             <textarea
               name="body"
               rows={6}
               value={form.body}
               onChange={(e) => setForm((c) => ({ ...c, body: e.target.value }))}
-              placeholder="Kontent matnini bu yerga kiriting..."
+              placeholder={t("content.bodyPlaceholder", {}, "Kontent matnini bu yerga kiriting...")}
               className="w-full px-4 py-3 bg-surface border border-outline-variant rounded-lg text-on-surface font-body-md focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all resize-y"
             />
           </div>
@@ -280,23 +281,23 @@ export function ContentPage() {
       {/* Delete confirm */}
       <Modal
         open={Boolean(deleteTarget)}
-        title="Kontentni o'chirish"
+        title={t("content.deleteModalTitle", {}, "Kontentni o'chirish")}
         description={deleteTarget?.name}
         onClose={() => setDeleteTarget(null)}
         footer={
           <>
-            <button type="button" onClick={() => setDeleteTarget(null)} className="px-5 py-2.5 text-body-sm border border-outline-variant rounded-lg hover:bg-surface-container-low text-on-surface">Bekor qilish</button>
+            <button type="button" onClick={() => setDeleteTarget(null)} className="px-5 py-2.5 text-body-sm border border-outline-variant rounded-lg hover:bg-surface-container-low text-on-surface">{t("content.cancelButton", {}, "Bekor qilish")}</button>
             <button
               type="button"
               onClick={() => { deleteContent(deleteTarget.id); setDeleteTarget(null); }}
               className="px-5 py-2.5 bg-error text-on-error text-body-sm font-medium rounded-lg hover:bg-error/90"
             >
-              O'chirish
+              {t("content.deleteConfirmButton", {}, "O'chirish")}
             </button>
           </>
         }
       >
-        <p className="text-body-sm text-on-surface-variant">Bu amalni qaytarib bo'lmaydi.</p>
+        <p className="text-body-sm text-on-surface-variant">{t("content.deleteModalNote", {}, "Bu amalni qaytarib bo'lmaydi.")}</p>
       </Modal>
     </div>
   );

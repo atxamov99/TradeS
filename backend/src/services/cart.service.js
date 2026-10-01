@@ -28,18 +28,20 @@ const getCart = async (userId) => {
 };
 
 const addToCart = async (userId, productId, quantity) => {
-  const product = await prisma.product.findUnique({ where: { id: productId } });
-  if (!product || !product.isActive) {
-    throw new ApiError(404, 'Product not found');
-  }
-  if (product.stock < quantity) {
-    throw new ApiError(400, `Only ${product.stock} items in stock`);
-  }
-
   // Do the read-modify-write of the cart line atomically. Two concurrent "add"
   // requests for the same product would otherwise both read the old quantity and
   // clobber each other's write (lost update) — a transaction serialises them.
+  // The product (and its stock) is read INSIDE the transaction so the "only N
+  // left" message reflects the value at write time rather than a stale one.
   return await prisma.$transaction(async (tx) => {
+    const product = await tx.product.findUnique({ where: { id: productId } });
+    if (!product || !product.isActive) {
+      throw new ApiError(404, 'Product not found');
+    }
+    if (product.stock < quantity) {
+      throw new ApiError(400, `Only ${product.stock} items in stock`);
+    }
+
     const cart = await tx.cart.upsert({
       where: { userId },
       update: {},
@@ -105,34 +107,38 @@ const removeFromCart = async (userId, productId) => {
 };
 
 const updateCartItem = async (userId, productId, quantity) => {
-  const product = await prisma.product.findUnique({ where: { id: productId } });
-  if (!product) throw new ApiError(404, 'Product not found');
-  if (product.stock < quantity) {
-    throw new ApiError(400, `Only ${product.stock} items in stock`);
-  }
+  // Same reasoning as addToCart: read stock inside the transaction so the
+  // rejection message can't quote a stale figure.
+  return await prisma.$transaction(async (tx) => {
+    const product = await tx.product.findUnique({ where: { id: productId } });
+    if (!product) throw new ApiError(404, 'Product not found');
+    if (product.stock < quantity) {
+      throw new ApiError(400, `Only ${product.stock} items in stock`);
+    }
 
-  const cart = await prisma.cart.findUnique({ where: { userId } });
-  if (!cart) throw new ApiError(404, 'Cart not found');
+    const cart = await tx.cart.findUnique({ where: { userId } });
+    if (!cart) throw new ApiError(404, 'Cart not found');
 
-  const item = await prisma.cartItem.findFirst({
-    where: { cartId: cart.id, productId },
-  });
-  if (!item) throw new ApiError(404, 'Item not in cart');
+    const item = await tx.cartItem.findFirst({
+      where: { cartId: cart.id, productId },
+    });
+    if (!item) throw new ApiError(404, 'Item not in cart');
 
-  await prisma.cartItem.update({
-    where: { id: item.id },
-    data: { quantity, price: product.finalPrice },
-  });
+    await tx.cartItem.update({
+      where: { id: item.id },
+      data: { quantity, price: product.finalPrice },
+    });
 
-  // Recompute totals
-  const updatedItems = await prisma.cartItem.findMany({ where: { cartId: cart.id } });
-  const totalItems = updatedItems.reduce((sum, i) => sum + i.quantity, 0);
-  const totalPrice = updatedItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
+    // Recompute totals
+    const updatedItems = await tx.cartItem.findMany({ where: { cartId: cart.id } });
+    const totalItems = updatedItems.reduce((sum, i) => sum + i.quantity, 0);
+    const totalPrice = updatedItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
-  return await prisma.cart.update({
-    where: { id: cart.id },
-    data: { totalItems, totalPrice },
-    include: { items: true }
+    return await tx.cart.update({
+      where: { id: cart.id },
+      data: { totalItems, totalPrice },
+      include: { items: true }
+    });
   });
 };
 

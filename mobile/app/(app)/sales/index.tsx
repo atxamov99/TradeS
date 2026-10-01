@@ -9,6 +9,7 @@ import { database, productsCollection } from "@/db";
 import { Sale } from "@/db/models/Sale";
 import { Q } from "@nozbe/watermelondb";
 import { DraggableFAB } from "@/components/DraggableFAB";
+import { useShopStore } from "@/store/shopStore";
 
 type Filter = "today" | "week" | "month";
 
@@ -39,6 +40,7 @@ export default function SalesScreen() {
   const sales = useSales(filter);
   const t = useT();
   const { c } = useTheme();
+  const activeShopId = useShopStore((s) => s.activeShopId);
 
   const totalRevenue = sales.reduce((s, x) => s + x.totalAmount, 0);
   const totalProfit = sales.reduce((s, x) => s + x.profit, 0);
@@ -123,10 +125,28 @@ export default function SalesScreen() {
         keyExtractor={(s) => s.id}
         contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100, paddingTop: 8 }}
         ListEmptyComponent={
-          <View style={{ alignItems: "center", paddingTop: 80 }}>
-            <Text style={{ fontSize: 48, marginBottom: 12 }}>🛒</Text>
-            <Text style={{ color: c.textMuted, fontSize: 16, fontWeight: "600" }}>{t.sales.noSales}</Text>
-          </View>
+          !activeShopId ? (
+            <View style={{ alignItems: "center", paddingTop: 80, paddingHorizontal: 24 }}>
+              <Text style={{ fontSize: 48, marginBottom: 12 }}>🏪</Text>
+              <Text style={{ color: c.text, fontSize: 16, fontWeight: "700", textAlign: "center" }}>
+                Hali do'koningiz yo'q
+              </Text>
+              <Text style={{ color: c.textMuted, fontSize: 13, textAlign: "center", marginTop: 6, marginBottom: 16 }}>
+                Sotuv yozish uchun avval do'kon oching yoki tanlang.
+              </Text>
+              <TouchableOpacity
+                onPress={() => router.push("/shops")}
+                style={{ backgroundColor: c.primary, borderRadius: 14, paddingHorizontal: 20, paddingVertical: 12 }}
+              >
+                <Text style={{ color: "#fff", fontWeight: "800", fontSize: 14 }}>Do'konlarim</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={{ alignItems: "center", paddingTop: 80 }}>
+              <Text style={{ fontSize: 48, marginBottom: 12 }}>🛒</Text>
+              <Text style={{ color: c.textMuted, fontSize: 16, fontWeight: "600" }}>{t.sales.noSales}</Text>
+            </View>
+          )
         }
         renderItem={({ item }) => (
           <TouchableOpacity
@@ -159,7 +179,9 @@ export default function SalesScreen() {
         )}
       />
 
-      <DraggableFAB color={c.primary} onPress={() => router.push("/sales/add")} bottomOffset={160} />
+      {activeShopId && (
+        <DraggableFAB color={c.primary} onPress={() => router.push("/sales/add")} bottomOffset={160} />
+      )}
     </View>
   );
 }

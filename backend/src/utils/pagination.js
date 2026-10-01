@@ -9,4 +9,13 @@ const clampLimit = (limit, fallback = 20, max = MAX_LIMIT) => {
   return Math.min(Math.floor(n), max);
 };
 
-module.exports = { clampLimit, MAX_LIMIT };
+// Clamp a client-supplied page number. An unguarded `(Number(page) - 1) * take`
+// yields a negative or NaN `skip`, which Prisma rejects at runtime (or silently
+// shifts the window), so every paginated query must run its page through this.
+const clampPage = (page, fallback = 1) => {
+  const n = Number(page);
+  if (!Number.isFinite(n) || n < 1) return fallback;
+  return Math.floor(n);
+};
+
+module.exports = { clampLimit, clampPage, MAX_LIMIT };

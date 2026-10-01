@@ -69,6 +69,25 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, { order }, 'Order status updated'));
 });
 
+// ── Shops ──────────────────────────────────────────────────────────────────
+
+const actorFrom = (req) => ({ id: req.user.id, name: req.user.name, ip: req.ip });
+
+const adminListShops = asyncHandler(async (req, res) => {
+  const result = await adminService.adminListShops(req.query);
+  res.status(200).json(new ApiResponse(200, result, 'Shops retrieved'));
+});
+
+const adminBlockShop = asyncHandler(async (req, res) => {
+  const shop = await adminService.adminBlockShop(req.params.id, req.body.reason, actorFrom(req));
+  res.status(200).json(new ApiResponse(200, { shop }, 'Shop blocked'));
+});
+
+const adminUnblockShop = asyncHandler(async (req, res) => {
+  const shop = await adminService.adminUnblockShop(req.params.id, actorFrom(req));
+  res.status(200).json(new ApiResponse(200, { shop }, 'Shop unblocked'));
+});
+
 // ── Admin Registration ─────────────────────────────────────────────────────
 
 const registerSuperAdmin = asyncHandler(async (req, res) => {
@@ -94,6 +113,9 @@ module.exports = {
   toggleAdminStatus,
   getAllOrders,
   updateOrderStatus,
+  adminListShops,
+  adminBlockShop,
+  adminUnblockShop,
   registerSuperAdmin,
   registerAdmin,
 };

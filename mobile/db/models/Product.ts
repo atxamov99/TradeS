@@ -15,6 +15,7 @@ export class Product extends Model {
   @field("is_synced") declare isSynced: boolean;
   @field("server_id") declare serverId: string | null;
   @field("created_by_id") declare createdById: string | null;
+  @field("shop_id") declare shopId: string | null;
   @readonly @date("created_at") declare createdAt: Date;
   @readonly @date("updated_at") declare updatedAt: Date;
 

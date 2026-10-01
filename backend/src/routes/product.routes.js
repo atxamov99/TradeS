@@ -11,10 +11,11 @@ const {
   restockSchema,
 } = require('../validators/product.validator');
 
-// All product routes require authentication (user-scoped)
+// All product routes require authentication. "Public" here means any signed-in
+// account, not just the shop owner — the app has no anonymous browsing.
 router.use(protect);
 
-router.get('/', productController.getProducts);
+router.get('/', productController.browseProducts);
 router.get('/categories', productController.getCategories);
 router.get('/slug/:slug', productController.getProductBySlug);
 router.get('/:id', productController.getProductById);

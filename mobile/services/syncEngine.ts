@@ -1,20 +1,17 @@
 /**
- * Oflayn sync engine — TradeS backend bilan ikki xil pull manbasi ishlatiladi:
+ * Oflayn sync engine — marketplace pivotidan keyin har mahsulot/sotuv bitta
+ * do'konga (Shop) tegishli, shuning uchun bu yerdagi har bir pull/push
+ * do'kon-context bilan ishlaydi:
  *
- *   POST /sync/push  { operations: [...] } → mahalliy push (products + sales)
- *   GET  /sync/pull?lastSyncAt=<ISO>       → SALES pull (foydalanuvchi bo'yicha to'g'ri
- *                                            cheklangan — backend/src/services/sale.service.js
- *                                            ham xuddi shunday scoping ishlatadi, web bilan mos)
- *   GET  /products?limit=1000              → PRODUCTS pull — bu GLOBAL KATALOG endpoint'i
- *                                            (backend/src/services/product.service.js: "shared
- *                                            global catalog... No ownerId filter on reads").
+ *   GET  /shops/mine                       → foydalanuvchining o'z do'konlari (pullShops())
+ *   GET  /shops/:id/products?limit=1000    → har do'konning o'z katalogi (pullProductCatalog())
+ *   POST /sync/push  { operations: [...] } → mahalliy push (products + sales), har biri shopId bilan
+ *   GET  /sync/pull?lastSyncAt=<ISO>       → foydalanuvchining barcha do'konlaridagi sotuvlari
  *
- * MUHIM: mahsulotlar uchun /sync/pull ISHLATILMAYDI — chunki
- * backend/src/services/sync.service.js'dagi pullData() mahsulotlarni `createdById: userId`
- * bo'yicha cheklaydi (faqat shu foydalanuvchi yaratgan tovarlar). Bu web'dagi global katalog
- * bilan mos kelmaydi — boshqa foydalanuvchi (yoki admin panel) qo'shgan tovar hech qachon
- * mobilga qaytmas edi. Shuning uchun tovar katalogi uchun alohida, cheklanmagan
- * `GET /products` ishlatiladi (pullProductCatalog()).
+ * Eski versiyada `GET /products` (global, cheklanmagan katalog) ishlatilgan edi —
+ * marketplace pivotidan keyin bu endpoint BUYER-side butun bozor katalogini qaytaradi
+ * (barcha do'konlar), seller-side lokal POS bazasi uchun yaroqsiz. Shuning uchun endi
+ * har bir egalik qilingan do'kon uchun alohida `GET /shops/:id/products` chaqiriladi.
  *
  * Konflikt qoidasi (ikkalasida ham): agar mahalliy yozuv hali push qilinmagan bo'lsa
  * (is_synced=false), pull uni ustidan yozmaydi — mahalliy tahrir har doim ustun, keyingi
@@ -31,12 +28,14 @@ import {
   suppliersCollection,
   supplierTxCollection,
   employeesCollection,
+  shopsCollection,
 } from "@/db";
 import { Product } from "@/db/models/Product";
 import { Sale } from "@/db/models/Sale";
 import { Q } from "@nozbe/watermelondb";
 import { api } from "./api";
 import { useSyncStore } from "@/store/syncStore";
+import { useShopStore } from "@/store/shopStore";
 import { mmkv } from "@/store/storage";
 
 const LAST_PULL_KEY = "lastSyncAt";
@@ -51,6 +50,13 @@ type SyncOperation = {
 
 type SyncResult = { entityId: string; status: string; serverEntityId?: string };
 
+type RemoteShop = {
+  id: string;
+  name: string;
+  description: string;
+  isBlocked: boolean;
+};
+
 type RemoteProduct = {
   id: string;
   name: string;
@@ -59,11 +65,12 @@ type RemoteProduct = {
   stock: number;
   unit: string;
   isActive: boolean;
-  createdById?: string | null;
+  shopId: string;
 };
 
 type RemoteSale = {
   id: string;
+  shopId: string;
   productId: string | null;
   productName: string;
   quantity: number;
@@ -90,12 +97,15 @@ export async function runSync() {
     }
     // Pull har doim chaqiriladi — push uchun kutayotgan narsa bo'lmasa ham,
     // admin panel/webda qilingan o'zgarishlar bo'lishi mumkin.
-    await pullProductCatalog();
+    const shops = await pullShops();
+    await pullProductCatalog(shops);
     await pullSync();
     useSyncStore.getState().setLastSynced();
+    useSyncStore.getState().setLastError(null);
     useSyncStore.getState().setPendingCount(await getPendingCount());
-  } catch (err) {
+  } catch (err: any) {
     console.warn("Sync error:", err);
+    useSyncStore.getState().setLastError(err?.message ?? String(err));
     useSyncStore.getState().setPendingCount(await getPendingCount());
   } finally {
     useSyncStore.getState().setSyncing(false);
@@ -103,11 +113,15 @@ export async function runSync() {
 }
 
 async function syncProducts() {
-  const unsynced = await database.collections
+  const allUnsynced = await database.collections
     .get<Product>("products")
     .query(Q.where("is_synced", false))
     .fetch();
 
+  // A product created before any shop existed (or while offline, before the
+  // active shop was resolved) has no shop_id yet — the backend requires one
+  // on every synced product, so these are left pending rather than sent.
+  const unsynced = allUnsynced.filter((p) => !!p.shopId);
   if (unsynced.length === 0) return;
 
   // Local id / server id → model, natijani qayta yozish uchun
@@ -137,6 +151,7 @@ async function syncProducts() {
   const operations: SyncOperation[] = unsynced.map((p) => {
     // Faqat backend Product sxemasidagi maydonlar (payload prisma.create/update ga spread qilinadi)
     const payload = {
+      shopId: p.shopId,
       name: p.name,
       buyPrice: p.buyPrice,
       sellPrice: p.sellPrice,
@@ -147,6 +162,19 @@ async function syncProducts() {
       isActive: p.archivedAt ? false : true,
     };
 
+    if (p.serverId && p.archivedAt) {
+      // Archived locally — tell the server to soft-delete (isActive:false) instead
+      // of "update", which the server ignores for isActive (server-owned field).
+      // Without this the product stays isActive:true forever and the next pull
+      // resurrects the local archive too.
+      return {
+        operation: "delete",
+        entity: "product",
+        entityId: p.serverId,
+        payload: { shopId: p.shopId },
+        clientUpdatedAt: toMillis(p.updatedAt),
+      };
+    }
     if (p.serverId) {
       return {
         operation: "update",
@@ -182,11 +210,13 @@ async function syncProducts() {
 }
 
 async function syncSales() {
-  const unsynced = await database.collections
+  const allUnsynced = await database.collections
     .get<Sale>("sales")
     .query(Q.where("is_synced", false))
     .fetch();
 
+  // Same reasoning as syncProducts(): a sale without a shop_id can't be pushed yet.
+  const unsynced = allUnsynced.filter((s) => !!s.shopId);
   if (unsynced.length === 0) return;
 
   const byLocalId = new Map(unsynced.map((s) => [s.id, s]));
@@ -212,6 +242,7 @@ async function syncSales() {
       entity: "sale",
       entityId: s.id,
       payload: {
+        shopId: s.shopId,
         product: serverProductId,
         productName: s.productName,
         quantity: s.qty,
@@ -242,16 +273,73 @@ async function syncSales() {
 }
 
 /**
- * Server → Mobile: global tovar katalogini (`GET /products`, cheklanmagan — hamma
- * foydalanuvchining tovarlari) olib kelib, mahalliy bazaga (serverId bo'yicha) upsert
- * qiladi. Hali push qilinmagan mahalliy yozuvlar (is_synced=false) ustidan yozilmaydi.
- * Incremental emas — har safar to'liq katalog qayta olinadi (kichik-o'rta do'kon uchun
- * bu yetarli va eng sodda yechim).
+ * Server → Mobile: foydalanuvchining o'z do'konlari ro'yxatini (`GET /shops/mine`)
+ * olib kelib, mahalliy `shops` jadvaliga (serverId bo'yicha) upsert qiladi.
+ * Bitta do'kon bo'lsa va hali faol do'kon tanlanmagan bo'lsa — avtomatik faollashtiradi.
+ * Natijada qaytgan ro'yxat pullProductCatalog() ga uzatiladi (har do'kon uchun
+ * alohida `GET /shops/:id/products` chaqirish uchun).
  */
-async function pullProductCatalog() {
-  const { data: body } = await api.get("/products", { params: { limit: 1000 } });
+async function pullShops(): Promise<RemoteShop[]> {
+  const { data: body } = await api.get("/shops/mine");
   const payload = body?.data ?? body ?? {};
-  const remoteProducts: RemoteProduct[] = payload.products ?? [];
+  const remoteShops: RemoteShop[] = payload.shops ?? [];
+
+  const localByServerId = new Map(
+    (await shopsCollection.query(Q.where("server_id", Q.oneOf(remoteShops.map((s) => s.id)))).fetch())
+      .map((s) => [s.serverId, s])
+  );
+
+  await database.write(async () => {
+    for (const rs of remoteShops) {
+      const local = localByServerId.get(rs.id);
+      if (local) {
+        await local.update((s) => {
+          s.name = rs.name;
+          s.description = rs.description ?? "";
+          s.isBlocked = rs.isBlocked;
+          s.isSynced = true;
+        });
+      } else {
+        await shopsCollection.create((s) => {
+          s.serverId = rs.id;
+          s.name = rs.name;
+          s.description = rs.description ?? "";
+          s.isBlocked = rs.isBlocked;
+          s.isSynced = true;
+        });
+      }
+    }
+  });
+
+  const { activeShopId, setActiveShop } = useShopStore.getState();
+  if (!activeShopId && remoteShops.length === 1) {
+    await setActiveShop(remoteShops[0].id);
+  }
+
+  return remoteShops;
+}
+
+/**
+ * Server → Mobile: har bir do'kon uchun `GET /shops/:id/products` chaqirib,
+ * mahalliy bazaga (serverId bo'yicha) upsert qiladi. Hali push qilinmagan
+ * mahalliy yozuvlar (is_synced=false) ustidan yozilmaydi. Incremental emas —
+ * har safar to'liq katalog qayta olinadi (kichik-o'rta do'kon uchun bu yetarli
+ * va eng sodda yechim).
+ *
+ * MUHIM: bloklangan do'kondagi mahsulotlar ham keladi (owner sifatida), shuning
+ * uchun bu funksiya `isBlocked` ni tekshirmaydi — do'konning o'zi UI'da bloklangan
+ * deb ko'rsatiladi, mahsulotlar esa lokal saqlanaveradi.
+ */
+async function pullProductCatalog(shops: RemoteShop[]) {
+  if (shops.length === 0) return;
+
+  const remoteProducts: RemoteProduct[] = [];
+  for (const shop of shops) {
+    const { data: body } = await api.get(`/shops/${shop.id}/products`, { params: { limit: 1000 } });
+    const payload = body?.data ?? body ?? {};
+    const products: Omit<RemoteProduct, "shopId">[] = payload.products ?? [];
+    for (const p of products) remoteProducts.push({ ...p, shopId: shop.id });
+  }
   if (remoteProducts.length === 0) return;
 
   const localByServerId = new Map(
@@ -273,7 +361,7 @@ async function pullProductCatalog() {
           p.unit = rp.unit;
           p.archivedAt = rp.isActive ? null : (p.archivedAt ?? Date.now());
           p.isSynced = true;
-          p.createdById = rp.createdById ?? null;
+          p.shopId = rp.shopId;
         });
       } else {
         await productsCollection.create((p) => {
@@ -287,7 +375,7 @@ async function pullProductCatalog() {
           p.archivedAt = rp.isActive ? null : Date.now();
           p.isSynced = true;
           p.serverId = rp.id;
-          p.createdById = rp.createdById ?? null;
+          p.shopId = rp.shopId;
         });
       }
     }
@@ -335,6 +423,7 @@ async function pullSync() {
             s.profit = rs.profit;
             s.note = rs.note ?? null;
             s.soldAt = new Date(rs.createdAt).getTime();
+            s.shopId = rs.shopId;
             s.isSynced = true;
             s.serverId = rs.id;
           });
@@ -394,4 +483,8 @@ export async function clearLocalData() {
     await database.unsafeResetDatabase();
   });
   await mmkv.delete(LAST_PULL_KEY);
+  // Faol do'kon ham shu qurilma-foydalanuvchi juftligiga tegishli — aks holda
+  // shu qurilmaga keyin kirgan boshqa foydalanuvchi avvalgi egasining do'kon
+  // ID'sini "faol" deb meros qilib oladi.
+  await useShopStore.getState().setActiveShop(null);
 }

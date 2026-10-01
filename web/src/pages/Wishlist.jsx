@@ -16,7 +16,7 @@ export default function Wishlist() {
   return (
     <div className="container py-8">
       <h1 className="text-2xl font-bold mb-6 flex items-center gap-2">
-        <Heart className="h-6 w-6 text-red-500 fill-red-500" /> Wishlist
+        <Heart className="h-6 w-6 text-red-500 fill-red-500" /> Sevimlilar
       </h1>
 
       {isLoading ? (
@@ -24,8 +24,8 @@ export default function Wishlist() {
       ) : products.length === 0 ? (
         <div className="text-center py-20 text-gray-400">
           <Heart className="h-16 w-16 mx-auto mb-4 text-gray-300" />
-          <p className="text-lg font-medium">Your wishlist is empty</p>
-          <Link to="/products" className="btn-primary btn mt-4 inline-flex">Discover Products</Link>
+          <p className="text-lg font-medium">Sevimlilar ro'yxati bo'sh</p>
+          <Link to="/products" className="btn-primary btn mt-4 inline-flex">Mahsulotlarni ko'rish</Link>
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">

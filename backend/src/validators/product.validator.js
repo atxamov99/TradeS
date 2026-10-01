@@ -1,6 +1,9 @@
 const Joi = require('joi');
 
 const createProductSchema = Joi.object({
+  // Which of the caller's shops this product belongs to. Ownership is verified
+  // server-side in product.service.js before the row is created.
+  shopId: Joi.string().trim().max(64).required(),
   name: Joi.string().trim().max(200).required(),
   buyPrice: Joi.number().min(0).required(),
   sellPrice: Joi.number().min(0).required(),
@@ -53,6 +56,10 @@ const reviewSchema = Joi.object({
 
 const restockSchema = Joi.object({
   quantity: Joi.number().greater(0).required(),
+  // Optional: this batch was bought in at a different cost than the product's
+  // current buyPrice. Omitted → the product's buyPrice is recorded.
+  buyPrice: Joi.number().min(0),
+  note: Joi.string().trim().max(500).allow('').default(''),
 });
 
 module.exports = { createProductSchema, updateProductSchema, reviewSchema, restockSchema };

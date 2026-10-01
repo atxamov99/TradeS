@@ -1,16 +1,21 @@
 const prisma = require('../config/prisma');
 const ApiError = require('../utils/ApiError');
-const { clampLimit } = require('../utils/pagination');
+const { assertShopOwnership } = require('./shop.service');
+const { clampLimit, clampPage } = require('../utils/pagination');
 const { assertTestUserWithinLimits } = require('../utils/testUserLimits');
 
 const createSale = async (userId, saleData) => {
-  const { product: productId, productName, quantity, sellPrice, buyPrice, unit, note, syncId, isFromOffline, createdAt } = saleData;
+  const { shopId, product: productId, productName, quantity, sellPrice, buyPrice, unit, note, syncId, isFromOffline, createdAt } = saleData;
 
   // Check for duplicate syncId (idempotent offline sync)
   if (syncId) {
     const existing = await prisma.sale.findUnique({ where: { syncId } });
     if (existing) return existing;
   }
+
+  // v1 POS sales are owner-only, so this doubles as the authorization check:
+  // you may only record a sale against a shop you own.
+  await assertShopOwnership(shopId, userId);
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -22,11 +27,11 @@ const createSale = async (userId, saleData) => {
   const sp = Number(sellPrice) || 0;
   const bp = Number(buyPrice) || 0;
 
-  // If a productId is given, it must belong to this user — prevents decrementing
-  // another owner's stock via a forged productId (IDOR).
+  // If a productId is given, it must belong to the same shop — prevents
+  // decrementing another shop's stock via a forged productId (IDOR).
   if (productId) {
     const owned = await prisma.product.findFirst({
-      where: { id: productId, ownerId: userId },
+      where: { id: productId, shopId },
       select: { id: true, stock: true },
     });
     if (!owned) throw new ApiError(404, `Product ${productId} not found`);
@@ -48,6 +53,7 @@ const createSale = async (userId, saleData) => {
     const sale = await tx.sale.create({
       data: {
         userId,
+        shopId,
         productId: productId || null,
         productName,
         quantity: qty,
@@ -93,8 +99,12 @@ const bulkSync = async (userId, sales) => {
   return results;
 };
 
-const getSales = async (userId, { page = 1, limit = 100, from, to, date } = {}) => {
+const getSales = async (userId, { shopId, page = 1, limit = 100, from, to, date } = {}) => {
+  // userId stays in the filter even when a shop is given: v1 has no employees,
+  // so "my sales" and "this shop's sales" are the same set, and keeping both
+  // means a future employee sale can't retroactively widen this listing.
   const where = { userId };
+  if (shopId) where.shopId = shopId;
 
   if (date) {
     // Single day filter
@@ -110,7 +120,8 @@ const getSales = async (userId, { page = 1, limit = 100, from, to, date } = {}) 
   }
 
   const take = clampLimit(limit, 100);
-  const skip = (Number(page) - 1) * take;
+  const currentPage = clampPage(page);
+  const skip = (currentPage - 1) * take;
 
   const [sales, total] = await Promise.all([
     prisma.sale.findMany({
@@ -122,7 +133,12 @@ const getSales = async (userId, { page = 1, limit = 100, from, to, date } = {}) 
     prisma.sale.count({ where }),
   ]);
 
-  return { sales, total, page: Number(page), pages: Math.ceil(total / take) };
+  return { sales, total, page: currentPage, pages: Math.ceil(total / take) };
 };
 
-module.exports = { createSale, bulkSync, getSales };
+const getShopSales = async (shopId, userId, queryParams = {}) => {
+  await assertShopOwnership(shopId, userId);
+  return getSales(userId, { ...queryParams, shopId });
+};
+
+module.exports = { createSale, bulkSync, getSales, getShopSales };

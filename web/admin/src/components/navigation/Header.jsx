@@ -8,7 +8,7 @@ export function Header({ onMenuToggle }) {
   const { locale, setLocale, supportedLocales, t } = useI18n();
 
   return (
-    <header className="h-16 sticky top-0 z-10 bg-surface/80 backdrop-blur-md border-b border-outline-variant flex justify-between items-center px-4 md:px-8">
+    <header className="h-16 sticky top-0 z-10 bg-surface/80 backdrop-blur-md border-b border-outline-variant flex justify-between items-center px-4 md:px-8 print:hidden">
       {/* Left: menu (mobile) + search */}
       <div className="flex items-center gap-3 min-w-0 flex-1">
         <button

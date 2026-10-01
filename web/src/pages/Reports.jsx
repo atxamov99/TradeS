@@ -4,9 +4,11 @@ import { BarChart2, TrendingUp, DollarSign, ShoppingCart, AlertCircle } from 'lu
 import { useTranslation } from 'react-i18next';
 import * as reportsApi from '../api/reports.api';
 import * as salesApi from '../api/sales.api';
+import useShopStore from '../store/shopStore';
 
 export default function Reports() {
   const { t, i18n } = useTranslation();
+  const activeShopId = useShopStore((s) => s.activeShopId);
   const locale = i18n.language.startsWith('uz') ? 'uz-UZ' : i18n.language.startsWith('ru') ? 'ru-RU' : 'en-US';
 
   function fmt(n) {
@@ -48,13 +50,13 @@ export default function Reports() {
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
 
     const { data: reportData, isLoading: reportLoading, isError: reportError, refetch: refetchReport } = useQuery({
-      queryKey: ['report-daily', date],
-      queryFn: () => reportsApi.getDailyReport(date),
+      queryKey: ['report-daily', date, activeShopId],
+      queryFn: () => reportsApi.getDailyReport(date, activeShopId),
     });
 
     const { data: salesData, isLoading: salesLoading, isError: salesError, refetch: refetchSales } = useQuery({
-      queryKey: ['sales-today', date],
-      queryFn: () => salesApi.getSales({ date }),
+      queryKey: ['sales-today', date, activeShopId],
+      queryFn: () => salesApi.getSales({ date, shopId: activeShopId }),
     });
 
     const report = reportData?.data?.data || {};
@@ -151,8 +153,8 @@ export default function Reports() {
     const [month, setMonth] = useState(defaultMonth);
 
     const { data, isLoading, isError, refetch } = useQuery({
-      queryKey: ['report-monthly', month],
-      queryFn: () => reportsApi.getMonthlyReport(month),
+      queryKey: ['report-monthly', month, activeShopId],
+      queryFn: () => reportsApi.getMonthlyReport(month, activeShopId),
     });
 
     const report = data?.data?.data || {};

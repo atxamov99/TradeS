@@ -8,12 +8,14 @@ import { Product } from "@/db/models/Product";
 import { useProducts } from "@/hooks/useProducts";
 import { useT } from "@/hooks/useT";
 import { useTheme } from "@/hooks/useTheme";
+import { useShopStore } from "@/store/shopStore";
 
 type SaleResult = { name: string; qty: number; totalAmount: number; profit: number };
 
 export default function AddSaleScreen() {
   const t = useT();
   const { c } = useTheme();
+  const activeShopId = useShopStore((s) => s.activeShopId);
   const allProducts = useProducts();
   const [search, setSearch] = useState("");
   const [showScanner, setShowScanner] = useState(false);
@@ -45,6 +47,7 @@ export default function AddSaleScreen() {
           s.soldAt = Date.now();
           s.isSynced = false;
           s.serverId = null;
+          s.shopId = activeShopId;
         });
         await selected.update((p) => {
           // Manfiy stok bo'lmasin (audit: HIGH H2) — handleSale allaqachon oldindan

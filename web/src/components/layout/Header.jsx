@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Heart, Sun, Moon, User, LogOut, LayoutDashboard, Menu, X } from 'lucide-react';
+import { ShoppingCart, Heart, Sun, Moon, User, LogOut, LayoutDashboard, Menu, X, Package } from 'lucide-react';
 import { useState } from 'react';
 import useAuthStore from '../../store/authStore';
 import useCartStore from '../../store/cartStore';
@@ -31,8 +31,16 @@ export default function Header() {
         {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
           <Link to="/products" className="text-gray-600 hover:text-primary-600 dark:text-gray-300">
-            Products
+            Mahsulotlar
           </Link>
+          <Link to="/help" className="text-gray-600 hover:text-primary-600 dark:text-gray-300">
+            Yordam
+          </Link>
+          {user && (
+            <Link to="/dashboard" className="text-gray-600 hover:text-primary-600 dark:text-gray-300">
+              Do'konim
+            </Link>
+          )}
           {isAdmin() && (
             <Link to="/admin" className="text-gray-600 hover:text-primary-600 dark:text-gray-300">
               Admin
@@ -48,6 +56,9 @@ export default function Header() {
 
           {user && (
             <>
+              <Link to="/my-orders" className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" title="Buyurtmalarim">
+                <Package className="h-5 w-5" />
+              </Link>
               <Link to="/wishlist" className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                 <Heart className="h-5 w-5" />
               </Link>
@@ -80,11 +91,25 @@ export default function Header() {
                     <div className="px-3 py-2 text-xs font-medium text-gray-500">{user.email}</div>
                     <hr className="my-1" />
                     <Link
+                      to="/dashboard"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
+                    >
+                      <LayoutDashboard className="h-4 w-4" /> Do'konim
+                    </Link>
+                    <Link
+                      to="/my-orders"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
+                    >
+                      <Package className="h-4 w-4" /> Buyurtmalarim
+                    </Link>
+                    <Link
                       to="/profile"
                       onClick={() => setUserMenuOpen(false)}
                       className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
                     >
-                      <User className="h-4 w-4" /> Profile
+                      <User className="h-4 w-4" /> Profil
                     </Link>
                     {isAdmin() && (
                       <Link
@@ -100,7 +125,7 @@ export default function Header() {
                       onClick={() => { setUserMenuOpen(false); handleLogout(); }}
                       className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
                     >
-                      <LogOut className="h-4 w-4" /> Logout
+                      <LogOut className="h-4 w-4" /> Chiqish
                     </button>
                   </div>
                 </>
@@ -123,11 +148,18 @@ export default function Header() {
       {/* Mobile menu */}
       {mobileOpen && (
         <div className="md:hidden border-t bg-white dark:bg-gray-900 px-4 py-4 space-y-2">
-          <Link to="/products" onClick={() => setMobileOpen(false)} className="block py-2 text-sm font-medium">Products</Link>
+          <Link to="/products" onClick={() => setMobileOpen(false)} className="block py-2 text-sm font-medium">Mahsulotlar</Link>
+          <Link to="/help" onClick={() => setMobileOpen(false)} className="block py-2 text-sm font-medium">Yordam</Link>
+          {user && (
+            <>
+              <Link to="/dashboard" onClick={() => setMobileOpen(false)} className="block py-2 text-sm font-medium">Do'konim</Link>
+              <Link to="/my-orders" onClick={() => setMobileOpen(false)} className="block py-2 text-sm font-medium">Buyurtmalarim</Link>
+            </>
+          )}
           {!user && (
             <>
-              <Link to="/login" onClick={() => setMobileOpen(false)} className="block py-2 text-sm">Login</Link>
-              <Link to="/register" onClick={() => setMobileOpen(false)} className="block py-2 text-sm font-medium text-primary-600">Register</Link>
+              <Link to="/login" onClick={() => setMobileOpen(false)} className="block py-2 text-sm">Kirish</Link>
+              <Link to="/register" onClick={() => setMobileOpen(false)} className="block py-2 text-sm font-medium text-primary-600">Ro'yxatdan o'tish</Link>
             </>
           )}
         </div>

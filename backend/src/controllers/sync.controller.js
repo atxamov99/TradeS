@@ -12,8 +12,8 @@ const push = asyncHandler(async (req, res) => {
 });
 
 const pull = asyncHandler(async (req, res) => {
-  const lastSyncAt = req.query.lastSyncAt;
-  const data = await syncService.pullData(req.user.id, lastSyncAt);
+  const { lastSyncAt, shopId } = req.query;
+  const data = await syncService.pullData(req.user.id, lastSyncAt, shopId);
   res.status(200).json(new ApiResponse(200, data, 'Sync pull completed'));
 });
 

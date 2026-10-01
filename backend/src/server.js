@@ -118,15 +118,17 @@ const cleanupExpiredTestUsers = async () => {
     const ids = expired.map((u) => u.id);
 
     // Sale.userId, SyncQueue.userId, Order.userId, and InventoryBatch.userId
-    // are all required FKs with no onDelete: Cascade to User (same for
-    // Product.ownerId/createdById, though those are optional), so these
+    // are all required FKs with no onDelete: Cascade to User, so these
     // throwaway rows must be deleted explicitly before the User row itself —
     // otherwise a required FK on any one of them would reject the whole
-    // batched User delete. Order already cascades to OrderItem/
-    // ShippingAddress via their own onDelete: Cascade, so deleting Order
-    // rows alone covers those. All deletes run in one transaction so we
-    // never end up with orphaned rows and a still-present User, or vice
-    // versa.
+    // batched User delete. Products now hang off Shop (Shop cascades from
+    // User, Product cascades from Shop), but they are still removed
+    // explicitly and in order here, because Sale/Order/InventoryBatch
+    // reference Product with RESTRICT and would block the cascade. Order
+    // already cascades to OrderItem/ShippingAddress via their own
+    // onDelete: Cascade, so deleting Order rows alone covers those. All
+    // deletes run in one transaction so we never end up with orphaned rows
+    // and a still-present User, or vice versa.
     //
     // NOTE: if a test user's Product is ever referenced by another user's
     // OrderItem/CartItem (both required FKs, default Restrict), this whole
@@ -137,7 +139,8 @@ const cleanupExpiredTestUsers = async () => {
       prisma.syncQueue.deleteMany({ where: { userId: { in: ids } } }),
       prisma.order.deleteMany({ where: { userId: { in: ids } } }),
       prisma.inventoryBatch.deleteMany({ where: { userId: { in: ids } } }),
-      prisma.product.deleteMany({ where: { OR: [{ ownerId: { in: ids } }, { createdById: { in: ids } }] } }),
+      prisma.product.deleteMany({ where: { shop: { ownerId: { in: ids } } } }),
+      prisma.shop.deleteMany({ where: { ownerId: { in: ids } } }),
       prisma.user.deleteMany({ where: { id: { in: ids } } }), // last element — the actual count we report
     ]);
     const { count } = results[results.length - 1];

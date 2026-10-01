@@ -1,5 +1,42 @@
 # Tasks (в работе / ожидают)
 
+## Code review 20.08.2026 — 4 parallel agent (backend/web/admin/mobile)
+
+Owner so'rovi: "mayda buglar ko'p, review kerak" — har repo alohida agentga berildi.
+
+### web/admin — TAYYOR
+- [ ] 🔴 Reports sahifasi hech qachon real data ko'rsatmaydi — `ReportsPage.jsx` javobni ikki marta unwrap qilmagan (`http.js` interceptor allaqachon bir marta ochadi). Kartalar/grafik doim bo'sh. Fix: `data.xxx` → `data.data.xxx`
+- [ ] 🟡 Roles/Permissions sahifalari stilsiz (mavjud bo'lmagan CSS class nomlari, Tailwind emas) — sidebarda ko'rinmaydi, lekin route orqali ochiladi
+- [ ] 🟡 Admin Forgot/Reset Password sahifalari — tugmalar handler'siz, router'da ulanmagan (o'lik)
+- [ ] 🟢 SsoPage.jsx'da 34 qatorlik ishlatilmaydigan duplikat kod
+- [ ] 🟢 store/adminData.js — deleteRole hech qayerdan chaqirilmaydi (UI'da o'chirish tugmasi yo'q)
+- [ ] 🟢 UsersPage.jsx:48-51 — ortiqcha/chalkash filter sharti (funksional bug emas)
+
+### web (seller-facing) — TAYYOR
+- [ ] 🔴 `/reset-password` butunlay ishlamaydi — App.jsx bu route'ni tekshirmasdan forgot-password'ga redirect qiladi, backend email havolasi ishlamay qoladi. ResetPasswordPage.jsx tayyor lekin import qilinmagan
+- [ ] 🟡 Cart/Checkout — yetkazib berish/soliq frontendda qattiq kodlangan (AQSh uslubi, $), backendga umuman yuborilmaydi — "Total" backend hisobidan farq qilishi mumkin
+- [ ] 🟡 Products.jsx StockBadge doim "dona" ko'rsatadi, mahsulot birligidan (kg/l/box) qat'i nazar
+- [ ] 🟡 components/guards/ProtectedRoute.jsx — ishlatilmaydigan, ishlatilsa BUZILGAN duplikat (App.jsx to'g'ri versiyani ishlatadi)
+- [ ] 🟡 Home/Cart/Checkout/Wishlist — butun "storefront" qismi inglizcha, i18n yo'q, $ mantiq — qolgan o'zbekcha POS'dan uzilgan, eskirgan shablon bo'lishi mumkin (o'chirilmadi, tasdiq kerak)
+- [ ] 🟢 formatPhone() kursor pozitsiyasini saqlamaydi
+- [ ] 🟢 Register.jsx probelli telefon yuboradi, Login/ForgotPassword tozalaydi — nomuvofiq
+
+### backend — TAYYOR
+- [x] **`Product.syncId` production DB'da yo'q edi (migration drift)** — 20.08.2026 Abdulaziz tasdig'i bilan `npx prisma db push --accept-data-loss` ishga tushirildi (unique constraint ogohlantirishi kutilgan edi — yangi ustun, mavjud qatorlar NULL, xavfsiz). Tasdiqlandi: `/api/v1/products` endi 500 (syncId) o'rniga to'g'ri 401 (token yo'q) qaytaryapti.
+- [ ] 🟡 `page` query parametri validatsiya qilinmaydi (`limit` uchun `clampLimit()` bor, `page` uchun yo'q) — noto'g'ri page (`0`, `-1`, matn) 400 o'rniga tushunarsiz 500 beradi. Product/order/sale/admin service'larning hammasida.
+- [ ] 🟡 cart.service.js — stock tekshiruvi transaction tashqarisida (addToCart/updateCartItem), race condition imkoniyati (checkout'da qayta tekshirilgani uchun real overselling yo'q, faqat cart darajasida noaniq xabar)
+- [ ] 🟢 product.service.js addReview — hisoblangan `average` reyting hech qayerga yozilmaydi, o'lik kod + eskirgan izohlar
+
+Auth oqimi (login/register/forgot-password/device-confirm) — jiddiy xato topilmadi, yaxshi yozilgan.
+
+### mobile — TAYYOR
+- [ ] 🟡 Sync xatolari foydalanuvchiga ko'rinmaydi (`syncEngine.ts` faqat `console.warn`, `syncStore.ts`da `lastError` yo'q, `SyncStatus.tsx` "muvaffaqiyatsiz" va "hali push qilinmagan"ni bir xil `⏳ N` bilan ko'rsatadi) — aynan shu pattern bugungi syncId buzilishini haftalab sezmasdan yashirgan bo'lardi. Taklif: `lastError` qo'shib, xatoni qizil rangda ko'rsatish
+- [ ] 🟡 "Xodimlar" (Team) — to'liq ishlaydigan CRUD ekran bor, lekin Settings'da "Tez orada" deb hardcoded qilingan, ekranga yo'l yo'q. PIN maydoni ham hech qayerda tekshirilmaydi (funksional emas)
+- [ ] 🟢 verify.tsx / verify-email.tsx — hech qayerdan chaqirilmaydigan o'lik ekranlar (OTP allaqachon register/forgot-password ichida)
+- [ ] 🟢 customers/employees/suppliers "qo'shish" ekranlarida telefon +998 formatlanmaydi (ixtiyoriy maydon, bug emas, faqat UX nomuvofiqlik)
+
+✅ Tasdiqlandi: +998 default to'g'ri ishlayapti, sync'dagi stok-himoya mantiqi to'g'ri, boshqa jiddiy muammo yo'q.
+
 ## Сейчас
 - [x] Получить TELEGRAM_BOT_TOKEN от @BotFather для `trades_uz_bot` и добавить в `backend/.env` — готово, бот `@trades_uz_bot`, токен рабочий (подтверждено через `getMe`)
 - [x] Проверить регистрацию end-to-end вживую — 2026-07-30: `/start` боту `@trades_uz_bot` + шаринг контакта → лог `Telegram linked phone 998940335044 -> chat 5921238772`; т.к. номер уже был зарегистрирован (тест 2026-07-03), прогнали через `forgot-password` (тот же Telegram-OTP механизм) — код пришёл, пароль обновлён, логин → `/dashboard` открылся с реальными данными. Полный цикл подтверждён рабочим.

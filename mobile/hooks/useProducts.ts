@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { productsCollection } from "@/db";
 import { Product } from "@/db/models/Product";
 import { Q } from "@nozbe/watermelondb";
+import { useShopStore } from "@/store/shopStore";
 
 function useDebounce<T>(value: T, delay = 300): T {
   const [debounced, setDebounced] = useState(value);
@@ -12,13 +13,19 @@ function useDebounce<T>(value: T, delay = 300): T {
   return debounced;
 }
 
-/** Barcha aktiv tovarlar (real-time observable) */
+/** Faol do'konning aktiv tovarlari (real-time observable). Faol do'kon tanlanmagan
+ * bo'lsa bo'sh ro'yxat qaytaradi — seller ekranlari endi do'kon-kontekstiga bog'liq. */
 export function useProducts(search?: string, categoryId?: string | null) {
   const [products, setProducts] = useState<Product[]>([]);
   const debouncedSearch = useDebounce(search ?? "", 300);
+  const activeShopId = useShopStore((s) => s.activeShopId);
 
   useEffect(() => {
-    const conditions = [Q.where("archived_at", null)];
+    if (!activeShopId) {
+      setProducts([]);
+      return;
+    }
+    const conditions = [Q.where("archived_at", null), Q.where("shop_id", activeShopId)];
     if (debouncedSearch) {
       conditions.push(Q.where("name", Q.like(`%${Q.sanitizeLikeString(debouncedSearch)}%`)));
     }
@@ -27,7 +34,7 @@ export function useProducts(search?: string, categoryId?: string | null) {
     }
     const sub = productsCollection.query(...conditions).observe().subscribe(setProducts);
     return () => sub.unsubscribe();
-  }, [debouncedSearch, categoryId]);
+  }, [debouncedSearch, categoryId, activeShopId]);
 
   return products;
 }
@@ -47,47 +54,62 @@ export function useProduct(id: string) {
   return product;
 }
 
-/** Kam qolgan tovarlar soni (real-time) — tab badge uchun */
+/** Faol do'konda kam qolgan tovarlar soni (real-time) — tab badge uchun */
 export function useLowStockCount() {
   const [count, setCount] = useState(0);
+  const activeShopId = useShopStore((s) => s.activeShopId);
 
   useEffect(() => {
+    if (!activeShopId) {
+      setCount(0);
+      return;
+    }
     const sub = productsCollection
-      .query(Q.where("archived_at", null), Q.where("stock_qty", Q.lte(5)))
+      .query(Q.where("archived_at", null), Q.where("stock_qty", Q.lte(5)), Q.where("shop_id", activeShopId))
       .observeCount()
       .subscribe(setCount);
     return () => sub.unsubscribe();
-  }, []);
+  }, [activeShopId]);
 
   return count;
 }
 
-/** Kam qolgan tovarlar ro'yxati (≤5) — home dashboard uchun */
+/** Faol do'konda kam qolgan tovarlar ro'yxati (≤5) — home dashboard uchun */
 export function useLowStockProducts() {
   const [products, setProducts] = useState<Product[]>([]);
+  const activeShopId = useShopStore((s) => s.activeShopId);
 
   useEffect(() => {
+    if (!activeShopId) {
+      setProducts([]);
+      return;
+    }
     const sub = productsCollection
-      .query(Q.where("archived_at", null), Q.where("stock_qty", Q.lte(5)))
+      .query(Q.where("archived_at", null), Q.where("stock_qty", Q.lte(5)), Q.where("shop_id", activeShopId))
       .observe()
       .subscribe(setProducts);
     return () => sub.unsubscribe();
-  }, []);
+  }, [activeShopId]);
 
   return products;
 }
 
-/** Jami aktiv tovarlar soni (tarif limiti uchun) */
+/** Faol do'kondagi jami aktiv tovarlar soni (tarif limiti uchun) */
 export function useProductCount() {
   const [count, setCount] = useState(0);
+  const activeShopId = useShopStore((s) => s.activeShopId);
 
   useEffect(() => {
+    if (!activeShopId) {
+      setCount(0);
+      return;
+    }
     const sub = productsCollection
-      .query(Q.where("archived_at", null))
+      .query(Q.where("archived_at", null), Q.where("shop_id", activeShopId))
       .observeCount()
       .subscribe(setCount);
     return () => sub.unsubscribe();
-  }, []);
+  }, [activeShopId]);
 
   return count;
 }

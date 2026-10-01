@@ -259,6 +259,15 @@ export default function ProfileScreen() {
       {/* Business */}
       <Section title="Biznes">
         <Row
+          iconName="storefront"
+          iconBg="#DCFCE7"
+          label="Do'konlarim"
+          sub="Do'kon ochish, tanlash va boshqarish"
+          right={<Ionicons name="chevron-forward" size={18} color={c.textMuted} />}
+          onPress={() => router.push("/shops")}
+        />
+        <Divider />
+        <Row
           iconName="bar-chart"
           iconBg="#EDE9FE"
           label={t.reports.title}

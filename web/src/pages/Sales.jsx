@@ -1,14 +1,17 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ShoppingCart, Plus, X, AlertCircle } from 'lucide-react';
+import { ShoppingCart, Plus, X, AlertCircle, Store } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import * as salesApi from '../api/sales.api';
-import * as productsApi from '../api/products.api';
+import * as shopApi from '../api/shop.api';
+import useShopStore from '../store/shopStore';
 import Dropdown from '../components/ui/Dropdown';
 
 export default function Sales() {
   const { t, i18n } = useTranslation();
+  const activeShopId = useShopStore((s) => s.activeShopId);
   const locale = i18n.language.startsWith('uz') ? 'uz-UZ' : i18n.language.startsWith('ru') ? 'ru-RU' : 'en-US';
 
   function fmt(n) {
@@ -24,8 +27,9 @@ export default function Sales() {
     const qc = useQueryClient();
 
     const { data: productsData } = useQuery({
-      queryKey: ['products'],
-      queryFn: () => productsApi.getProducts(),
+      queryKey: ['shop-products', activeShopId],
+      queryFn: () => shopApi.getShopProducts(activeShopId, { limit: 200 }),
+      enabled: !!activeShopId,
       staleTime: 0,
       refetchOnMount: true,
     });
@@ -48,7 +52,7 @@ export default function Sales() {
       onSuccess: () => {
         qc.invalidateQueries({ queryKey: ['sales-today'] });
         qc.invalidateQueries({ queryKey: ['reports-summary'] });
-        qc.invalidateQueries({ queryKey: ['products'] });
+        qc.invalidateQueries({ queryKey: ['shop-products', activeShopId] });
         toast.success(t('sale_added'));
         onClose();
       },
@@ -86,6 +90,7 @@ export default function Sales() {
       const errs = validate();
       if (Object.keys(errs).length) { setErrors(errs); return; }
       mutation.mutate({
+        shopId: activeShopId,
         product: selected.id,
         productName: selected.name,
         quantity: isBag ? bagTotalKg : Number(quantity),
@@ -225,8 +230,9 @@ export default function Sales() {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
 
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['sales-today', date],
-    queryFn: () => salesApi.getSales({ date }),
+    queryKey: ['sales-today', date, activeShopId],
+    queryFn: () => salesApi.getSales({ date, shopId: activeShopId }),
+    enabled: !!activeShopId,
     refetchInterval: 30000,
   });
 
@@ -242,7 +248,8 @@ export default function Sales() {
         <h1 className="text-lg font-bold text-[#0F172A] dark:text-slate-100">{t('sales')}</h1>
         <button
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white font-bold px-4 py-2.5 rounded-xl transition"
+          disabled={!activeShopId}
+          className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white font-bold px-4 py-2.5 rounded-xl transition disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <Plus size={18} />
           <span className="hidden sm:inline">{t('new_sale')}</span>
@@ -250,6 +257,20 @@ export default function Sales() {
         </button>
       </div>
 
+      {!activeShopId ? (
+        <div className="px-4 sm:px-6 py-16 max-w-3xl mx-auto text-center text-[#64748B] dark:text-slate-400">
+          <Store size={40} className="mx-auto mb-3 opacity-40" />
+          <p className="font-semibold">{t('no_shops_title')}</p>
+          <p className="text-sm mt-1">{t('no_shops_desc')}</p>
+          <Link
+            to="/dashboard/shops"
+            className="mt-4 inline-flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white font-bold px-5 py-3 rounded-xl transition"
+          >
+            <Plus size={18} />
+            {t('create_shop')}
+          </Link>
+        </div>
+      ) : (
       <div className="px-4 sm:px-6 py-5 max-w-3xl mx-auto flex flex-col gap-4">
         <input
           type="date"
@@ -335,6 +356,7 @@ export default function Sales() {
           </div>
         )}
       </div>
+      )}
 
       {showModal && <NewSaleModal onClose={() => setShowModal(false)} />}
     </div>

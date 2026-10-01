@@ -1,7 +1,8 @@
 const prisma = require('../config/prisma');
 const ApiError = require('../utils/ApiError');
 const bcrypt = require('bcryptjs');
-const { clampLimit } = require('../utils/pagination');
+const { createAuditLog } = require('./audit.service');
+const { clampLimit, clampPage } = require('../utils/pagination');
 
 const stripPassword = (user) => {
   if (!user) return user;
@@ -120,7 +121,8 @@ const getDashboardStats = async () => {
 
 const getAllUsers = async ({ page = 1, limit = 20, search, role } = {}) => {
   const take = clampLimit(limit, 20);
-  const skip = (Number(page) - 1) * take;
+  const currentPage = clampPage(page);
+  const skip = (currentPage - 1) * take;
   const where = { deletedAt: null };
 
   if (search) {
@@ -141,7 +143,7 @@ const getAllUsers = async ({ page = 1, limit = 20, search, role } = {}) => {
     prisma.user.count({ where }),
   ]);
 
-  return { users: stripPasswordMany(users), total, page: Number(page), pages: Math.ceil(total / take) };
+  return { users: stripPasswordMany(users), total, page: currentPage, pages: Math.ceil(total / take) };
 };
 
 const getUserById = async (userId) => {
@@ -325,7 +327,7 @@ const deleteUser = async (userId, adminId, actorRole) => {
   const [salesCount, ordersCount, productsCount, inventoryCount, syncCount] = await Promise.all([
     prisma.sale.count({ where: { userId } }),
     prisma.order.count({ where: { userId } }),
-    prisma.product.count({ where: { OR: [{ ownerId: userId }, { createdById: userId }] } }),
+    prisma.product.count({ where: { shop: { ownerId: userId } } }),
     prisma.inventoryBatch.count({ where: { userId } }),
     prisma.syncQueue.count({ where: { userId } }),
   ]);
@@ -349,7 +351,8 @@ const deleteUser = async (userId, adminId, actorRole) => {
 
 const getAllAdmins = async ({ page = 1, limit = 50 } = {}) => {
   const take = clampLimit(limit, 20);
-  const skip = (Number(page) - 1) * take;
+  const currentPage = clampPage(page);
+  const skip = (currentPage - 1) * take;
   const where = { role: { in: ['ADMIN', 'SUPER_ADMIN'] }, deletedAt: null };
 
   const [users, total] = await Promise.all([
@@ -357,7 +360,7 @@ const getAllAdmins = async ({ page = 1, limit = 50 } = {}) => {
     prisma.user.count({ where }),
   ]);
 
-  return { users: stripPasswordMany(users), total, page: Number(page), pages: Math.ceil(total / take) };
+  return { users: stripPasswordMany(users), total, page: currentPage, pages: Math.ceil(total / take) };
 };
 
 const toggleAdminStatus = async (userId, adminId, actorRole) => {
@@ -377,7 +380,8 @@ const toggleAdminStatus = async (userId, adminId, actorRole) => {
 
 const getAllOrders = async ({ page = 1, limit = 20, status } = {}) => {
   const take = clampLimit(limit, 20);
-  const skip = (Number(page) - 1) * take;
+  const currentPage = clampPage(page);
+  const skip = (currentPage - 1) * take;
   const where = {};
   if (status) where.orderStatus = status;
 
@@ -387,13 +391,79 @@ const getAllOrders = async ({ page = 1, limit = 20, status } = {}) => {
       orderBy: { createdAt: 'desc' },
       skip,
       take,
-      include: { user: { select: { name: true, email: true } } },
+      include: {
+        user: { select: { name: true, email: true } },
+        shop: { select: { id: true, name: true } },
+      },
     }),
     prisma.order.count({ where }),
   ]);
 
-  return { orders, total, page: Number(page), pages: Math.ceil(total / take) };
+  return { orders, total, page: currentPage, pages: Math.ceil(total / take) };
 };
+
+// ── Shops ──────────────────────────────────────────────────────────────────
+
+const adminListShops = async ({ page = 1, limit = 20, search, blocked } = {}) => {
+  const take = clampLimit(limit, 20);
+  const currentPage = clampPage(page);
+  const skip = (currentPage - 1) * take;
+
+  const where = {};
+  if (search) {
+    where.OR = [
+      { name: { contains: search, mode: 'insensitive' } },
+      { owner: { name: { contains: search, mode: 'insensitive' } } },
+      { owner: { phone: { contains: search, mode: 'insensitive' } } },
+    ];
+  }
+  if (blocked !== undefined) where.isBlocked = blocked === 'true' || blocked === true;
+
+  const [shops, total] = await Promise.all([
+    prisma.shop.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take,
+      include: {
+        owner: { select: { id: true, name: true, phone: true } },
+        _count: { select: { products: true } },
+      },
+    }),
+    prisma.shop.count({ where }),
+  ]);
+
+  return { shops, total, page: currentPage, pages: Math.ceil(total / take) };
+};
+
+const setShopBlocked = async (shopId, { isBlocked, blockedReason }, actor) => {
+  const shop = await prisma.shop.findUnique({ where: { id: shopId } });
+  if (!shop) throw new ApiError(404, 'Shop not found');
+
+  const updated = await prisma.shop.update({
+    where: { id: shopId },
+    data: { isBlocked, blockedReason: isBlocked ? blockedReason || '' : null },
+  });
+
+  await createAuditLog({
+    action: isBlocked ? 'SHOP_BLOCKED' : 'SHOP_UNBLOCKED',
+    category: 'shop',
+    actor: actor?.name || '',
+    actorId: actor?.id,
+    target: updated.name,
+    targetId: updated.id,
+    ip: actor?.ip || '',
+    metadata: isBlocked ? { reason: updated.blockedReason } : undefined,
+  }).catch(() => {});
+
+  return updated;
+};
+
+const adminBlockShop = (shopId, reason, actor) =>
+  setShopBlocked(shopId, { isBlocked: true, blockedReason: reason }, actor);
+
+const adminUnblockShop = (shopId, actor) =>
+  setShopBlocked(shopId, { isBlocked: false }, actor);
 
 const registerSuperAdmin = async ({ name, email, password, setupKey }) => {
   if (!setupKey || setupKey !== process.env.ADMIN_SETUP_KEY) {
@@ -437,6 +507,9 @@ module.exports = {
   getAllAdmins,
   toggleAdminStatus,
   getAllOrders,
+  adminListShops,
+  adminBlockShop,
+  adminUnblockShop,
   registerSuperAdmin,
   registerAdmin,
 };

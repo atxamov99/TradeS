@@ -14,6 +14,7 @@ import {
 import { usersApi } from "../services/api/users.api";
 import { productsApi } from "../services/api/products.api";
 import { adminsApi } from "../services/api/admins.api";
+import { shopsApi } from "../services/api/shops.api";
 import { auditLogsApi } from "../services/api/auditLogs.api";
 import { contentApi } from "../services/api/content.api";
 import { ordersApi } from "../services/api/orders.api";
@@ -36,6 +37,20 @@ function normalizeUser(u) {
     lastLogin: u.lastLoginAt ? u.lastLoginAt.slice(0, 16).replace("T", " ") : null,
     isAdmin: ["admin", "super_admin"].includes((u.role || "").toLowerCase()),
     isPrimary: u.role === "SUPER_ADMIN"
+  };
+}
+
+function normalizeShop(s) {
+  return {
+    id: s.id,
+    name: s.name || "",
+    description: s.description || "",
+    ownerName: s.owner?.name || "",
+    ownerPhone: s.owner?.phone || "",
+    productCount: s._count?.products ?? 0,
+    isBlocked: Boolean(s.isBlocked),
+    blockedReason: s.blockedReason || "",
+    createdAt: s.createdAt ? s.createdAt.slice(0, 10) : ""
   };
 }
 
@@ -69,6 +84,7 @@ export function AdminDataProvider({ children }) {
 
   // ── Remote state ─────────────────────────────────────────
   const [users, setUsers] = useState([]);
+  const [shops, setShops] = useState([]);
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
   const [supportMessages, setSupportMessages] = useState([]);
@@ -77,8 +93,12 @@ export function AdminDataProvider({ children }) {
   // ── Local-only state (no backend endpoints yet) ──────────
   const [admins, setAdmins] = useState([]);
   const [contentRows, setContentRows] = useState([]);
+  // Merge of server-fetched audit logs (stable id) + local-only optimistic
+  // entries (id prefixed "local-") added by logAudit for actions the backend
+  // doesn't record yet. Polling merges rather than replaces this list, so an
+  // admin's own recent action doesn't silently disappear/re-key on the next
+  // 30s refresh (that used to make the notification bell "forget" it).
   const [auditLogs, setAuditLogs] = useState([]);
-  const [recentActivity, setRecentActivity] = useState([]);
   const [notificationFeed, setNotificationFeed] = useState([]);
   const [toasts, setToasts] = useState([]);
   const [roles, setRoles] = useState(initialRoles);
@@ -92,8 +112,9 @@ export function AdminDataProvider({ children }) {
 
     async function load() {
       try {
-        const [usersRes, productsRes, adminsRes, auditRes, contentRes, ordersRes, settingsRes, supportRes] = await Promise.allSettled([
+        const [usersRes, shopsRes, productsRes, adminsRes, auditRes, contentRes, ordersRes, settingsRes, supportRes] = await Promise.allSettled([
           usersApi.getAll({ limit: 100 }),
+          shopsApi.getAll({ limit: 100 }),
           productsApi.getAll({ limit: 100 }),
           adminsApi.getAll(),
           auditLogsApi.getAll({ limit: 10 }),
@@ -107,6 +128,11 @@ export function AdminDataProvider({ children }) {
         if (usersRes.status === "fulfilled") {
           rawUsers = usersRes.value?.data?.users || usersRes.value?.data || [];
           setUsers((Array.isArray(rawUsers) ? rawUsers : []).map(normalizeUser));
+        }
+        let rawShops = [];
+        if (shopsRes.status === "fulfilled") {
+          rawShops = shopsRes.value?.data?.shops || shopsRes.value?.data || [];
+          setShops((Array.isArray(rawShops) ? rawShops : []).map(normalizeShop));
         }
         if (productsRes.status === "fulfilled") {
           const raw = productsRes.value?.data?.products || productsRes.value?.data || [];
@@ -122,13 +148,23 @@ export function AdminDataProvider({ children }) {
         if (auditRes.status === "fulfilled") {
           const rawLogs = auditRes.value?.data?.logs || auditRes.value?.data || [];
           const logsArray = Array.isArray(rawLogs) ? rawLogs : [];
-          setAuditLogs(logsArray);
-          setRecentActivity(logsArray.slice(0, 8).map(log => ({
-            title: log.action || "Amal",
-            detail: `${log.actor} → ${log.target}`,
-            time: log.timestamp || (log.createdAt ? new Date(log.createdAt).toLocaleString() : "Hozir"),
+          const serverLogs = logsArray.map(log => ({
+            id: log.id,
+            action: log.action || "Amal",
+            category: log.category || "user",
+            actor: log.actor || "",
+            target: log.target || "",
+            ip: log.ip || "—",
+            timestamp: log.timestamp || (log.createdAt ? new Date(log.createdAt).toLocaleString() : "Hozir"),
             tone: log.tone || "info"
-          })));
+          }));
+          // Keep local-only entries (own actions the backend hasn't recorded
+          // an audit log for) instead of wiping them on every poll.
+          setAuditLogs((curr) => {
+            const serverIds = new Set(serverLogs.map((l) => l.id));
+            const localOnly = curr.filter((l) => l.isLocal && !serverIds.has(l.id));
+            return [...localOnly, ...serverLogs].slice(0, 50);
+          });
         }
         if (contentRes.status === "fulfilled") {
           const rawContent = contentRes.value?.data?.content || contentRes.value?.data?.contents || contentRes.value?.data || [];
@@ -169,7 +205,7 @@ export function AdminDataProvider({ children }) {
               id: "n1",
               titleKey: "dashboard.notificationFeed.newUsers",
               detailKey: "dashboard.notificationFeed.newUsersDetail",
-              detail: `Bu hafta ${newUsersCount} ta yangi registratsiya`,
+              detailValues: { count: newUsersCount },
               priority: "medium"
             });
           }
@@ -179,8 +215,22 @@ export function AdminDataProvider({ children }) {
               id: "n2",
               titleKey: "dashboard.notificationFeed.blockedAccounts",
               detailKey: "dashboard.notificationFeed.blockedAccountsDetail",
-              detail: `${blockedUsersCount} ta akkaunt faol emas`,
+              detailValues: { count: blockedUsersCount },
               priority: "high"
+            });
+          }
+        }
+        if (Array.isArray(rawShops) && rawShops.length > 0) {
+          const lastWeek = new Date();
+          lastWeek.setDate(lastWeek.getDate() - 7);
+          const newShopsCount = rawShops.filter(s => new Date(s.createdAt) >= lastWeek).length;
+          if (newShopsCount > 0) {
+            notifications.push({
+              id: "n3",
+              titleKey: "dashboard.notificationFeed.newShops",
+              detailKey: "dashboard.notificationFeed.newShopsDetail",
+              detailValues: { count: newShopsCount },
+              priority: "medium"
             });
           }
         }
@@ -209,20 +259,27 @@ export function AdminDataProvider({ children }) {
   }
 
   // ── Activity + Audit ─────────────────────────────────────
-  function appendActivity(title, detail, tone = "info") {
-    setRecentActivity((curr) =>
-      [{ title, detail, time: "Hozir", tone }, ...curr].slice(0, 8)
-    );
-  }
-
   function logAudit(action, target, category = "user", tone = "info") {
     const actor = profile?.name || "Tizim";
+    const id = `local-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
     setAuditLogs((curr) => [
-      { id: `${Date.now()}`, action, category, actor, target, ip: "—", timestamp: formatNow() },
+      { id, action, category, actor, target, ip: "—", timestamp: formatNow(), tone, isLocal: true },
       ...curr
     ]);
-    appendActivity(action, `${actor} → ${target}`, tone);
   }
+
+  // recentActivity is derived from auditLogs (single source of truth) so the
+  // header bell and the full notifications page never drift out of sync.
+  const recentActivity = useMemo(
+    () => auditLogs.slice(0, 8).map((log) => ({
+      id: log.id,
+      title: log.action,
+      detail: `${log.actor} → ${log.target}`,
+      time: log.timestamp,
+      tone: log.tone || "info"
+    })),
+    [auditLogs]
+  );
 
   // ── Users ────────────────────────────────────────────────
   async function createUser(payload) {
@@ -279,6 +336,29 @@ export function AdminDataProvider({ children }) {
       pushToast(`${target?.name || id} o'chirildi`, "danger");
     } catch (err) {
       pushToast(err?.message || "O'chirishda xatolik", "danger");
+    }
+  }
+
+  // ── Shops ────────────────────────────────────────────────
+  async function blockShop(id, reason) {
+    try {
+      await shopsApi.block(id, reason);
+      setShops((curr) => curr.map((s) => (s.id === id ? { ...s, isBlocked: true, blockedReason: reason || "" } : s)));
+      logAudit("Do'kon bloklandi", id, "shop", "danger");
+      pushToast("Do'kon bloklandi", "danger");
+    } catch (err) {
+      pushToast(err?.message || "Xatolik yuz berdi", "danger");
+    }
+  }
+
+  async function unblockShop(id) {
+    try {
+      await shopsApi.unblock(id);
+      setShops((curr) => curr.map((s) => (s.id === id ? { ...s, isBlocked: false, blockedReason: "" } : s)));
+      logAudit("Do'kon aktivlashtirildi", id, "shop", "success");
+      pushToast("Do'kon aktivlashtirildi");
+    } catch (err) {
+      pushToast(err?.message || "Xatolik yuz berdi", "danger");
     }
   }
 
@@ -572,6 +652,7 @@ export function AdminDataProvider({ children }) {
       notificationFeed, recentActivity, toasts,
       roles, permissionMatrix,
       products,
+      shops, blockShop, unblockShop,
       orders, setOrders,
       supportMessages, replySupportTicket, deleteSupportTicket,
       pushToast, dismissToast,
@@ -584,7 +665,7 @@ export function AdminDataProvider({ children }) {
       createProduct, updateProduct, deleteProduct, toggleProductStatus,
       updateOrderStatus
     }),
-    [users, admins, contentRows, auditLogs, recentActivity, toasts, roles, permissionMatrix, products, orders, supportMessages, loading]
+    [users, admins, contentRows, auditLogs, recentActivity, toasts, roles, permissionMatrix, products, shops, orders, supportMessages, loading]
   );
 
   return createElement(AdminDataContext.Provider, { value }, children);

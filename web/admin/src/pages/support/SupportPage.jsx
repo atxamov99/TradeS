@@ -3,19 +3,9 @@ import { usePageTitle } from "../../hooks/usePageTitle";
 import { useAuth } from "../../store";
 import { useAdminData } from "../../store/adminData";
 import { Icon } from "../../components/shared/Icon";
+import { useI18n } from "../../i18n";
 
-const TABS = [
-  { key: "all", label: "Hammasi" },
-  { key: "open", label: "Ochiq" },
-  { key: "answered", label: "Javob berilgan" },
-];
-
-const SOURCE_LABEL = {
-  bot: "Telegram bot",
-  web: "Ilova (Contact Support)",
-};
-
-function ReplyRow({ ticket, onReply }) {
+function ReplyRow({ ticket, onReply, t }) {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
 
@@ -33,7 +23,7 @@ function ReplyRow({ ticket, onReply }) {
   if (ticket.status === "answered") {
     return (
       <div className="text-body-sm text-on-surface-variant">
-        <span className="font-medium text-on-surface">Javob:</span> {ticket.adminReply}
+        <span className="font-medium text-on-surface">{t("support.replyLabel", {}, "Javob:")}</span> {ticket.adminReply}
       </div>
     );
   }
@@ -41,7 +31,7 @@ function ReplyRow({ ticket, onReply }) {
   if (ticket.source !== "bot") {
     return (
       <div className="text-body-sm text-on-surface-variant italic">
-        Bu ilova formasidan kelgan — javob bu yerdan yuborilmaydi, ko'rsatilgan aloqa orqali bog'laning.
+        {t("support.webOnlyNote", {}, "Bu ilova formasidan kelgan — javob bu yerdan yuborilmaydi, ko'rsatilgan aloqa orqali bog'laning.")}
       </div>
     );
   }
@@ -52,7 +42,7 @@ function ReplyRow({ ticket, onReply }) {
         type="text"
         value={text}
         onChange={(e) => setText(e.target.value)}
-        placeholder="Javob yozing..."
+        placeholder={t("support.replyPlaceholder", {}, "Javob yozing...")}
         disabled={sending}
         className="flex-1 px-3 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-sm text-on-surface focus:outline-none focus:border-primary"
       />
@@ -62,16 +52,28 @@ function ReplyRow({ ticket, onReply }) {
         disabled={sending || !text.trim()}
         className="px-4 py-2 rounded-lg bg-primary text-on-primary text-body-sm font-medium disabled:opacity-50"
       >
-        Yuborish
+        {t("support.sendButton", {}, "Yuborish")}
       </button>
     </div>
   );
 }
 
 export function SupportPage() {
-  usePageTitle("Murojaatlar");
+  const { t } = useI18n();
+  usePageTitle(t("support.title", {}, "Murojaatlar"));
   const { profile } = useAuth();
   const { supportMessages, replySupportTicket, deleteSupportTicket } = useAdminData();
+
+  const TABS = [
+    { key: "all", label: t("support.tabAll", {}, "Hammasi") },
+    { key: "open", label: t("support.tabOpen", {}, "Ochiq") },
+    { key: "answered", label: t("support.tabAnswered", {}, "Javob berilgan") },
+  ];
+
+  const SOURCE_LABEL = {
+    bot: t("support.sourceBot", {}, "Telegram bot"),
+    web: t("support.sourceWeb", {}, "Ilova (Contact Support)"),
+  };
 
   const [tab, setTab] = useState("all");
   const [confirmingId, setConfirmingId] = useState(null);
@@ -90,9 +92,9 @@ export function SupportPage() {
   return (
     <div className="space-y-section-gap">
       <div>
-        <h2 className="font-headline-md text-headline-md font-bold text-on-surface">Murojaatlar</h2>
+        <h2 className="font-headline-md text-headline-md font-bold text-on-surface">{t("support.title", {}, "Murojaatlar")}</h2>
         <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">
-          Telegram bot (/support) va ilova orqali kelgan yordam so'rovlari
+          {t("support.description", {}, "Telegram bot (/support) va ilova orqali kelgan yordam so'rovlari")}
         </p>
       </div>
 
@@ -117,7 +119,7 @@ export function SupportPage() {
       <div className="space-y-3">
         {filtered.length === 0 ? (
           <div className="bg-surface-bright border border-outline-variant rounded-xl p-12 text-center text-on-surface-variant">
-            Murojaatlar topilmadi
+            {t("support.noTickets", {}, "Murojaatlar topilmadi")}
           </div>
         ) : (
           filtered.map((s) => (
@@ -135,7 +137,7 @@ export function SupportPage() {
                       s.status === "answered" ? "bg-[#D1FAE5] text-[#065F46]" : "bg-[#FEF3C7] text-[#92400E]"
                     }`}
                   >
-                    {s.status === "answered" ? "Javob berilgan" : "Ochiq"}
+                    {s.status === "answered" ? t("support.statusAnswered", {}, "Javob berilgan") : t("support.statusOpen", {}, "Ochiq")}
                   </span>
                 </div>
                 <div className="flex items-center gap-3">
@@ -145,16 +147,16 @@ export function SupportPage() {
                   {profile?.isPrimary && (
                     confirmingId === s.id ? (
                       <span className="flex items-center gap-2 text-xs">
-                        <span className="text-on-surface-variant">O'chirilsinmi?</span>
+                        <span className="text-on-surface-variant">{t("support.deleteConfirmQuestion", {}, "O'chirilsinmi?")}</span>
                         <button
                           type="button"
                           onClick={() => { deleteSupportTicket(s.id); setConfirmingId(null); }}
                           className="text-error font-semibold"
                         >
-                          Ha
+                          {t("support.yes", {}, "Ha")}
                         </button>
                         <button type="button" onClick={() => setConfirmingId(null)} className="text-on-surface-variant">
-                          Yo'q
+                          {t("support.no", {}, "Yo'q")}
                         </button>
                       </span>
                     ) : (
@@ -162,7 +164,7 @@ export function SupportPage() {
                         type="button"
                         onClick={() => setConfirmingId(s.id)}
                         className="text-on-surface-variant hover:text-error"
-                        title="O'chirish"
+                        title={t("support.deleteTooltip", {}, "O'chirish")}
                       >
                         <Icon name="delete" className="text-[18px]" />
                       </button>
@@ -171,7 +173,7 @@ export function SupportPage() {
                 </div>
               </div>
               <p className="font-body-sm text-on-surface whitespace-pre-wrap">{s.message}</p>
-              <ReplyRow ticket={s} onReply={replySupportTicket} />
+              <ReplyRow ticket={s} onReply={replySupportTicket} t={t} />
             </div>
           ))
         )}

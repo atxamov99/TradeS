@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from "@nozbe/watermelondb";
 
 export const schema = appSchema({
-  version: 5,
+  version: 6,
   tables: [
     tableSchema({
       name: "products",
@@ -17,6 +17,7 @@ export const schema = appSchema({
         { name: "is_synced", type: "boolean" },
         { name: "server_id", type: "string", isOptional: true },
         { name: "created_by_id", type: "string", isOptional: true },
+        { name: "shop_id", type: "string", isOptional: true, isIndexed: true },
         { name: "created_at", type: "number" },
         { name: "updated_at", type: "number" },
       ],
@@ -33,6 +34,19 @@ export const schema = appSchema({
         { name: "sold_at", type: "number", isIndexed: true },
         { name: "is_synced", type: "boolean" },
         { name: "server_id", type: "string", isOptional: true },
+        { name: "shop_id", type: "string", isOptional: true, isIndexed: true },
+        { name: "created_at", type: "number" },
+        { name: "updated_at", type: "number" },
+      ],
+    }),
+    tableSchema({
+      name: "shops",
+      columns: [
+        { name: "server_id", type: "string", isIndexed: true },
+        { name: "name", type: "string" },
+        { name: "description", type: "string", isOptional: true },
+        { name: "is_blocked", type: "boolean" },
+        { name: "is_synced", type: "boolean" },
         { name: "created_at", type: "number" },
         { name: "updated_at", type: "number" },
       ],

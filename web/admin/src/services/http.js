@@ -18,23 +18,34 @@ http.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// Concurrent 401s (e.g. multiple polling intervals firing at once after the
+// tab was backgrounded) must share a single refresh call — the backend's
+// refresh-token rotation is single-use, so a second, independent refresh
+// call would be rejected as "already used" and wrongly force a logout.
+let refreshPromise = null;
+
+function refreshAccessToken() {
+  if (!refreshPromise) {
+    refreshPromise = axios
+      .post(`${appConfig.apiBaseUrl}/auth/refresh-token`, {}, { withCredentials: true })
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+  return refreshPromise;
+}
+
 // ── Response interceptor — handle errors + token refresh ─
 http.interceptors.response.use(
   (response) => response.data,
   async (error) => {
     const original = error.config;
 
-    // 401 — try token refresh (once)
+    // 401 — try token refresh (once per request; concurrent requests share one refresh call)
     if (error.response?.status === 401 && !original._retry) {
       original._retry = true;
       try {
-        // Cookies are sent automatically with withCredentials: true (if configured in axios.create)
-        // But let's ensure the base axios call for refresh is correct
-        await axios.post(
-          `${appConfig.apiBaseUrl}/auth/refresh-token`,
-          {},
-          { withCredentials: true }
-        );
+        await refreshAccessToken();
         return http(original);
       } catch {
         window.dispatchEvent(new Event("auth:logout"));

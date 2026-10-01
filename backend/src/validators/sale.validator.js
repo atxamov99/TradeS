@@ -1,6 +1,8 @@
 const Joi = require('joi');
 
 const createSaleSchema = Joi.object({
+  // Which shop's till this sale was rung up on; ownership verified server-side.
+  shopId: Joi.string().trim().max(64).required(),
   product: Joi.string(),
   productName: Joi.string().trim().required(),
   quantity: Joi.number().positive().required(),

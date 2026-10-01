@@ -1,8 +1,8 @@
 import api from './axios';
 
-export const getSummary = () => api.get('/reports/summary');
-export const getDailyReport = (date) => api.get('/reports/daily', { params: { date } });
-export const getMonthlyReport = (month) => api.get('/reports/monthly', { params: { month } });
+export const getSummary = (shopId) => api.get('/reports/summary', { params: { shopId } });
+export const getDailyReport = (date, shopId) => api.get('/reports/daily', { params: { date, shopId } });
+export const getMonthlyReport = (month, shopId) => api.get('/reports/monthly', { params: { month, shopId } });
 export const getOverview = (params) => api.get('/reports/overview', { params });
 export const getAdminActivity = (params) => api.get('/reports/admin-activity', { params });
 export const getSecurity = (params) => api.get('/reports/security', { params });

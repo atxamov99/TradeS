@@ -21,10 +21,11 @@ const monthRange = (yearMonth) => {
   return { start, end };
 };
 
-const aggregateSales = async (userId, startDate, endDate) => {
+const aggregateSales = async (userId, startDate, endDate, shopId) => {
   const stats = await prisma.sale.aggregate({
     where: {
       userId,
+      ...(shopId ? { shopId } : {}),
       createdAt: { gte: startDate, lte: endDate },
     },
     _sum: {
@@ -49,11 +50,12 @@ const aggregateSales = async (userId, startDate, endDate) => {
   };
 };
 
-const topProducts = async (userId, startDate, endDate, limit = 5) => {
+const topProducts = async (userId, startDate, endDate, limit = 5, shopId) => {
   const result = await prisma.sale.groupBy({
     by: ['productName'],
     where: {
       userId,
+      ...(shopId ? { shopId } : {}),
       createdAt: { gte: startDate, lte: endDate },
     },
     _sum: {
@@ -81,13 +83,13 @@ const topProducts = async (userId, startDate, endDate, limit = 5) => {
   }));
 };
 
-const getDailyReport = async (userId, dateStr) => {
+const getDailyReport = async (userId, dateStr, shopId) => {
   const { start, end } = dayRange(dateStr || new Date().toISOString().slice(0, 10));
   const [stats, products, salesRaw] = await Promise.all([
-    aggregateSales(userId, start, end),
-    topProducts(userId, start, end),
+    aggregateSales(userId, start, end, shopId),
+    topProducts(userId, start, end, 5, shopId),
     prisma.sale.findMany({
-      where: { userId, createdAt: { gte: start, lte: end } },
+      where: { userId, ...(shopId ? { shopId } : {}), createdAt: { gte: start, lte: end } },
       select: { createdAt: true, totalRevenue: true, profit: true },
     }),
   ]);
@@ -110,15 +112,15 @@ const getDailyReport = async (userId, dateStr) => {
   return { date: dateStr, stats, topProducts: products, hourlySales };
 };
 
-const getMonthlyReport = async (userId, yearMonth) => {
+const getMonthlyReport = async (userId, yearMonth, shopId) => {
   const ym = yearMonth || new Date().toISOString().slice(0, 7);
   const { start, end } = monthRange(ym);
 
   const [stats, products, salesRaw] = await Promise.all([
-    aggregateSales(userId, start, end),
-    topProducts(userId, start, end, 10),
+    aggregateSales(userId, start, end, shopId),
+    topProducts(userId, start, end, 10, shopId),
     prisma.sale.findMany({
-      where: { userId, createdAt: { gte: start, lte: end } },
+      where: { userId, ...(shopId ? { shopId } : {}), createdAt: { gte: start, lte: end } },
       select: { createdAt: true, totalRevenue: true, profit: true },
     }),
   ]);
@@ -141,16 +143,16 @@ const getMonthlyReport = async (userId, yearMonth) => {
   return { month: ym, stats, topProducts: products, dailySales };
 };
 
-const getSummary = async (userId) => {
+const getSummary = async (userId, shopId) => {
   const today = new Date().toISOString().slice(0, 10);
   const thisMonth = new Date().toISOString().slice(0, 7);
 
   const [todayStats, monthStats, allTimeStats, lowStock] = await Promise.all([
-    aggregateSales(userId, ...Object.values(dayRange(today))),
-    aggregateSales(userId, ...Object.values(monthRange(thisMonth))),
-    aggregateSales(userId, new Date(0), new Date()),
+    aggregateSales(userId, ...Object.values(dayRange(today)), shopId),
+    aggregateSales(userId, ...Object.values(monthRange(thisMonth)), shopId),
+    aggregateSales(userId, new Date(0), new Date(), shopId),
     prisma.product.findMany({
-      where: { ownerId: userId, stock: { lte: 5 } },
+      where: { shop: { ownerId: userId }, ...(shopId ? { shopId } : {}), stock: { lte: 5 } },
       select: { id: true, name: true, stock: true, unit: true },
       orderBy: { stock: 'asc' },
       take: 10,
@@ -261,6 +263,28 @@ const getSecurityReport = async ({ from, to } = {}) => {
   };
 };
 
+const getMonthlyOverview = async ({ months } = {}) => {
+  const count = Math.min(Math.max(Number(months) || 6, 1), 12);
+  const now = new Date();
+  const monthKeys = Array.from({ length: count }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - (count - 1 - i), 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  });
+
+  const trend = await Promise.all(monthKeys.map(async (ym) => {
+    const { start, end } = monthRange(ym);
+    const [newUsers, supportTotal, supportOpen, supportAnswered] = await Promise.all([
+      prisma.user.count({ where: { createdAt: { gte: start, lte: end }, role: 'USER', deletedAt: null } }),
+      prisma.supportMessage.count({ where: { createdAt: { gte: start, lte: end } } }),
+      prisma.supportMessage.count({ where: { createdAt: { gte: start, lte: end }, status: 'open' } }),
+      prisma.supportMessage.count({ where: { createdAt: { gte: start, lte: end }, status: 'answered' } }),
+    ]);
+    return { month: ym, newUsers, supportTotal, supportOpen, supportAnswered };
+  }));
+
+  return { months: trend, current: trend[trend.length - 1] };
+};
+
 // Escape a value for safe CSV output. Prevents CSV/formula injection: a cell that
 // starts with = + - @ (or tab/CR) can be executed as a formula when opened in Excel/
 // Sheets, so we prefix such values with a single quote. Also quotes values containing
@@ -312,4 +336,4 @@ const exportReport = async ({ type, from, to } = {}) => {
   return '';
 };
 
-module.exports = { getDailyReport, getMonthlyReport, getSummary, getAdminOverview, getAdminActivity, getSecurityReport, exportReport };
+module.exports = { getDailyReport, getMonthlyReport, getSummary, getAdminOverview, getAdminActivity, getSecurityReport, getMonthlyOverview, exportReport };

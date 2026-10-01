@@ -1,30 +1,40 @@
 const prisma = require('../config/prisma');
 const ApiError = require('../utils/ApiError');
 const slugify = require('slugify');
-const { clampLimit } = require('../utils/pagination');
+const { assertShopOwnership } = require('./shop.service');
+const { clampLimit, clampPage } = require('../utils/pagination');
 const { assertTestUserWithinLimits } = require('../utils/testUserLimits');
 
-const getProducts = async (userId, queryParams = {}, options = {}) => {
-  const { search, page = 1, limit = 50, sortBy = 'createdAt', order = 'desc' } = queryParams;
+// Ownership of a product is now indirect: Product → Shop → owner. Every
+// non-admin write filters on this instead of the dropped Product.ownerId.
+const ownedBy = (userId) => ({ shop: { ownerId: userId } });
 
-  // Products are a shared global catalog: every authenticated user sees every
-  // product regardless of who created it. No ownerId filter on reads. Archived
-  // products (isActive=false, i.e. "deleted" but kept for history) are hidden.
-  const where = { isActive: true };
+// Buyer-side marketplace listing: everything on sale across every shop.
+// A blocked shop's catalog disappears from the marketplace entirely, while its
+// rows stay intact for the owner and for order history.
+const browseProducts = async (queryParams = {}) => {
+  const { search, category, page = 1, limit = 50, sortBy = 'createdAt', order = 'desc' } = queryParams;
+
+  const where = { isActive: true, shop: { isBlocked: false } };
   if (search) {
     where.name = { contains: search, mode: 'insensitive' };
   }
+  if (category) {
+    where.category = category;
+  }
 
   const take = clampLimit(limit, 50);
-  const skip = (Number(page) - 1) * take;
+  const currentPage = clampPage(page);
+  const skip = (currentPage - 1) * take;
   const sortField = sortBy === 'name' ? 'name' : 'createdAt';
 
   const [products, total] = await Promise.all([
     prisma.product.findMany({
       where,
-      orderBy: { [sortField]: order },
+      orderBy: { [sortField]: order === 'asc' ? 'asc' : 'desc' },
       skip,
       take,
+      include: { images: true, shop: { select: { id: true, name: true } } },
     }),
     prisma.product.count({ where }),
   ]);
@@ -32,19 +42,65 @@ const getProducts = async (userId, queryParams = {}, options = {}) => {
   return {
     products,
     total,
-    page: Number(page),
+    page: currentPage,
     pages: Math.ceil(total / take),
     limit: take,
   };
 };
 
+// Seller-side "my shop's products" AND a buyer viewing one shop's catalog — the
+// same query, differing only in whether archived (isActive=false) rows are
+// visible. Only the owner sees those; a blocked shop is readable by its owner
+// but not by anyone else.
+const getShopProducts = async (shopId, userId, queryParams = {}) => {
+  const { search, category, page = 1, limit = 50, sortBy = 'createdAt', order = 'desc' } = queryParams;
+
+  const shop = await prisma.shop.findUnique({ where: { id: shopId }, select: { id: true, ownerId: true, isBlocked: true } });
+  if (!shop) throw new ApiError(404, 'Shop not found');
+
+  const asOwner = shop.ownerId === userId;
+  if (!asOwner && shop.isBlocked) throw new ApiError(404, 'Shop not found');
+
+  const where = { shopId };
+  if (!asOwner) where.isActive = true;
+  if (search) where.name = { contains: search, mode: 'insensitive' };
+  if (category) where.category = category;
+
+  const take = clampLimit(limit, 50);
+  const currentPage = clampPage(page);
+  const skip = (currentPage - 1) * take;
+  const sortField = sortBy === 'name' ? 'name' : 'createdAt';
+
+  const [products, total] = await Promise.all([
+    prisma.product.findMany({
+      where,
+      orderBy: { [sortField]: order === 'asc' ? 'asc' : 'desc' },
+      skip,
+      take,
+      include: { images: true },
+    }),
+    prisma.product.count({ where }),
+  ]);
+
+  return {
+    products,
+    total,
+    page: currentPage,
+    pages: Math.ceil(total / take),
+    limit: take,
+    asOwner,
+  };
+};
+
 const getProductById = async (id) => {
-  // Global catalog: any authenticated user can view any product by id.
+  // Any authenticated user can view any product by id (the marketplace has no
+  // per-product privacy); the listing endpoints are what apply shop filtering.
   const product = await prisma.product.findUnique({
     where: { id },
     include: {
       images: true,
       reviews: true,
+      shop: { select: { id: true, name: true, isBlocked: true } },
     },
   });
 
@@ -55,13 +111,15 @@ const getProductById = async (id) => {
 const getProductBySlug = async (slug) => {
   const product = await prisma.product.findUnique({
     where: { slug },
-    include: { images: true, reviews: true },
+    include: { images: true, reviews: true, shop: { select: { id: true, name: true, isBlocked: true } } },
   });
   if (!product) throw new ApiError(404, 'Product not found');
   return product;
 };
 
-const createProduct = async (productData, userId) => {
+const createProduct = async (shopId, userId, productData) => {
+  await assertShopOwnership(shopId, userId);
+
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { isTestUser: true, testExpiresAt: true, testActionCount: true },
@@ -81,8 +139,7 @@ const createProduct = async (productData, userId) => {
       ...rest,
       slug,
       finalPrice,
-      ownerId: userId,
-      createdById: userId,
+      shopId,
       images: { create: images.map((img) => ({ url: img.url, alt: img.alt || '' })) },
     },
     include: { images: true },
@@ -99,7 +156,7 @@ const updateProduct = async (id, userId, updateData, options = {}) => {
   const { isAdmin = false } = options;
   const where = { id };
   if (!isAdmin && userId) {
-    where.ownerId = userId;
+    Object.assign(where, ownedBy(userId));
   }
 
   const product = await prisma.product.findFirst({ where });
@@ -143,14 +200,17 @@ const updateProduct = async (id, userId, updateData, options = {}) => {
   return updatedProduct;
 };
 
-const restockProduct = async (id, userId, quantity, options = {}) => {
+const restockProduct = async (id, userId, { quantity, buyPrice, note } = {}, options = {}) => {
   const { isAdmin = false } = options;
   const where = { id };
   if (!isAdmin && userId) {
-    where.ownerId = userId;
+    Object.assign(where, ownedBy(userId));
   }
 
-  const product = await prisma.product.findFirst({ where });
+  const product = await prisma.product.findFirst({
+    where,
+    include: { shop: { select: { ownerId: true } } },
+  });
   if (!product) throw new ApiError(404, 'Product not found');
 
   const qty = Number(quantity);
@@ -158,20 +218,67 @@ const restockProduct = async (id, userId, quantity, options = {}) => {
     throw new ApiError(400, 'Restock quantity must be greater than 0', [], '', 'INVALID_RESTOCK_QUANTITY');
   }
 
-  const updated = await prisma.product.update({
-    where: { id },
-    data: { stock: { increment: qty } },
-    include: { images: true },
-  });
+  // A restock is a buy-in, so it is also a costed event: the InventoryBatch row is
+  // what the shop's cost/margin reporting reads. Written in the same transaction as
+  // the stock bump so stock can never move without its matching batch record.
+  // Attributed to the shop's owner (not the caller) so an admin restocking on a
+  // seller's behalf still lands in that seller's books.
+  const bp = buyPrice !== undefined ? Number(buyPrice) : product.buyPrice || 0;
 
-  return updated;
+  const [updated, batch] = await prisma.$transaction([
+    prisma.product.update({
+      where: { id },
+      data: { stock: { increment: qty } },
+      include: { images: true },
+    }),
+    prisma.inventoryBatch.create({
+      data: {
+        userId: product.shop.ownerId,
+        shopId: product.shopId,
+        productId: product.id,
+        productName: product.name,
+        quantity: qty,
+        unit: product.unit || 'pcs',
+        buyPrice: bp,
+        totalCost: qty * bp,
+        note: note || '',
+      },
+    }),
+  ]);
+
+  return { ...updated, batch };
+};
+
+// The read side of the restock log — without it InventoryBatch rows would be
+// write-only. Owner-scoped, same as the shop's orders and sales listings.
+const getShopInventoryBatches = async (shopId, userId, { page = 1, limit = 50, productId } = {}) => {
+  await assertShopOwnership(shopId, userId);
+
+  const where = { shopId };
+  if (productId) where.productId = productId;
+
+  const take = clampLimit(limit, 50);
+  const currentPage = clampPage(page);
+  const skip = (currentPage - 1) * take;
+
+  const [batches, total] = await Promise.all([
+    prisma.inventoryBatch.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take,
+    }),
+    prisma.inventoryBatch.count({ where }),
+  ]);
+
+  return { batches, total, page: currentPage, pages: Math.ceil(total / take), limit: take };
 };
 
 const deleteProduct = async (id, userId, options = {}) => {
   const { isAdmin = false } = options;
   const where = { id };
   if (!isAdmin && userId) {
-    where.ownerId = userId;
+    Object.assign(where, ownedBy(userId));
   }
 
   const product = await prisma.product.findFirst({ where });
@@ -226,21 +333,14 @@ const addReview = async (productId, userId, userName, { rating, comment }) => {
     },
   });
 
-  // Calculate average rating
-  const reviews = await prisma.review.findMany({ where: { productId } });
-  const count = reviews.length;
-  const average = reviews.reduce((sum, r) => sum + r.rating, 0) / count;
-
-  // We might want to update the Product model if it had cached ratings
-  // But our Prisma schema didn't have rating.average fields, I should check it.
-  // Actually, I'll just return the review or product.
-
   return review;
 };
 
+// Categories power the marketplace browse filter, so they are aggregated over
+// the same set browseProducts can return — not over archived or blocked rows.
 const getCategories = async () => {
-  // Global catalog: categories are aggregated across all products.
   const products = await prisma.product.findMany({
+    where: { isActive: true, shop: { isBlocked: false } },
     select: { category: true },
     distinct: ['category'],
   });
@@ -248,12 +348,14 @@ const getCategories = async () => {
 };
 
 module.exports = {
-  getProducts,
+  browseProducts,
+  getShopProducts,
   getProductById,
   getProductBySlug,
   createProduct,
   updateProduct,
   restockProduct,
+  getShopInventoryBatches,
   deleteProduct,
   addReview,
   getCategories,

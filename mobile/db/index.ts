@@ -12,6 +12,7 @@ import { SupplierTransaction } from "./models/SupplierTransaction";
 import { Customer } from "./models/Customer";
 import { CustomerTransaction } from "./models/CustomerTransaction";
 import { Employee } from "./models/Employee";
+import { Shop } from "./models/Shop";
 
 // LokiJS faqat web'da (IndexedDB'ga tayanadi) — native (iOS/Android)da endi WatermelonDB'ning
 // o'z SQLite adapteri ishlatiladi (audit: CRITICAL#4). LokiJS native platformada sovuq
@@ -35,7 +36,7 @@ const adapter = Platform.OS === "web"
 
 export const database = new Database({
   adapter,
-  modelClasses: [Product, Sale, Category, Supplier, SupplierTransaction, Customer, CustomerTransaction, Employee],
+  modelClasses: [Product, Sale, Category, Supplier, SupplierTransaction, Customer, CustomerTransaction, Employee, Shop],
 });
 
 export const productsCollection    = database.collections.get<Product>("products");
@@ -46,3 +47,4 @@ export const supplierTxCollection  = database.collections.get<SupplierTransactio
 export const customersCollection   = database.collections.get<Customer>("customers");
 export const customerTxCollection  = database.collections.get<CustomerTransaction>("customer_transactions");
 export const employeesCollection   = database.collections.get<Employee>("employees");
+export const shopsCollection       = database.collections.get<Shop>("shops");

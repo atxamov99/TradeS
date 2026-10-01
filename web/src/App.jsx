@@ -8,10 +8,13 @@ import Layout from './components/layout/Layout';
 import { ProtectedRoute, GuestRoute } from './components/common/ProtectedRoute';
 
 import Home from './pages/Home';
+import ShopPage from './pages/ShopPage';
 import ProductDetail from './pages/ProductDetail';
 import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
 import Wishlist from './pages/Wishlist';
+import MyOrders from './pages/MyOrders';
+import Help from './pages/Help';
 
 import PosDashboard from './pages/pos/PosDashboard';
 import PosSales from './pages/pos/PosSales';
@@ -22,6 +25,7 @@ import PosReports from './pages/pos/PosReports';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage';
+import { ResetPasswordPage } from './pages/auth/ResetPasswordPage';
 import Dashboard from './pages/Dashboard';
 import Products from './pages/Products';
 import Sales from './pages/Sales';
@@ -29,6 +33,8 @@ import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import Profile from './pages/Profile';
 import Landing from './pages/Landing';
+import Shops from './pages/dashboard/Shops';
+import IncomingOrders from './pages/dashboard/IncomingOrders';
 
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminUsers from './pages/admin/AdminUsers';
@@ -86,16 +92,21 @@ export default function App() {
         <Route path="/forgot-password" element={
           <GuestRoute><ForgotPasswordPage /></GuestRoute>
         } />
-        <Route path="/reset-password" element={<Navigate to="/forgot-password" replace />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
 
         {/* Public storefront (customer-facing shop) */}
         <Route element={<Layout />}>
           <Route path="/shop" element={<Navigate to="/products" replace />} />
           <Route path="/products" element={<Home />} />
           <Route path="/products/:slug" element={<ProductDetail />} />
+          <Route path="/shops/:id" element={<ShopPage />} />
+          <Route path="/help" element={<Help />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/wishlist" element={<Wishlist />} />
+          <Route path="/my-orders" element={
+            <ProtectedRoute><MyOrders /></ProtectedRoute>
+          } />
         </Route>
 
         {/* Protected user routes */}
@@ -103,6 +114,8 @@ export default function App() {
           <ProtectedRoute><AppLayout /></ProtectedRoute>
         }>
           <Route index element={<Dashboard />} />
+          <Route path="shops" element={<Shops />} />
+          <Route path="orders" element={<IncomingOrders />} />
           <Route path="products" element={<Products />} />
           <Route path="sales" element={<Sales />} />
           <Route path="reports" element={<Reports />} />

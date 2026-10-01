@@ -1,13 +1,16 @@
 const prisma = require('../config/prisma');
 const saleService = require('./sale.service');
+const { assertShopOwnership } = require('./shop.service');
 const ApiError = require('../utils/ApiError');
 const slugify = require('slugify');
 const { assertTestUserWithinLimits } = require('../utils/testUserLimits');
 
 // Fields a mobile client is allowed to set on a product via sync. Everything else
-// (ownerId, createdById, slug, finalPrice, isActive, id, timestamps) is server-owned
-// and must never be taken from the client payload — otherwise a device could spoof
+// (shopId, slug, finalPrice, isActive, id, timestamps) is server-owned and must
+// never be taken from the client payload as-is — otherwise a device could spoof
 // ownership, resurrect archived products, or inject stock/price for another tenant.
+// shopId IS client-supplied (the device knows which shop it is operating), but it
+// is verified against the authenticated user's shops before every write.
 const PRODUCT_SYNC_FIELDS = [
   'name', 'buyPrice', 'sellPrice', 'unit', 'description',
   'price', 'discount', 'category', 'stock', 'brand', 'tags', 'bagWeightKg',
@@ -50,9 +53,16 @@ const processSyncBatch = async (userId, operations) => {
     try {
       let serverEntityId;
 
+      // Every synced entity names the shop it belongs to, and that shop must be
+      // one the authenticated user owns. Checked once per operation, before any
+      // write — a forged shopId can never reach Prisma.
+      const shop = await assertShopOwnership(payload?.shopId, userId);
+      const shopId = shop.id;
+
       if (entity === 'sale' && operation === 'create') {
         const sale = await saleService.createSale(userId, {
           ...payload,
+          shopId,
           syncId: entityId,
           isFromOffline: true,
         });
@@ -69,11 +79,11 @@ const processSyncBatch = async (userId, operations) => {
           // genuinely different products that happen to share one. And not `id`
           // either: the server generates its own cuid on create, so a client id
           // would never match, and an absent one collapses the filter to
-          // `{ createdById }` (Prisma drops undefined), matching an arbitrary
-          // existing product of the same user.
+          // `{ shopId }` (Prisma drops undefined), matching an arbitrary
+          // existing product of the same shop.
           const existing = entityId
             ? await prisma.product.findFirst({
-                where: { syncId: entityId, createdById: userId },
+                where: { syncId: entityId, shopId },
               })
             : null;
           if (!existing) {
@@ -94,8 +104,7 @@ const processSyncBatch = async (userId, operations) => {
                 finalPrice,
                 slug,
                 syncId: entityId || null,
-                createdById: userId,
-                ownerId: userId,
+                shopId,
                 isActive: true,
               },
             });
@@ -114,13 +123,14 @@ const processSyncBatch = async (userId, operations) => {
 
         else if (operation === 'update') {
           const pId = payload.serverId || entityId;
-          // Scope by createdById — a device may only sync-update its own products (prevents IDOR)
-          const product = await prisma.product.findFirst({ where: { id: pId, createdById: userId } });
+          // Scope by shopId — a device may only sync-update products in the shop
+          // it just proved ownership of (prevents IDOR)
+          const product = await prisma.product.findFirst({ where: { id: pId, shopId } });
           if (product) {
             const clientTime = clientUpdatedAt ? new Date(clientUpdatedAt) : new Date(0);
             const serverTime = product.updatedAt;
             if (clientTime >= serverTime) {
-              // Only trust whitelisted fields — never let the client change ownerId/isActive/slug/finalPrice.
+              // Only trust whitelisted fields — never let the client change shopId/isActive/slug/finalPrice.
               const updateData = pickAllowed(normalizeProductPayload(payload), PRODUCT_SYNC_FIELDS);
 
               if (payload.name && payload.name !== product.name) {
@@ -145,9 +155,9 @@ const processSyncBatch = async (userId, operations) => {
 
         else if (operation === 'delete') {
           const pId = payload.serverId || entityId;
-          // Scope by createdById — only soft-delete products this device owns (prevents IDOR)
+          // Scope by shopId — only soft-delete products in this device's shop (prevents IDOR)
           await prisma.product.updateMany({
-            where: { id: pId, createdById: userId },
+            where: { id: pId, shopId },
             data: { isActive: false },
           });
         }
@@ -227,21 +237,27 @@ const processSyncBatch = async (userId, operations) => {
 /**
  * Pull latest data for a user's device
  */
-const pullData = async (userId, lastSyncAt) => {
+const pullData = async (userId, lastSyncAt, shopId) => {
   const since = lastSyncAt ? new Date(lastSyncAt) : new Date(0);
+
+  // Without shopId the device gets every shop it owns (a shop-switcher client can
+  // then filter locally); with one it gets just that shop, after an ownership check.
+  if (shopId) await assertShopOwnership(shopId, userId);
+  const productScope = shopId ? { shopId } : { shop: { ownerId: userId } };
+  const saleScope = shopId ? { shopId } : { userId };
 
   const [products, sales] = await Promise.all([
     prisma.product.findMany({
-      // Scope to this device's own products — never leak other users' catalog (prevents cross-tenant data leak).
+      // Scope to the caller's own shops — never leak another seller's catalog (prevents cross-tenant data leak).
       // reviews relation is simply not included (Prisma `omit` only works on scalar fields, not relations).
       where: {
-        createdById: userId,
+        ...productScope,
         updatedAt: { gt: since },
       },
     }),
     prisma.sale.findMany({
       where: {
-        userId,
+        ...saleScope,
         createdAt: { gt: since },
       },
     }),

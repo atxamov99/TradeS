@@ -7,6 +7,7 @@ const { protect } = require('../middlewares/auth.middleware');
 const { authorize } = require('../middlewares/rbac.middleware');
 const { validate } = require('../middlewares/validate.middleware');
 const { updateOrderStatusSchema } = require('../validators/order.validator');
+const { blockShopSchema } = require('../validators/shop.validator');
 const { registerAdminSchema, registerSuperAdminSchema } = require('../validators/auth.validator');
 const { authLimiter } = require('../middlewares/rateLimiter.middleware');
 
@@ -33,9 +34,9 @@ router.post(
 // Dashboard
 router.get('/stats', adminController.getDashboardStats);
 
-// Admin management
-router.get('/admins', adminController.getAllAdmins);
-router.patch('/admins/:id/status', adminController.toggleAdminStatus);
+// Admin management — SUPER_ADMIN only (peer admins must not see/toggle each other)
+router.get('/admins', authorize('SUPER_ADMIN'), adminController.getAllAdmins);
+router.patch('/admins/:id/status', authorize('SUPER_ADMIN'), adminController.toggleAdminStatus);
 
 // User management
 router.get('/users', adminController.getAllUsers);
@@ -58,6 +59,11 @@ router.delete(
   authorize('SUPER_ADMIN'),
   supportController.deleteSupportMessage
 );
+
+// Shop management
+router.get('/shops', adminController.adminListShops);
+router.patch('/shops/:id/block', validate(blockShopSchema), adminController.adminBlockShop);
+router.patch('/shops/:id/unblock', adminController.adminUnblockShop);
 
 // Order management
 router.get('/orders', adminController.getAllOrders);

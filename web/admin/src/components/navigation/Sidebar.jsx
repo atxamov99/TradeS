@@ -1,9 +1,10 @@
 import { NavLink } from "react-router-dom";
 import { getMenuForProfile, settingsItem } from "../../constants/menu";
 import { useAuth } from "../../store";
+import { useI18n } from "../../i18n";
 import { Icon } from "../shared/Icon";
 
-function NavItem({ item, onClose }) {
+function NavItem({ item, label, onClose }) {
   return (
     <NavLink
       to={item.path}
@@ -20,7 +21,7 @@ function NavItem({ item, onClose }) {
       {({ isActive }) => (
         <>
           <Icon name={item.icon} fill={isActive} />
-          <span>{item.label}</span>
+          <span>{label}</span>
         </>
       )}
     </NavLink>
@@ -29,13 +30,14 @@ function NavItem({ item, onClose }) {
 
 export function Sidebar({ open, onClose }) {
   const { profile } = useAuth();
+  const { t } = useI18n();
   const menu = getMenuForProfile(profile);
 
   return (
     <>
       {/* Backdrop (mobile) */}
       <div
-        className={`fixed inset-0 bg-inverse-surface/40 z-20 transition-opacity duration-200 lg:hidden
+        className={`fixed inset-0 bg-inverse-surface/40 z-20 transition-opacity duration-200 lg:hidden print:hidden
           ${open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
         onClick={onClose}
       />
@@ -43,7 +45,7 @@ export function Sidebar({ open, onClose }) {
       {/* Sidebar panel */}
       <aside
         className={`fixed top-0 left-0 h-full w-[280px] bg-surface border-r border-outline-variant z-30 flex flex-col py-6
-          sidebar-slide lg:relative lg:translate-x-0
+          sidebar-slide lg:relative lg:translate-x-0 print:hidden
           ${open ? "translate-x-0" : "-translate-x-full"}`}
       >
         {/* Brand */}
@@ -53,7 +55,7 @@ export function Sidebar({ open, onClose }) {
           </div>
           <div className="min-w-0">
             <h1 className="font-display-lg text-primary font-bold leading-tight text-xl truncate">TradeS</h1>
-            <p className="font-label-caps text-label-caps text-on-surface-variant">Savdo boshqaruvi</p>
+            <p className="font-label-caps text-label-caps text-on-surface-variant">{t("app.sidebarTagline", {}, "Savdo boshqaruvi")}</p>
           </div>
         </div>
 
@@ -66,7 +68,7 @@ export function Sidebar({ open, onClose }) {
             <div className="min-w-0">
               <p className="text-body-sm font-semibold text-on-surface leading-tight truncate">{profile?.name}</p>
               <p className="text-xs text-on-surface-variant leading-tight truncate mt-0.5">
-                {profile?.isPrimary ? "SUPER ADMIN" : "ADMIN"}
+                {profile?.isPrimary ? t("titles.platformSuperAdmin", {}, "SUPER ADMIN") : t("titles.operationsAdmin", {}, "ADMIN")}
               </p>
             </div>
           </div>
@@ -75,13 +77,13 @@ export function Sidebar({ open, onClose }) {
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto px-2 space-y-1">
           {menu.map((item) => (
-            <NavItem key={item.path} item={item} onClose={onClose} />
+            <NavItem key={item.path} item={item} label={t(`navigation.menu.${item.key}.label`, {}, item.label)} onClose={onClose} />
           ))}
         </nav>
 
         {/* Settings pinned bottom */}
         <div className="px-2 mt-4 pt-4 border-t border-outline-variant">
-          <NavItem item={settingsItem} onClose={onClose} />
+          <NavItem item={settingsItem} label={t(`navigation.menu.${settingsItem.key}.label`, {}, settingsItem.label)} onClose={onClose} />
         </div>
       </aside>
     </>

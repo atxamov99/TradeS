@@ -102,5 +102,30 @@ export const migrations = schemaMigrations({
         }),
       ],
     },
+    {
+      toVersion: 6,
+      steps: [
+        createTable({
+          name: "shops",
+          columns: [
+            { name: "server_id", type: "string", isIndexed: true },
+            { name: "name", type: "string" },
+            { name: "description", type: "string", isOptional: true },
+            { name: "is_blocked", type: "boolean" },
+            { name: "is_synced", type: "boolean" },
+            { name: "created_at", type: "number" },
+            { name: "updated_at", type: "number" },
+          ],
+        }),
+        addColumns({
+          table: "products",
+          columns: [{ name: "shop_id", type: "string", isOptional: true, isIndexed: true }],
+        }),
+        addColumns({
+          table: "sales",
+          columns: [{ name: "shop_id", type: "string", isOptional: true, isIndexed: true }],
+        }),
+      ],
+    },
   ],
 });

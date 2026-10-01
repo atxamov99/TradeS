@@ -1,10 +1,11 @@
 const prisma = require('../config/prisma');
 const ApiError = require('../utils/ApiError');
-const { clampLimit } = require('../utils/pagination');
+const { clampLimit, clampPage } = require('../utils/pagination');
 
 const getContent = async ({ page = 1, limit = 20, type, status } = {}) => {
   const take = clampLimit(limit, 20);
-  const skip = (Number(page) - 1) * take;
+  const currentPage = clampPage(page);
+  const skip = (currentPage - 1) * take;
   const where = {};
 
   if (type) where.type = type;
@@ -20,7 +21,19 @@ const getContent = async ({ page = 1, limit = 20, type, status } = {}) => {
     prisma.content.count({ where }),
   ]);
 
-  return { content: rows, total, page: Number(page), pages: Math.ceil(total / take) };
+  return { content: rows, total, page: currentPage, pages: Math.ceil(total / take) };
+};
+
+const getPublicContent = async ({ type, limit = 50 } = {}) => {
+  const take = clampLimit(limit, 50);
+  const where = { status: 'published' };
+  if (type) where.type = type;
+
+  return prisma.content.findMany({
+    where,
+    orderBy: { updatedAt: 'desc' },
+    take,
+  });
 };
 
 const createContent = async (data) => {
@@ -47,4 +60,4 @@ const deleteContent = async (id) => {
   }
 };
 
-module.exports = { getContent, createContent, updateContentStatus, deleteContent };
+module.exports = { getContent, getPublicContent, createContent, updateContentStatus, deleteContent };

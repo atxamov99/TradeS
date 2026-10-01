@@ -252,9 +252,36 @@ const resources = {
             "admin_update_label": "Yangilash",
             "order_status_pending": "Kutilmoqda",
             "order_status_paid": "To'landi",
+            "order_status_processing": "Tayyorlanmoqda",
             "order_status_shipped": "Jo'natildi",
             "order_status_delivered": "Yetkazildi",
-            "order_status_cancelled": "Bekor qilindi"
+            "order_status_cancelled": "Bekor qilindi",
+
+            // Shops (marketplace pivot)
+            "shops_nav": "Do'konlarim",
+            "incoming_orders_nav": "Kelgan buyurtmalar",
+            "create_shop": "Do'kon ochish",
+            "shop_name_label": "Do'kon nomi",
+            "shop_description_label": "Tavsif",
+            "shop_description_ph": "Do'koningiz haqida qisqacha (ixtiyoriy)",
+            "no_shops_title": "Sizda hali do'kon yo'q",
+            "no_shops_desc": "Sotishni boshlash uchun birinchi do'koningizni oching",
+            "shop_limit_reached": "Ko'pi bilan 10 ta do'kon ochish mumkin",
+            "shop_created": "Do'kon yaratildi!",
+            "active_shop_label": "Faol do'kon",
+            "my_shops_title": "Mening do'konlarim",
+            "products_count_suffix": "ta mahsulot",
+            "no_orders_yet": "Hali buyurtma tushmagan",
+            "order_number_label": "Buyurtma №",
+            "buyer_label": "Xaridor",
+            "order_total_label": "Summasi",
+            "select_shop_first": "Avval do'kon tanlang",
+            "shop_name_required": "Do'kon nomini kiriting",
+            "mark_processing": "Tayyorlashni boshlash",
+            "mark_shipped": "Jo'natildi deb belgilash",
+            "mark_delivered": "Yetkazildi deb belgilash",
+            "mark_cancelled": "Bekor qilish",
+            "order_status_updated": "Buyurtma holati yangilandi"
         }
     },
     ru: {
@@ -506,9 +533,36 @@ const resources = {
             "admin_update_label": "Обновить",
             "order_status_pending": "В ожидании",
             "order_status_paid": "Оплачен",
+            "order_status_processing": "Готовится",
             "order_status_shipped": "Отправлен",
             "order_status_delivered": "Доставлен",
-            "order_status_cancelled": "Отменён"
+            "order_status_cancelled": "Отменён",
+
+            // Shops (marketplace pivot)
+            "shops_nav": "Мои магазины",
+            "incoming_orders_nav": "Входящие заказы",
+            "create_shop": "Открыть магазин",
+            "shop_name_label": "Название магазина",
+            "shop_description_label": "Описание",
+            "shop_description_ph": "Кратко о вашем магазине (необязательно)",
+            "no_shops_title": "У вас пока нет магазина",
+            "no_shops_desc": "Откройте свой первый магазин, чтобы начать продавать",
+            "shop_limit_reached": "Можно открыть максимум 10 магазинов",
+            "shop_created": "Магазин создан!",
+            "active_shop_label": "Активный магазин",
+            "my_shops_title": "Мои магазины",
+            "products_count_suffix": "товаров",
+            "no_orders_yet": "Заказов пока нет",
+            "order_number_label": "Заказ №",
+            "buyer_label": "Покупатель",
+            "order_total_label": "Сумма",
+            "select_shop_first": "Сначала выберите магазин",
+            "shop_name_required": "Введите название магазина",
+            "mark_processing": "Начать подготовку",
+            "mark_shipped": "Отметить как отправлено",
+            "mark_delivered": "Отметить как доставлено",
+            "mark_cancelled": "Отменить",
+            "order_status_updated": "Статус заказа обновлён"
         }
     },
     en: {
@@ -760,9 +814,36 @@ const resources = {
             "admin_update_label": "Update",
             "order_status_pending": "Pending",
             "order_status_paid": "Paid",
+            "order_status_processing": "Processing",
             "order_status_shipped": "Shipped",
             "order_status_delivered": "Delivered",
-            "order_status_cancelled": "Cancelled"
+            "order_status_cancelled": "Cancelled",
+
+            // Shops (marketplace pivot)
+            "shops_nav": "My Shops",
+            "incoming_orders_nav": "Incoming Orders",
+            "create_shop": "Open a Shop",
+            "shop_name_label": "Shop Name",
+            "shop_description_label": "Description",
+            "shop_description_ph": "A short description of your shop (optional)",
+            "no_shops_title": "You don't have a shop yet",
+            "no_shops_desc": "Open your first shop to start selling",
+            "shop_limit_reached": "You can open at most 10 shops",
+            "shop_created": "Shop created!",
+            "active_shop_label": "Active Shop",
+            "my_shops_title": "My Shops",
+            "products_count_suffix": "products",
+            "no_orders_yet": "No orders yet",
+            "order_number_label": "Order #",
+            "buyer_label": "Buyer",
+            "order_total_label": "Total",
+            "select_shop_first": "Select a shop first",
+            "shop_name_required": "Enter a shop name",
+            "mark_processing": "Start processing",
+            "mark_shipped": "Mark as shipped",
+            "mark_delivered": "Mark as delivered",
+            "mark_cancelled": "Cancel order",
+            "order_status_updated": "Order status updated"
         }
     }
 };

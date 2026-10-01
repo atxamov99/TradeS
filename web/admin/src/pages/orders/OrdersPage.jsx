@@ -12,21 +12,6 @@ const STATUS_BADGE = {
   cancelled:  "bg-[#FEE2E2] text-[#991B1B]"
 };
 
-const STATUS_LABELS = {
-  pending: "Kutilmoqda",
-  processing: "Jarayonda",
-  shipped: "Yo'lda",
-  delivered: "Yetkazildi",
-  cancelled: "Bekor qilindi"
-};
-
-const PAYMENT_LABELS = {
-  pending: "Kutilmoqda",
-  paid: "To'langan",
-  failed: "Muvaffaqiyatsiz",
-  refunded: "Qaytarilgan"
-};
-
 const PAYMENT_DOT = {
   pending: "bg-outline-variant",
   paid: "bg-primary-container",
@@ -34,18 +19,33 @@ const PAYMENT_DOT = {
   refunded: "bg-secondary"
 };
 
-const TABS = [
-  { key: "all", label: "Hammasi" },
-  { key: "pending", label: "Kutilmoqda" },
-  { key: "processing", label: "Jarayonda" },
-  { key: "delivered", label: "Yetkazildi" },
-  { key: "cancelled", label: "Bekor qilindi" }
-];
-
 export function OrdersPage() {
   const { t } = useI18n();
   usePageTitle(t("orders.title", {}, "Buyurtmalar"));
   const { orders, loading, updateOrderStatus } = useAdminData();
+
+  const STATUS_LABELS = {
+    pending: t("orders.tabPending", {}, "Kutilmoqda"),
+    processing: t("orders.tabProcessing", {}, "Jarayonda"),
+    shipped: t("orders.tabShipped", {}, "Yo'lda"),
+    delivered: t("orders.tabDelivered", {}, "Yetkazildi"),
+    cancelled: t("orders.tabCancelled", {}, "Bekor qilindi")
+  };
+
+  const PAYMENT_LABELS = {
+    pending: t("orders.tabPending", {}, "Kutilmoqda"),
+    paid: t("orders.paymentPaid", {}, "To'langan"),
+    failed: t("orders.paymentFailed", {}, "Muvaffaqiyatsiz"),
+    refunded: t("orders.paymentRefunded", {}, "Qaytarilgan")
+  };
+
+  const TABS = [
+    { key: "all", label: t("orders.tabAll", {}, "Hammasi") },
+    { key: "pending", label: t("orders.tabPending", {}, "Kutilmoqda") },
+    { key: "processing", label: t("orders.tabProcessing", {}, "Jarayonda") },
+    { key: "delivered", label: t("orders.tabDelivered", {}, "Yetkazildi") },
+    { key: "cancelled", label: t("orders.tabCancelled", {}, "Bekor qilindi") }
+  ];
 
   const [error, setError] = useState("");
   const [statusUpdating, setStatusUpdating] = useState(null);
@@ -75,7 +75,7 @@ export function OrdersPage() {
     try {
       await updateOrderStatus(id, { orderStatus: newStatus, paymentStatus: order ? order.paymentStatus : undefined });
     } catch (err) {
-      setError("Statusni yangilashda xatolik: " + err.message);
+      setError(t("orders.statusUpdateError", { message: err.message }, "Statusni yangilashda xatolik: " + err.message));
     } finally {
       setStatusUpdating(null);
     }
@@ -87,7 +87,7 @@ export function OrdersPage() {
     try {
       await updateOrderStatus(id, { orderStatus: order ? order.orderStatus : "pending", paymentStatus: newPaymentStatus });
     } catch (err) {
-      setError("To'lov holatini yangilashda xatolik: " + err.message);
+      setError(t("orders.paymentUpdateError", { message: err.message }, "To'lov holatini yangilashda xatolik: " + err.message));
     } finally {
       setStatusUpdating(null);
     }
@@ -98,14 +98,14 @@ export function OrdersPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="font-headline-md text-headline-md font-bold text-on-surface">Buyurtmalar</h2>
-          <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">Barcha mijozlar buyurtmalarini boshqarish va kuzatish</p>
+          <h2 className="font-headline-md text-headline-md font-bold text-on-surface">{t("orders.title", {}, "Buyurtmalar")}</h2>
+          <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">{t("orders.description", {}, "Barcha mijozlar buyurtmalarini boshqarish va kuzatish")}</p>
         </div>
         <div className="relative w-full md:w-72">
           <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]" />
           <input
             type="text"
-            placeholder="ID yoki mijoz..."
+            placeholder={t("orders.searchPlaceholder", {}, "ID yoki mijoz...")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-9 pr-4 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-sm text-on-surface focus:outline-none focus:border-primary transition-all"
@@ -137,28 +137,28 @@ export function OrdersPage() {
       {/* Table */}
       <div className="bg-surface-bright border border-outline-variant rounded-xl overflow-hidden shadow-sm">
         {loading ? (
-          <div className="p-12 text-center text-on-surface-variant">Yuklanmoqda...</div>
+          <div className="p-12 text-center text-on-surface-variant">{t("orders.loading", {}, "Yuklanmoqda...")}</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-surface-bright border-b border-outline-variant font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">
-                  <th className="py-4 px-6">ID</th>
-                  <th className="py-4 px-6">Mijoz</th>
-                  <th className="py-4 px-6">Sana</th>
-                  <th className="py-4 px-6 text-right">Summa</th>
-                  <th className="py-4 px-6">To'lov holati</th>
-                  <th className="py-4 px-6">Buyurtma holati</th>
+                  <th className="py-4 px-6">{t("orders.tableId", {}, "ID")}</th>
+                  <th className="py-4 px-6">{t("orders.tableCustomer", {}, "Mijoz")}</th>
+                  <th className="py-4 px-6">{t("orders.tableDate", {}, "Sana")}</th>
+                  <th className="py-4 px-6 text-right">{t("orders.tableTotal", {}, "Summa")}</th>
+                  <th className="py-4 px-6">{t("orders.tablePaymentStatus", {}, "To'lov holati")}</th>
+                  <th className="py-4 px-6">{t("orders.tableOrderStatus", {}, "Buyurtma holati")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant bg-surface-container-lowest">
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-12 text-center text-on-surface-variant">Buyurtmalar topilmadi</td>
+                    <td colSpan={6} className="py-12 text-center text-on-surface-variant">{t("orders.noOrders", {}, "Buyurtmalar topilmadi")}</td>
                   </tr>
                 ) : (
                   filtered.map((o) => {
-                    const name = o.user?.name || "Noma'lum";
+                    const name = o.user?.name || t("orders.unknownCustomer", {}, "Noma'lum");
                     return (
                       <tr key={o.id} className="hover:bg-surface-container-low transition-colors">
                         <td className="py-4 px-6 font-body-sm font-semibold text-on-surface whitespace-nowrap">{o.orderNumber}</td>
@@ -215,7 +215,7 @@ export function OrdersPage() {
           </div>
         )}
         <div className="bg-surface-bright px-6 py-4 border-t border-outline-variant">
-          <span className="font-body-sm text-on-surface-variant">{filtered.length} ta buyurtma ko'rsatilmoqda</span>
+          <span className="font-body-sm text-on-surface-variant">{t("orders.totalShowing", { count: filtered.length }, `${filtered.length} ta buyurtma ko'rsatilmoqda`)}</span>
         </div>
       </div>
     </div>

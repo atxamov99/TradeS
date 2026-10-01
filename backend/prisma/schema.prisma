@@ -36,8 +36,7 @@ model User {
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
-  products        Product[]      @relation("CreatedBy")
-  ownedProducts   Product[]      @relation("Owner")
+  shops           Shop[]
   orders          Order[]
   sales           Sale[]
   cart            Cart?
@@ -46,6 +45,28 @@ model User {
   knownDevices    KnownDevice[]
   inventoryBatches InventoryBatch[]
   syncQueues      SyncQueue[]
+}
+
+// A shop a user opened. One user may own several (capped app-side at 10,
+// enforced in shop.service.js, not here). v1 has no separate staff — the
+// owner is the only one who can manage a shop.
+model Shop {
+  id            String   @id @default(cuid())
+  ownerId       String
+  owner         User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name          String
+  description   String   @default("")
+  isBlocked     Boolean  @default(false)
+  blockedReason String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  products         Product[]
+  sales            Sale[]
+  orders           Order[]
+  inventoryBatches InventoryBatch[]
+
+  @@index([ownerId])
 }
 
 model Address {
@@ -82,10 +103,8 @@ model Product {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  ownerId     String?
-  owner       User?    @relation("Owner", fields: [ownerId], references: [id])
-  createdById String?
-  createdBy   User?    @relation("CreatedBy", fields: [createdById], references: [id])
+  shopId      String
+  shop        Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
 
   images      ProductImage[]
   reviews     Review[]
@@ -98,8 +117,7 @@ model Product {
   @@index([slug])
   @@index([category])
   @@index([price])
-  @@index([ownerId])
-  @@index([createdById])
+  @@index([shopId])
 }
 
 model ProductImage {
@@ -126,6 +144,8 @@ model Order {
   id              String      @id @default(cuid())
   userId          String
   user            User        @relation(fields: [userId], references: [id])
+  shopId          String
+  shop            Shop        @relation(fields: [shopId], references: [id])
   orderNumber     String      @unique
   paymentMethod   String      @default("cash_on_delivery")
   paymentStatus   String      @default("pending")
@@ -144,6 +164,7 @@ model Order {
   shippingAddress ShippingAddress?
 
   @@index([userId])
+  @@index([shopId])
   @@index([orderStatus])
   @@index([createdAt])
 }
@@ -175,6 +196,8 @@ model Sale {
   id            String   @id @default(cuid())
   userId        String
   user          User     @relation(fields: [userId], references: [id])
+  shopId        String
+  shop          Shop     @relation(fields: [shopId], references: [id])
   productId     String?
   product       Product? @relation(fields: [productId], references: [id])
   productName   String
@@ -193,6 +216,7 @@ model Sale {
   updatedAt     DateTime @updatedAt
 
   @@index([userId, createdAt])
+  @@index([shopId, createdAt])
   @@index([createdAt])
 }
 
@@ -221,6 +245,8 @@ model InventoryBatch {
   id          String   @id @default(cuid())
   userId      String
   user        User     @relation(fields: [userId], references: [id])
+  shopId      String
+  shop        Shop     @relation(fields: [shopId], references: [id])
   productId   String
   product     Product  @relation(fields: [productId], references: [id])
   productName String
@@ -234,6 +260,7 @@ model InventoryBatch {
   updatedAt   DateTime @updatedAt
 
   @@index([userId, createdAt])
+  @@index([shopId])
   @@index([productId])
 }
 

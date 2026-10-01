@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Search, Plus, X, Pencil, Trash2, Package, AlertCircle, PackagePlus } from 'lucide-react';
+import { Search, Plus, X, Pencil, Trash2, Package, AlertCircle, PackagePlus, Store } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import * as productsApi from '../api/products.api';
-import useAuthStore from '../store/authStore';
+import * as shopApi from '../api/shop.api';
+import useShopStore from '../store/shopStore';
 import Dropdown from '../components/ui/Dropdown';
 
 const BAG_WEIGHT_PRESETS = [5, 10, 25, 50, 100];
@@ -13,10 +15,7 @@ const isPresetBagWeight = (w) => BAG_WEIGHT_PRESETS.some((p) => String(p) === St
 
 export default function Products() {
   const { t, i18n } = useTranslation();
-  const user = useAuthStore((s) => s.user);
-  // Mirrors backend rule (product.service.js): owner OR ADMIN/SUPER_ADMIN may edit/delete.
-  const canManage = (product) =>
-    !!user && (['ADMIN', 'SUPER_ADMIN'].includes(user.role) || product.ownerId === user.id);
+  const activeShopId = useShopStore((s) => s.activeShopId);
   const locale = i18n.language.startsWith('uz') ? 'uz-UZ' : i18n.language.startsWith('ru') ? 'ru-RU' : 'en-US';
 
   const UNITS = [
@@ -30,10 +29,11 @@ export default function Products() {
     return Number(n || 0).toLocaleString(locale) + " " + t('currency');
   }
 
-  function StockBadge({ stock }) {
+  function StockBadge({ stock, unit }) {
+    const unitLabel = t(`unit_${unit || 'pcs'}`);
     if (stock <= 0) return <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-red-100 text-red-600">{t('out_of_stock')}</span>;
-    if (stock <= 10) return <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-100 text-amber-700">{stock} {t('pcs')}</span>;
-    return <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-green-100 text-green-700">{stock} {t('pcs')}</span>;
+    if (stock <= 10) return <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-100 text-amber-700">{stock} {unitLabel}</span>;
+    return <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-green-100 text-green-700">{stock} {unitLabel}</span>;
   }
 
   const [search, setSearch] = useState('');
@@ -42,8 +42,9 @@ export default function Products() {
   const [restockTarget, setRestockTarget] = useState(null);
 
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['products'],
-    queryFn: () => productsApi.getProducts(),
+    queryKey: ['shop-products', activeShopId],
+    queryFn: () => shopApi.getShopProducts(activeShopId, { limit: 200 }),
+    enabled: !!activeShopId,
   });
 
   const allProducts = data?.data?.data?.products || [];
@@ -60,7 +61,8 @@ export default function Products() {
         <h1 className="text-lg font-bold text-[#0F172A] dark:text-slate-100">{t('products')}</h1>
         <button
           onClick={() => setModal('add')}
-          className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white font-bold px-4 py-2.5 rounded-xl transition"
+          disabled={!activeShopId}
+          className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white font-bold px-4 py-2.5 rounded-xl transition disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <Plus size={18} />
           <span className="hidden sm:inline">{t('add_product')}</span>
@@ -68,6 +70,20 @@ export default function Products() {
         </button>
       </div>
 
+      {!activeShopId ? (
+        <div className="px-4 sm:px-6 py-16 max-w-3xl mx-auto text-center text-[#64748B] dark:text-slate-400">
+          <Store size={40} className="mx-auto mb-3 opacity-40" />
+          <p className="font-semibold">{t('no_shops_title')}</p>
+          <p className="text-sm mt-1">{t('no_shops_desc')}</p>
+          <Link
+            to="/dashboard/shops"
+            className="mt-4 inline-flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white font-bold px-5 py-3 rounded-xl transition"
+          >
+            <Plus size={18} />
+            {t('create_shop')}
+          </Link>
+        </div>
+      ) : (
       <div className="px-4 sm:px-6 py-5 max-w-3xl mx-auto flex flex-col gap-4">
         {/* Search */}
         <div className="relative">
@@ -127,7 +143,7 @@ export default function Products() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <p className="font-bold text-[#0F172A] dark:text-slate-100 truncate">{product.name}</p>
-                    <StockBadge stock={product.stock} />
+                    <StockBadge stock={product.stock} unit={product.unit} />
                   </div>
                   {product.unit === 'box' && product.bagWeightKg ? (
                     <p className="text-xs text-[#94A3B8] dark:text-slate-500 mb-0.5">{t('unit_box')} · {product.bagWeightKg} kg</p>
@@ -137,41 +153,41 @@ export default function Products() {
                     <span className="text-green-600 font-semibold">{t('sell_price')} {Number(product.sellPrice).toLocaleString(locale)} {t('currency')}</span>
                   </div>
                 </div>
-                {canManage(product) && (
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setRestockTarget(product)}
-                      className="p-2.5 rounded-xl hover:bg-green-50 dark:hover:bg-green-500/10 text-[#64748B] dark:text-slate-400 hover:text-green-600 dark:hover:text-green-400 transition"
-                      title={t('restock_action')}
-                    >
-                      <PackagePlus size={18} />
-                    </button>
-                    <button
-                      onClick={() => setModal(product)}
-                      className="p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-[#64748B] dark:text-slate-400 hover:text-[#0F172A] dark:hover:text-slate-100 transition"
-                      title={t('edit_product')}
-                    >
-                      <Pencil size={18} />
-                    </button>
-                    <button
-                      onClick={() => setDeleteTarget(product)}
-                      className="p-2.5 rounded-xl hover:bg-red-50 dark:hover:bg-red-500/10 text-[#64748B] dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition"
-                      title={t('delete')}
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  </div>
-                )}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setRestockTarget(product)}
+                    className="p-2.5 rounded-xl hover:bg-green-50 dark:hover:bg-green-500/10 text-[#64748B] dark:text-slate-400 hover:text-green-600 dark:hover:text-green-400 transition"
+                    title={t('restock_action')}
+                  >
+                    <PackagePlus size={18} />
+                  </button>
+                  <button
+                    onClick={() => setModal(product)}
+                    className="p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-[#64748B] dark:text-slate-400 hover:text-[#0F172A] dark:hover:text-slate-100 transition"
+                    title={t('edit_product')}
+                  >
+                    <Pencil size={18} />
+                  </button>
+                  <button
+                    onClick={() => setDeleteTarget(product)}
+                    className="p-2.5 rounded-xl hover:bg-red-50 dark:hover:bg-red-500/10 text-[#64748B] dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition"
+                    title={t('delete')}
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
         )}
       </div>
+      )}
 
       {/* Modals */}
       {modal && (
         <ProductModal
           product={modal === 'add' ? null : modal}
+          shopId={activeShopId}
           onClose={() => setModal(null)}
           t={t}
           fmt={fmt}
@@ -181,6 +197,7 @@ export default function Products() {
       {deleteTarget && (
         <DeleteConfirm
           product={deleteTarget}
+          shopId={activeShopId}
           onClose={() => setDeleteTarget(null)}
           t={t}
         />
@@ -188,6 +205,7 @@ export default function Products() {
       {restockTarget && (
         <RestockModal
           product={restockTarget}
+          shopId={activeShopId}
           onClose={() => setRestockTarget(null)}
           t={t}
         />
@@ -196,7 +214,7 @@ export default function Products() {
   );
 }
 
-function ProductModal({ product, onClose, t, fmt, UNITS }) {
+function ProductModal({ product, shopId, onClose, t, fmt, UNITS }) {
   const emptyForm = { name: '', buyPrice: '', sellPrice: '', stock: '', unit: 'pcs', bagWeightKg: '' };
   const [form, setForm] = useState(
     product
@@ -219,7 +237,7 @@ function ProductModal({ product, onClose, t, fmt, UNITS }) {
   const createMutation = useMutation({
     mutationFn: productsApi.createProduct,
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['products'] });
+      qc.invalidateQueries({ queryKey: ['shop-products', shopId] });
       toast.success(t('product_added'));
       onClose();
     },
@@ -228,7 +246,7 @@ function ProductModal({ product, onClose, t, fmt, UNITS }) {
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => productsApi.updateProduct(id, data),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['products'] });
+      qc.invalidateQueries({ queryKey: ['shop-products', shopId] });
       toast.success(t('product_updated'));
       onClose();
     },
@@ -253,10 +271,16 @@ function ProductModal({ product, onClose, t, fmt, UNITS }) {
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
+    const sellPrice = parseFloat(form.sellPrice);
     const payload = {
       name: form.name.trim(),
       buyPrice: parseFloat(form.buyPrice),
-      sellPrice: parseFloat(form.sellPrice),
+      sellPrice,
+      // The marketplace-facing price (finalPrice = price - discount%) is driven by
+      // these e-commerce fields, separate from the POS buy/sell price above — keep
+      // them in sync so a buyer sees the same price the seller set at the till.
+      price: sellPrice,
+      discount: 0,
       stock: parseInt(form.stock, 10) || 0,
       unit: form.unit,
       bagWeightKg: form.unit === 'box' ? parseFloat(form.bagWeightKg) : null,
@@ -264,7 +288,7 @@ function ProductModal({ product, onClose, t, fmt, UNITS }) {
     if (product) {
       updateMutation.mutate({ id: product.id, data: payload });
     } else {
-      createMutation.mutate(payload);
+      createMutation.mutate({ ...payload, shopId });
     }
   };
 
@@ -401,12 +425,12 @@ function ProductModal({ product, onClose, t, fmt, UNITS }) {
   );
 }
 
-function DeleteConfirm({ product, onClose, t }) {
+function DeleteConfirm({ product, shopId, onClose, t }) {
   const qc = useQueryClient();
   const deleteMutation = useMutation({
     mutationFn: () => productsApi.deleteProduct(product.id),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['products'] });
+      qc.invalidateQueries({ queryKey: ['shop-products', shopId] });
       toast.success(t('product_deleted'));
       onClose();
     },
@@ -438,7 +462,7 @@ function DeleteConfirm({ product, onClose, t }) {
   );
 }
 
-function RestockModal({ product, onClose, t }) {
+function RestockModal({ product, shopId, onClose, t }) {
   const [quantity, setQuantity] = useState('');
   const [error, setError] = useState('');
   const qc = useQueryClient();
@@ -446,7 +470,7 @@ function RestockModal({ product, onClose, t }) {
   const restockMutation = useMutation({
     mutationFn: (qty) => productsApi.restockProduct(product.id, qty),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['products'] });
+      qc.invalidateQueries({ queryKey: ['shop-products', shopId] });
       toast.success(t('restock_success'));
       onClose();
     },

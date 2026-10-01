@@ -3,6 +3,7 @@ const router = express.Router();
 
 const authRoutes = require('./auth.routes');
 const userRoutes = require('./user.routes');
+const shopRoutes = require('./shop.routes');
 const productRoutes = require('./product.routes');
 const cartRoutes = require('./cart.routes');
 const wishlistRoutes = require('./wishlist.routes');
@@ -20,6 +21,7 @@ const supportRoutes = require('./support.routes');
 
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
+router.use('/shops', shopRoutes);
 router.use('/products', productRoutes);
 router.use('/cart', cartRoutes);
 router.use('/wishlist', wishlistRoutes);

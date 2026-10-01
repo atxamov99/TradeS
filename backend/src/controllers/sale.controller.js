@@ -17,4 +17,9 @@ const getSales = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, result, 'Sales retrieved'));
 });
 
-module.exports = { createSale, bulkSync, getSales };
+const getShopSales = asyncHandler(async (req, res) => {
+  const result = await saleService.getShopSales(req.params.id, req.user.id, req.query);
+  res.status(200).json(new ApiResponse(200, result, 'Sales retrieved'));
+});
+
+module.exports = { createSale, bulkSync, getSales, getShopSales };

@@ -26,7 +26,7 @@ export default function RegisterScreen() {
 
   const [step, setStep] = useState<"form" | "connect" | "otp">("form");
   const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [phone, setPhone] = useState("+998 ");
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);

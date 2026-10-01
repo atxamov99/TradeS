@@ -6,7 +6,12 @@ const Joi = require('joi');
 // enforced here are the TYPES: `Number(quantity)` on a non-numeric string
 // yields NaN and propagates into stock/profit columns.
 
+// Every synced row belongs to exactly one shop; the service re-checks that the
+// authenticated user owns it before writing.
+const shopIdRule = Joi.string().trim().max(64).required();
+
 const productPayloadSchema = Joi.object({
+  shopId: shopIdRule,
   name: Joi.string().trim().max(200),
   buyPrice: Joi.number().min(0),
   sellPrice: Joi.number().min(0),
@@ -27,6 +32,7 @@ const productPayloadSchema = Joi.object({
 });
 
 const salePayloadSchema = Joi.object({
+  shopId: shopIdRule,
   product: Joi.string().max(64).allow(null, ''),
   productName: Joi.string().trim().max(200).required(),
   quantity: Joi.number().positive().required(),
@@ -46,10 +52,13 @@ const syncPushSchema = Joi.object({
         // Client-generated id — also the idempotency key persisted as syncId.
         entityId: Joi.string().max(64).required(),
         clientUpdatedAt: Joi.number().integer().min(0),
+        // Required for both entities now: even a delete op must name its shopId,
+        // which is what the service authorizes against. A `.default({})` here
+        // would let a missing payload skip that check entirely.
         payload: Joi.when('entity', {
           is: 'sale',
           then: salePayloadSchema.required(),
-          otherwise: productPayloadSchema.default({}),
+          otherwise: productPayloadSchema.required(),
         }),
       })
     )

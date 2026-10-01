@@ -26,7 +26,7 @@ const useCartStore = create((set, get) => ({
     try {
       const res = await cartApi.addToCart({ productId, quantity });
       set({ cart: res.data.data.cart });
-      toast.success('Added to cart');
+      toast.success("Savatga qo'shildi");
     } catch (err) {
       throw err;
     }
@@ -36,7 +36,7 @@ const useCartStore = create((set, get) => ({
     try {
       const res = await cartApi.removeFromCart(productId);
       set({ cart: res.data.data.cart });
-      toast.success('Removed from cart');
+      toast.success('Savatdan olib tashlandi');
     } catch (err) {
       throw err;
     }

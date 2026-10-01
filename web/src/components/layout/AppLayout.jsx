@@ -1,8 +1,69 @@
-import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { Home, Package, ShoppingCart, BarChart2, Settings, User, ShieldCheck, LogOut } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Outlet, NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
+import { Home, Package, ShoppingCart, BarChart2, Settings, User, ShieldCheck, LogOut, Store, ChevronDown, Check, Inbox } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import useAuthStore from '../../store/authStore';
+import useShopStore from '../../store/shopStore';
 import TestUserBanner from '../common/TestUserBanner';
+
+function ShopSwitcher() {
+  const { t } = useTranslation();
+  const { shops, activeShopId, setActiveShop } = useShopStore();
+  const [open, setOpen] = useState(false);
+  const activeShop = shops.find((s) => s.id === activeShopId);
+
+  if (shops.length === 0) {
+    return (
+      <Link
+        to="/dashboard/shops"
+        className="mx-4 mb-3 flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold border border-dashed border-green-400 text-green-600 hover:bg-green-50 dark:hover:bg-green-500/10 transition"
+      >
+        <Store size={16} /> {t('create_shop')}
+      </Link>
+    );
+  }
+
+  return (
+    <div className="relative mx-4 mb-3">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold border border-[#E2E8F0] dark:border-[#334155] bg-white dark:bg-[#0F172A] hover:border-green-300 transition"
+      >
+        <Store size={16} className="text-green-600 flex-shrink-0" />
+        <span className="flex-1 min-w-0 text-left truncate text-[#0F172A] dark:text-slate-100">
+          {activeShop?.name || t('active_shop_label')}
+        </span>
+        <ChevronDown size={15} className={`text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && (
+        <>
+          <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
+          <div className="absolute left-0 right-0 top-full mt-1 z-40 rounded-xl border border-[#E2E8F0] dark:border-[#334155] bg-white dark:bg-[#1E293B] shadow-lg py-1 max-h-64 overflow-y-auto">
+            {shops.map((shop) => (
+              <button
+                key={shop.id}
+                onClick={() => { setActiveShop(shop.id); setOpen(false); }}
+                className="w-full flex items-center justify-between gap-2 px-3 py-2.5 text-left text-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+              >
+                <span className="truncate text-[#0F172A] dark:text-slate-100">{shop.name}</span>
+                {shop.id === activeShopId && <Check size={14} className="text-green-600 flex-shrink-0" />}
+              </button>
+            ))}
+            <hr className="my-1 border-[#E2E8F0] dark:border-[#334155]" />
+            <Link
+              to="/dashboard/shops"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2 px-3 py-2.5 text-sm font-semibold text-green-600 hover:bg-green-50 dark:hover:bg-green-500/10 transition"
+            >
+              <Store size={14} /> {t('shops_nav')}
+            </Link>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 function NavItem({ item, mobile = false }) {
   const Icon = item.icon;
@@ -54,13 +115,20 @@ export default function AppLayout() {
   const location = useLocation();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  const fetchMyShops = useShopStore((s) => s.fetchMyShops);
 
   const isAdmin = ['ADMIN', 'SUPER_ADMIN'].includes(user?.role);
 
+  useEffect(() => {
+    fetchMyShops().catch(() => {});
+  }, []);
+
   const navItems = [
     { to: '/dashboard', label: t('dashboard'), icon: Home },
+    { to: '/dashboard/shops',    label: t('shops_nav'), icon: Store },
     { to: '/dashboard/products', label: t('products'),  icon: Package },
     { to: '/dashboard/sales',    label: t('sales'),     icon: ShoppingCart },
+    { to: '/dashboard/orders',   label: t('incoming_orders_nav'), icon: Inbox },
     { to: '/dashboard/reports',  label: t('reports'),   icon: BarChart2 },
     { to: '/dashboard/settings', label: t('settings'),  icon: Settings },
     { to: '/dashboard/profile',  label: t('profile'),   icon: User },
@@ -95,6 +163,11 @@ export default function AppLayout() {
             <p className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate">{user?.name}</p>
             <p className="text-[10px] text-slate-400 truncate">{user?.role}</p>
           </div>
+        </div>
+
+        {/* Shop switcher */}
+        <div className="pt-3">
+          <ShopSwitcher />
         </div>
 
         {/* Nav links */}

@@ -11,11 +11,11 @@ function formatPrice(p) {
   return Number(p).toLocaleString("uz-UZ") + " UZS";
 }
 
-function stockBadge(p) {
-  if (p.status === "inactive") return { label: "Nofaol", cls: "bg-surface-variant text-on-surface-variant" };
-  if (p.stock === 0) return { label: "Tugagan", cls: "bg-[#fee2e2] text-[#991b1b]" };
-  if (p.stock <= 10) return { label: "Kam qolgan", cls: "bg-[#fef3c7] text-[#92400e]" };
-  return { label: "Sotuvda", cls: "bg-[#ecfdf5] text-[#065f46]" };
+function stockBadge(p, t) {
+  if (p.status === "inactive") return { label: t("products.statusInactive", {}, "Nofaol"), cls: "bg-surface-variant text-on-surface-variant" };
+  if (p.stock === 0) return { label: t("products.statusOutOfStock", {}, "Tugagan"), cls: "bg-[#fee2e2] text-[#991b1b]" };
+  if (p.stock <= 10) return { label: t("products.statusLowStock", {}, "Kam qolgan"), cls: "bg-[#fef3c7] text-[#92400e]" };
+  return { label: t("products.statusInStock", {}, "Sotuvda"), cls: "bg-[#ecfdf5] text-[#065f46]" };
 }
 
 function StatCard({ label, value, icon, wrap, valueCls = "text-on-surface" }) {
@@ -107,8 +107,8 @@ export function ProductsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
         <div>
-          <h2 className="font-headline-md text-headline-md text-on-surface">Mahsulotlar</h2>
-          <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">Mahsulotlar katalogi va ombor boshqaruvi</p>
+          <h2 className="font-headline-md text-headline-md text-on-surface">{t("products.title", {}, "Mahsulotlar")}</h2>
+          <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">{t("products.description", {}, "Mahsulotlar katalogi va ombor boshqaruvi")}</p>
         </div>
         <button
           type="button"
@@ -116,15 +116,15 @@ export function ProductsPage() {
           className="flex items-center gap-2 bg-primary-container text-on-primary-container font-semibold py-2.5 px-5 rounded-lg hover:bg-primary hover:text-on-primary transition-colors shadow-sm shrink-0"
         >
           <Icon name="add" />
-          <span>Yangi mahsulot</span>
+          <span>{t("products.createButton", {}, "Yangi mahsulot")}</span>
         </button>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-element-gap">
-        <StatCard label="Jami mahsulotlar" value={products.length} icon="inventory_2" wrap="bg-surface-container text-primary" />
-        <StatCard label="Faol mahsulotlar" value={activeCount} icon="check_circle" wrap="bg-surface-container text-primary" />
-        <StatCard label="Kam qolgan" value={lowCount} icon="warning" wrap="bg-error-container text-error" valueCls="text-error" />
+        <StatCard label={t("products.statTotal", {}, "Jami mahsulotlar")} value={products.length} icon="inventory_2" wrap="bg-surface-container text-primary" />
+        <StatCard label={t("products.statActive", {}, "Faol mahsulotlar")} value={activeCount} icon="check_circle" wrap="bg-surface-container text-primary" />
+        <StatCard label={t("products.statLow", {}, "Kam qolgan")} value={lowCount} icon="warning" wrap="bg-error-container text-error" valueCls="text-error" />
       </div>
 
       {/* Table */}
@@ -135,7 +135,7 @@ export function ProductsPage() {
             <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]" />
             <input
               type="text"
-              placeholder="Mahsulot nomi yoki SKU..."
+              placeholder={t("products.searchPlaceholder", {}, "Mahsulot nomi yoki SKU...")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full bg-surface border border-outline-variant text-on-surface font-body-sm rounded-lg pl-9 pr-4 py-2 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
@@ -146,7 +146,7 @@ export function ProductsPage() {
             onChange={(e) => setCategoryFilter(e.target.value)}
             className="bg-surface border border-outline-variant text-on-surface font-body-sm rounded-lg px-4 py-2 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary cursor-pointer"
           >
-            <option value="all">Barcha kategoriyalar</option>
+            <option value="all">{t("products.allCategories", {}, "Barcha kategoriyalar")}</option>
             {categories.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
           <select
@@ -154,9 +154,9 @@ export function ProductsPage() {
             onChange={(e) => setStatusFilter(e.target.value)}
             className="bg-surface border border-outline-variant text-on-surface font-body-sm rounded-lg px-4 py-2 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary cursor-pointer"
           >
-            <option value="all">Barcha holatlar</option>
-            <option value="active">Sotuvda</option>
-            <option value="inactive">Nofaol</option>
+            <option value="all">{t("products.allStatuses", {}, "Barcha holatlar")}</option>
+            <option value="active">{t("products.statusInStock", {}, "Sotuvda")}</option>
+            <option value="inactive">{t("products.statusInactive", {}, "Nofaol")}</option>
           </select>
         </div>
 
@@ -164,23 +164,23 @@ export function ProductsPage() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-surface-bright font-label-caps text-label-caps text-on-surface-variant border-b border-outline-variant">
-                <th className="py-3 px-6 w-16">Rasm</th>
-                <th className="py-3 px-6">Nomi</th>
-                <th className="py-3 px-6">Kategoriya</th>
-                <th className="py-3 px-6 text-right">Narxi</th>
-                <th className="py-3 px-6 text-center">Miqdori</th>
-                <th className="py-3 px-6">Holati</th>
-                <th className="py-3 px-6 text-right">Amallar</th>
+                <th className="py-3 px-6 w-16">{t("products.tableImage", {}, "Rasm")}</th>
+                <th className="py-3 px-6">{t("products.tableName", {}, "Nomi")}</th>
+                <th className="py-3 px-6">{t("products.tableCategory", {}, "Kategoriya")}</th>
+                <th className="py-3 px-6 text-right">{t("products.tablePrice", {}, "Narxi")}</th>
+                <th className="py-3 px-6 text-center">{t("products.tableStock", {}, "Miqdori")}</th>
+                <th className="py-3 px-6">{t("products.tableStatus", {}, "Holati")}</th>
+                <th className="py-3 px-6 text-right">{t("products.tableActions", {}, "Amallar")}</th>
               </tr>
             </thead>
             <tbody className="font-body-sm text-body-sm divide-y divide-outline-variant">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-on-surface-variant">Mahsulot topilmadi</td>
+                  <td colSpan={7} className="py-12 text-center text-on-surface-variant">{t("products.noProducts", {}, "Mahsulot topilmadi")}</td>
                 </tr>
               ) : (
                 filtered.map((p) => {
-                  const badge = stockBadge(p);
+                  const badge = stockBadge(p, t);
                   return (
                     <tr key={p.id} className="hover:bg-surface-container-low transition-colors group">
                       <td className="py-3 px-6">
@@ -200,18 +200,18 @@ export function ProductsPage() {
                       </td>
                       <td className="py-3 px-6 text-right">
                         <div className="flex justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button type="button" onClick={() => openEdit(p)} className="text-on-surface-variant hover:text-primary" title="Tahrirlash">
+                          <button type="button" onClick={() => openEdit(p)} className="text-on-surface-variant hover:text-primary" title={t("products.editTooltip", {}, "Tahrirlash")}>
                             <Icon name="edit" className="text-[20px]" />
                           </button>
                           <button
                             type="button"
                             onClick={() => toggleProductStatus(p.id)}
                             className="text-on-surface-variant hover:text-secondary"
-                            title={p.status === "active" ? "Nofaol qilish" : "Yoqish"}
+                            title={p.status === "active" ? t("products.deactivateTooltip", {}, "Nofaol qilish") : t("products.activateTooltip", {}, "Yoqish")}
                           >
                             <Icon name={p.status === "active" ? "visibility_off" : "visibility"} className="text-[20px]" />
                           </button>
-                          <button type="button" onClick={() => setDeleteTarget(p)} className="text-on-surface-variant hover:text-error" title="O'chirish">
+                          <button type="button" onClick={() => setDeleteTarget(p)} className="text-on-surface-variant hover:text-error" title={t("products.deleteTooltip", {}, "O'chirish")}>
                             <Icon name="delete" className="text-[20px]" />
                           </button>
                         </div>
@@ -225,34 +225,34 @@ export function ProductsPage() {
         </div>
 
         <div className="p-4 border-t border-outline-variant bg-surface-bright flex items-center justify-between">
-          <p className="font-body-sm text-on-surface-variant">{filtered.length} ta mahsulot ko'rsatilmoqda</p>
+          <p className="font-body-sm text-on-surface-variant">{t("products.showingCount", { count: filtered.length }, `${filtered.length} ta mahsulot ko'rsatilmoqda`)}</p>
         </div>
       </div>
 
       {/* Create / Edit modal */}
       <Modal
         open={modalOpen}
-        title={editTarget ? "Mahsulotni tahrirlash" : "Yangi mahsulot"}
-        description="Mahsulot ma'lumotlarini kiriting"
+        title={editTarget ? t("products.editModalTitle", {}, "Mahsulotni tahrirlash") : t("products.createModalTitle", {}, "Yangi mahsulot")}
+        description={t("products.modalDescription", {}, "Mahsulot ma'lumotlarini kiriting")}
         onClose={closeModal}
         footer={
           <>
             <button type="button" className="px-5 py-2.5 text-body-sm border border-outline-variant rounded-lg hover:bg-surface-container-low text-on-surface" onClick={closeModal}>
-              Bekor qilish
+              {t("products.cancel", {}, "Bekor qilish")}
             </button>
             <button type="submit" form="product-form" disabled={submitting} className="px-5 py-2.5 bg-primary-container text-on-primary-container text-body-sm font-medium rounded-lg hover:bg-primary hover:text-on-primary transition-colors disabled:opacity-60">
-              {submitting ? "Saqlanmoqda..." : (editTarget ? "Saqlash" : "Qo'shish")}
+              {submitting ? t("products.saving", {}, "Saqlanmoqda...") : (editTarget ? t("products.save", {}, "Saqlash") : t("products.add", {}, "Qo'shish"))}
             </button>
           </>
         }
       >
         <form id="product-form" className="space-y-4" onSubmit={handleSubmit}>
           {[
-            { l: "Mahsulot nomi", n: "name", tp: "text", r: true },
-            { l: "Kategoriya", n: "category", tp: "text", r: true },
-            { l: "SKU", n: "sku", tp: "text", r: false },
-            { l: "Narx (UZS)", n: "price", tp: "number", r: true },
-            { l: "Ombor qoldig'i", n: "stock", tp: "number", r: true }
+            { l: t("products.fieldName", {}, "Mahsulot nomi"), n: "name", tp: "text", r: true },
+            { l: t("products.fieldCategory", {}, "Kategoriya"), n: "category", tp: "text", r: true },
+            { l: t("products.fieldSku", {}, "SKU"), n: "sku", tp: "text", r: false },
+            { l: t("products.fieldPrice", {}, "Narx (UZS)"), n: "price", tp: "number", r: true },
+            { l: t("products.fieldStock", {}, "Ombor qoldig'i"), n: "stock", tp: "number", r: true }
           ].map((f) => (
             <div key={f.n} className="flex flex-col gap-1.5">
               <label className="font-body-sm text-body-sm font-medium text-on-surface">{f.l}</label>
@@ -273,25 +273,25 @@ export function ProductsPage() {
       {/* Delete confirm */}
       <Modal
         open={!!deleteTarget}
-        title="Mahsulotni o'chirish"
-        description={deleteTarget ? `"${deleteTarget.name}" mahsulotini o'chirasizmi?` : ""}
+        title={t("products.deleteModalTitle", {}, "Mahsulotni o'chirish")}
+        description={deleteTarget ? t("products.deleteModalDescription", { name: deleteTarget.name }, `"${deleteTarget.name}" mahsulotini o'chirasizmi?`) : ""}
         onClose={() => setDeleteTarget(null)}
         footer={
           <>
             <button type="button" className="px-5 py-2.5 text-body-sm border border-outline-variant rounded-lg hover:bg-surface-container-low text-on-surface" onClick={() => setDeleteTarget(null)}>
-              Bekor qilish
+              {t("products.cancel", {}, "Bekor qilish")}
             </button>
             <button
               type="button"
               className="px-5 py-2.5 bg-error text-on-error text-body-sm font-medium rounded-lg hover:bg-error/90"
               onClick={() => { deleteProduct(deleteTarget.id); setDeleteTarget(null); }}
             >
-              O'chirish
+              {t("products.deleteConfirmButton", {}, "O'chirish")}
             </button>
           </>
         }
       >
-        <p className="text-body-sm text-on-surface-variant">Bu amalni qaytarib bo'lmaydi. Mahsulot arxivlanishi mumkin.</p>
+        <p className="text-body-sm text-on-surface-variant">{t("products.deleteModalNote", {}, "Bu amalni qaytarib bo'lmaydi. Mahsulot arxivlanishi mumkin.")}</p>
       </Modal>
     </div>
   );

@@ -12,20 +12,20 @@ export default function ProductCard({ product }) {
 
   const handleAddToCart = (e) => {
     e.preventDefault();
-    if (!user) { toast.error('Please login to add to cart'); return; }
+    if (!user) { toast.error('Savatga qo\'shish uchun tizimga kiring'); return; }
     // Fire-and-forget: the store rethrows and the axios interceptor toasts the error.
     addItem(product.id, 1).catch(() => {});
   };
 
   const handleWishlist = async (e) => {
     e.preventDefault();
-    if (!user) { toast.error('Please login to use wishlist'); return; }
+    if (!user) { toast.error('Sevimlilar uchun tizimga kiring'); return; }
     try {
       const res = await wishlistApi.toggleWishlist(product.id);
       const action = res.data.data.action;
-      toast.success(action === 'added' ? 'Added to wishlist' : 'Removed from wishlist');
+      toast.success(action === 'added' ? "Sevimlilarga qo'shildi" : "Sevimlilardan olib tashlandi");
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Failed to update wishlist');
+      toast.error(err?.response?.data?.message || "Sevimlilarni yangilab bo'lmadi");
     }
   };
 
@@ -47,7 +47,7 @@ export default function ProductCard({ product }) {
           )}
           {product.stock === 0 && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-              <span className="text-white font-medium text-sm">Out of Stock</span>
+              <span className="text-white font-medium text-sm">Tugagan</span>
             </div>
           )}
           <div className="absolute top-2 right-2 flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -61,7 +61,9 @@ export default function ProductCard({ product }) {
         </div>
 
         <div className="p-4">
-          <p className="text-xs text-gray-400 mb-1 capitalize">{product.category}</p>
+          {product.shop?.name && (
+            <p className="text-xs text-primary-600 font-medium mb-1 truncate">{product.shop.name}</p>
+          )}
           <h3 className="font-medium text-sm line-clamp-2 mb-3">{product.name}</h3>
 
           <div className="flex items-center justify-between">

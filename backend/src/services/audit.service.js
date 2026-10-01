@@ -1,9 +1,10 @@
 const prisma = require('../config/prisma');
-const { clampLimit } = require('../utils/pagination');
+const { clampLimit, clampPage } = require('../utils/pagination');
 
 const getAuditLogs = async ({ page = 1, limit = 30, category, from, to, search } = {}) => {
   const take = clampLimit(limit, 30);
-  const skip = (Number(page) - 1) * take;
+  const currentPage = clampPage(page);
+  const skip = (currentPage - 1) * take;
   const where = {};
 
   if (category) where.category = category;
@@ -30,7 +31,7 @@ const getAuditLogs = async ({ page = 1, limit = 30, category, from, to, search }
     prisma.auditLog.count({ where }),
   ]);
 
-  return { logs, total, page: Number(page), pages: Math.ceil(total / take) };
+  return { logs, total, page: currentPage, pages: Math.ceil(total / take) };
 };
 
 const getAuditLogsExport = async ({ category, from, to } = {}) => {

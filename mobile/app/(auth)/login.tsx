@@ -57,7 +57,7 @@ function Field({
 }
 
 export default function LoginScreen() {
-  const [identifier, setIdentifier] = useState("");
+  const [identifier, setIdentifier] = useState("+998 ");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);

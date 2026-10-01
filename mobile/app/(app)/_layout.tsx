@@ -58,9 +58,17 @@ export default function AppLayout() {
           tabBarBadge: lowStockCount > 0 ? lowStockCount : undefined,
         }}
       />
+      <Tabs.Screen
+        name="marketplace"
+        options={{
+          title: "Bozor",
+          tabBarIcon: ({ color, size }) => <Ionicons name="storefront" size={size} color={color} />,
+        }}
+      />
       <Tabs.Screen name="reports"    options={{ href: null }} />
       <Tabs.Screen name="customers"  options={{ href: null }} />
       <Tabs.Screen name="suppliers"  options={{ href: null }} />
+      <Tabs.Screen name="shops"      options={{ href: null }} />
       <Tabs.Screen
         name="settings"
         options={{

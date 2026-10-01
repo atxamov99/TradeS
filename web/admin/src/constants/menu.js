@@ -3,6 +3,7 @@
 const sidebarMenu = [
   { key: "dashboard", path: "/dashboard", icon: "dashboard",     label: "Boshqaruv paneli" },
   { key: "products",  path: "/products",  icon: "inventory_2",   label: "Mahsulotlar" },
+  { key: "shops",     path: "/shops",     icon: "storefront",    label: "Do'konlar" },
   { key: "orders",    path: "/orders",    icon: "shopping_cart", label: "Buyurtmalar" },
   { key: "reports",   path: "/reports",   icon: "payments",      label: "Sotuvlar" },
   { key: "users",     path: "/users",     icon: "group",         label: "Foydalanuvchilar" },

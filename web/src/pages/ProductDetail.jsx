@@ -1,6 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ShoppingCart, Heart, Star, ArrowLeft, Minus, Plus } from 'lucide-react';
+import { ShoppingCart, Heart, Star, ArrowLeft, Minus, Plus, Store } from 'lucide-react';
 import { useState } from 'react';
 import * as productsApi from '../api/products.api';
 import * as wishlistApi from '../api/wishlist.api';
@@ -26,16 +26,16 @@ export default function ProductDetail() {
   const product = data?.data?.data?.product;
 
   const handleAddToCart = () => {
-    if (!user) { toast.error('Please login to add to cart'); return; }
+    if (!user) { toast.error('Savatga qo\'shish uchun tizimga kiring'); return; }
     // Fire-and-forget: the store rethrows and the axios interceptor toasts the error.
     addItem(product.id, qty).catch(() => {});
   };
 
   const handleWishlist = async () => {
-    if (!user) { toast.error('Please login'); return; }
+    if (!user) { toast.error('Tizimga kiring'); return; }
     const res = await wishlistApi.toggleWishlist(product.id);
     const action = res.data.data.action;
-    toast.success(action === 'added' ? 'Added to wishlist' : 'Removed from wishlist');
+    toast.success(action === 'added' ? "Sevimlilarga qo'shildi" : "Sevimlilardan olib tashlandi");
   };
 
   if (isLoading) {
@@ -55,8 +55,8 @@ export default function ProductDetail() {
 
   if (!product) return (
     <div className="container py-20 text-center">
-      <p className="text-gray-500">Product not found.</p>
-      <Link to="/products" className="btn-primary btn mt-4">Back to Products</Link>
+      <p className="text-gray-500">Mahsulot topilmadi.</p>
+      <Link to="/products" className="btn-primary btn mt-4">Mahsulotlarga qaytish</Link>
     </div>
   );
 
@@ -69,7 +69,7 @@ export default function ProductDetail() {
   return (
     <div className="container py-8">
       <Link to="/products" className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 mb-6">
-        <ArrowLeft className="h-4 w-4" /> Back to products
+        <ArrowLeft className="h-4 w-4" /> Mahsulotlarga qaytish
       </Link>
 
       <div className="grid gap-8 md:grid-cols-2">
@@ -102,9 +102,16 @@ export default function ProductDetail() {
         {/* Info */}
         <div className="space-y-5">
           <div>
-            <p className="text-sm text-gray-400 uppercase tracking-wide mb-1">{product.category}</p>
+            {product.shop?.name && (
+              <Link
+                to={`/shops/${product.shop.id}`}
+                className="inline-flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 font-medium mb-2"
+              >
+                <Store className="h-3.5 w-3.5" /> {product.shop.name}
+              </Link>
+            )}
             <h1 className="text-2xl font-bold">{product.name}</h1>
-            {product.brand && <p className="text-sm text-gray-500 mt-1">by {product.brand}</p>}
+            {product.brand && <p className="text-sm text-gray-500 mt-1">Brend: {product.brand}</p>}
           </div>
 
           {reviewCount > 0 && (
@@ -115,7 +122,7 @@ export default function ProductDetail() {
                 ))}
               </div>
               <span className="text-sm font-medium">{avgRating.toFixed(1)}</span>
-              <span className="text-sm text-gray-400">({reviewCount} {reviewCount === 1 ? 'review' : 'reviews'})</span>
+              <span className="text-sm text-gray-400">({reviewCount} ta sharh)</span>
             </div>
           )}
 
@@ -135,7 +142,7 @@ export default function ProductDetail() {
 
           <div className="flex items-center gap-2">
             <span className={`text-sm font-medium ${product.stock > 0 ? 'text-green-600' : 'text-red-500'}`}>
-              {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
+              {product.stock > 0 ? `${product.stock} ta mavjud` : 'Tugagan'}
             </span>
           </div>
 
@@ -151,7 +158,7 @@ export default function ProductDetail() {
               </button>
             </div>
             <Button onClick={handleAddToCart} disabled={product.stock === 0} className="flex-1">
-              <ShoppingCart className="h-4 w-4" /> Add to Cart
+              <ShoppingCart className="h-4 w-4" /> Savatga qo'shish
             </Button>
             <button onClick={handleWishlist} className="p-3 rounded-lg border hover:bg-red-50 hover:border-red-200 hover:text-red-500 transition-colors">
               <Heart className="h-5 w-5" />
@@ -163,7 +170,7 @@ export default function ProductDetail() {
       {/* Reviews */}
       {product.reviews?.length > 0 && (
         <div className="mt-12">
-          <h2 className="text-xl font-bold mb-6">Customer Reviews</h2>
+          <h2 className="text-xl font-bold mb-6">Mijozlar sharhlari</h2>
           <div className="space-y-4">
             {product.reviews.map((review, i) => (
               <div key={i} className="card p-4">

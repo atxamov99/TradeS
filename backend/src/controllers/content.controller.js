@@ -7,6 +7,11 @@ const getContent = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, data, 'Content retrieved'));
 });
 
+const getPublicContent = asyncHandler(async (req, res) => {
+  const content = await contentService.getPublicContent(req.query);
+  res.status(200).json(new ApiResponse(200, { content }, 'Content retrieved'));
+});
+
 const createContent = asyncHandler(async (req, res) => {
   const content = await contentService.createContent(req.body);
   res.status(201).json(new ApiResponse(201, content, 'Content created'));
@@ -22,4 +27,4 @@ const deleteContent = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, result, result.message));
 });
 
-module.exports = { getContent, createContent, updateContentStatus, deleteContent };
+module.exports = { getContent, getPublicContent, createContent, updateContentStatus, deleteContent };

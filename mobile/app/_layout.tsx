@@ -8,6 +8,7 @@ import { useLangStore } from "@/store/langStore";
 import { useThemeStore } from "@/store/themeStore";
 import { useSubscriptionStore } from "@/store/subscriptionStore";
 import { useRoleStore } from "@/store/roleStore";
+import { useShopStore } from "@/store/shopStore";
 import { runSync } from "@/services/syncEngine";
 import { loadDeviceId } from "@/utils/deviceId";
 import "../global.css";
@@ -19,13 +20,14 @@ export default function RootLayout() {
   const loadTheme = useThemeStore((s) => s.loadTheme);
   const loadSubscription = useSubscriptionStore((s) => s.load);
   const loadRole = useRoleStore((s) => s.load);
+  const loadActiveShop = useShopStore((s) => s.loadActiveShop);
   const isDark = useThemeStore((s) => s.isDark);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     // First paint faqat tez lokal o'qishlarga bog'lansin — tarmoq chaqiruvi (loadSubscription)
     // ni bu yerga qo'shsak, backend "cold start" bo'lsa 10s gacha qora ekran ko'rinadi.
-    Promise.all([loadToken(), loadUser(), loadLang(), loadTheme(), loadRole(), loadDeviceId()])
+    Promise.all([loadToken(), loadUser(), loadLang(), loadTheme(), loadRole(), loadDeviceId(), loadActiveShop()])
       .then(() => setReady(true))
       .catch(() => setReady(true));
     // Obuna ma'lumoti tarmoq orqali keladi — fon rejimida yuklanadi, renderni bloklamaydi.

@@ -13,6 +13,7 @@ export class Sale extends Model {
   @field("sold_at") declare soldAt: number;
   @field("is_synced") declare isSynced: boolean;
   @field("server_id") declare serverId: string | null;
+  @field("shop_id") declare shopId: string | null;
   @readonly @date("created_at") declare createdAt: Date;
   @readonly @date("updated_at") declare updatedAt: Date;
 

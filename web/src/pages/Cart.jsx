@@ -19,9 +19,9 @@ export default function Cart() {
     return (
       <div className="container py-20 text-center">
         <ShoppingBag className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-        <h2 className="text-xl font-semibold mb-2">Your cart is empty</h2>
-        <p className="text-gray-500 mb-6">Please login to view your cart.</p>
-        <Link to="/login" className="btn-primary btn">Login</Link>
+        <h2 className="text-xl font-semibold mb-2">Savat bo'sh</h2>
+        <p className="text-gray-500 mb-6">Savatni ko'rish uchun tizimga kiring.</p>
+        <Link to="/login" className="btn-primary btn">Kirish</Link>
       </div>
     );
   }
@@ -30,22 +30,19 @@ export default function Cart() {
     return (
       <div className="container py-20 text-center">
         <ShoppingBag className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-        <h2 className="text-xl font-semibold mb-2">Your cart is empty</h2>
-        <p className="text-gray-500 mb-6">Add some products to get started.</p>
-        <Link to="/products" className="btn-primary btn">Browse Products</Link>
+        <h2 className="text-xl font-semibold mb-2">Savat bo'sh</h2>
+        <p className="text-gray-500 mb-6">Boshlash uchun mahsulot qo'shing.</p>
+        <Link to="/products" className="btn-primary btn">Mahsulotlarni ko'rish</Link>
       </div>
     );
   }
 
   const items = cart.items || [];
-  const subtotal = cart.totalPrice || 0;
-  const shipping = subtotal >= 50 ? 0 : 5;
-  const tax = subtotal * 0.1;
-  const total = subtotal + shipping + tax;
+  const total = cart.totalPrice || 0;
 
   return (
     <div className="container py-8">
-      <h1 className="text-2xl font-bold mb-8">Shopping Cart ({cart.totalItems} items)</h1>
+      <h1 className="text-2xl font-bold mb-8">Savat ({cart.totalItems} ta mahsulot)</h1>
 
       <div className="grid gap-8 lg:grid-cols-3">
         {/* Items */}
@@ -99,33 +96,16 @@ export default function Cart() {
 
         {/* Summary */}
         <div className="card p-6 h-fit space-y-3">
-          <h2 className="font-bold text-lg border-b pb-3">Order Summary</h2>
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-500">Subtotal</span>
-            <span>{formatPrice(subtotal)}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-500">Shipping</span>
-            <span>{shipping === 0 ? <span className="text-green-600">Free</span> : formatPrice(shipping)}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-500">Tax (10%)</span>
-            <span>{formatPrice(tax)}</span>
-          </div>
-          <div className="flex justify-between font-bold text-lg border-t pt-3">
-            <span>Total</span>
+          <h2 className="font-bold text-lg border-b pb-3">Buyurtma xulosasi</h2>
+          <div className="flex justify-between font-bold text-lg pt-1">
+            <span>Jami</span>
             <span>{formatPrice(total)}</span>
           </div>
-          {subtotal < 50 && (
-            <p className="text-xs text-primary-600 bg-primary-50 dark:bg-primary-900/20 rounded-lg p-2">
-              Add {formatPrice(50 - subtotal)} more for free shipping!
-            </p>
-          )}
           <Button className="w-full" size="lg" onClick={() => navigate('/checkout')}>
-            Proceed to Checkout
+            Buyurtma berish
           </Button>
           <Link to="/products" className="block text-center text-sm text-primary-600 hover:text-primary-700">
-            Continue Shopping
+            Xaridni davom ettirish
           </Link>
         </div>
       </div>

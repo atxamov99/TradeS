@@ -10,6 +10,7 @@ import { useProductCount } from "@/hooks/useProducts";
 import { useRoleStore } from "@/store/roleStore";
 import { useSubscriptionStore } from "@/store/subscriptionStore";
 import { useUserStore } from "@/store/userStore";
+import { useShopStore } from "@/store/shopStore";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
 
 const UNIT_KEYS = ["kg", "dona", "litr", "metr", "paket", "quti"] as const;
@@ -25,6 +26,7 @@ export default function AddProductScreen() {
   const { isAdmin } = useRoleStore();
   const { getProductLimit } = useSubscriptionStore();
   const { user } = useUserStore();
+  const activeShopId = useShopStore((s) => s.activeShopId);
   const FREE_LIMIT = getProductLimit();
 
   const [name, setName] = useState("");
@@ -46,6 +48,10 @@ export default function AddProductScreen() {
   async function handleSave() {
     if (!isAdmin()) {
       Alert.alert(t.employees.restricted, t.employees.adminOnly);
+      return;
+    }
+    if (!activeShopId) {
+      Alert.alert("Do'kon tanlanmagan", "Tovar qo'shishdan oldin avval do'kon oching yoki tanlang.");
       return;
     }
     if (productCount >= FREE_LIMIT) {
@@ -78,6 +84,7 @@ export default function AddProductScreen() {
           p.isSynced = false;
           p.serverId = null;
           p.createdById = user?.id ?? null;
+          p.shopId = activeShopId;
         });
       });
       router.back();

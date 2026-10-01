@@ -12,7 +12,7 @@ export function ToastViewport() {
   const { toasts, dismissToast } = useAdminData();
 
   return (
-    <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-3 w-80" aria-live="polite">
+    <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-3 w-80 print:hidden" aria-live="polite">
       {toasts.map((toast) => {
         const cfg = toneConfig[toast.tone] || toneConfig.success;
         return (

@@ -13,6 +13,10 @@ export const reportsApi = {
   getSecurity: (params = {}) =>
     http.get("/reports/security", { params }),
 
+  /** GET /api/reports/monthly-overview?months= */
+  getMonthlyOverview: (params = {}) =>
+    http.get("/reports/monthly-overview", { params }),
+
   /** GET /api/reports/export?type=&from=&to= — returns blob */
   export: (params = {}) =>
     http.get("/reports/export", { params, responseType: "blob" })

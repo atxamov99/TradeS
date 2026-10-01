@@ -5,11 +5,13 @@ import { useTranslation } from 'react-i18next';
 import * as reportsApi from '../api/reports.api';
 import * as salesApi from '../api/sales.api';
 import useAuthStore from '../store/authStore';
+import useShopStore from '../store/shopStore';
 
 export default function Dashboard() {
   const { t, i18n } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  const activeShopId = useShopStore((s) => s.activeShopId);
   const navigate = useNavigate();
 
   function fmt(n) {
@@ -48,15 +50,15 @@ export default function Dashboard() {
   }
 
   const { data: summaryData, isLoading: summaryLoading, isError: summaryError, refetch: refetchSummary } = useQuery({
-    queryKey: ['reports-summary'],
-    queryFn: reportsApi.getSummary,
+    queryKey: ['reports-summary', activeShopId],
+    queryFn: () => reportsApi.getSummary(activeShopId),
     refetchInterval: 30000,
   });
 
   const todayStr = new Date().toISOString().split('T')[0];
   const { data: salesData, isLoading: salesLoading, isError: salesError, refetch: refetchSales } = useQuery({
-    queryKey: ['sales-today', todayStr],
-    queryFn: () => salesApi.getSales({ date: todayStr }),
+    queryKey: ['sales-today', todayStr, activeShopId],
+    queryFn: () => salesApi.getSales({ date: todayStr, shopId: activeShopId }),
     refetchInterval: 30000,
   });
 

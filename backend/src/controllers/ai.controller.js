@@ -24,7 +24,7 @@ exports.askAI = asyncHandler(async (req, res) => {
         // Fetch context data using Prisma — scoped to the requesting user so one
         // user's catalog/sales are never exposed to another user's AI query (and never
         // sent to Gemini as someone else's data).
-        const products = await prisma.product.findMany({ where: { ownerId: req.user.id }, take: 20 });
+        const products = await prisma.product.findMany({ where: { shop: { ownerId: req.user.id } }, take: 20 });
         const recentSales = await prisma.sale.findMany({
             where: { userId: req.user.id },
             orderBy: { createdAt: 'desc' },

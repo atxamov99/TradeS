@@ -21,23 +21,23 @@ const toneIcon = {
 // Same source data as the header's NotificationBell dropdown — this page is
 // just the full, permanent view of the same feed (no separate backend model).
 export function NotificationsPage() {
-  usePageTitle("Bildirishnomalar");
-  const { notificationFeed, recentActivity } = useAdminData();
   const { t } = useI18n();
+  usePageTitle(t("notificationsPage.title", {}, "Bildirishnomalar"));
+  const { notificationFeed, recentActivity } = useAdminData();
 
   const items = useMemo(() => {
     const alerts = (notificationFeed || []).map((n) => ({
       key: `alert-${n.id}`,
       kind: "alert",
       title: n.titleKey ? t(n.titleKey, {}, n.title || "Bildirishnoma") : n.title || "Bildirishnoma",
-      detail: n.detail || (n.detailKey ? t(n.detailKey, {}, "") : ""),
+      detail: n.detailKey ? t(n.detailKey, n.detailValues || {}, n.detail || "") : (n.detail || ""),
       priority: n.priority || "low",
     }));
-    // Content-derived key (not array index) — recentActivity shifts as new
+    // Stable id-based key (not array index) — recentActivity shifts as new
     // entries get prepended, so an index-based key would silently "forget"
     // which items were already marked read as everything shifts down.
     const activity = (recentActivity || []).map((a) => ({
-      key: `act-${a.title || ""}-${a.detail || ""}-${a.time || ""}`,
+      key: a.id ? `act-${a.id}` : `act-${a.title || ""}-${a.detail || ""}-${a.time || ""}`,
       kind: "activity",
       title: a.title || "Amal",
       detail: a.detail || "",
@@ -54,10 +54,10 @@ export function NotificationsPage() {
     <div className="space-y-section-gap">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="font-headline-md text-headline-md font-bold text-on-surface">Bildirishnomalar</h2>
+          <h2 className="font-headline-md text-headline-md font-bold text-on-surface">{t("notificationsPage.title", {}, "Bildirishnomalar")}</h2>
           <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">
-            Tizimdagi ogohlantirishlar va so'nggi harakatlar
-            {unreadCount > 0 && <span className="ml-2 text-error font-medium">({unreadCount} ta o'qilmagan)</span>}
+            {t("notificationsPage.description", {}, "Tizimdagi ogohlantirishlar va so'nggi harakatlar")}
+            {unreadCount > 0 && <span className="ml-2 text-error font-medium">({t("notificationsPage.unreadSuffix", { count: unreadCount }, `${unreadCount} ta o'qilmagan`)})</span>}
           </p>
         </div>
         {unreadCount > 0 && (
@@ -66,7 +66,7 @@ export function NotificationsPage() {
             onClick={() => markAllRead(items.map((it) => it.key))}
             className="px-4 py-2 rounded-lg bg-surface-container-lowest border border-outline-variant text-body-sm text-on-surface hover:border-primary transition-colors"
           >
-            Hammasini o'qilgan deb belgilash
+            {t("notificationsPage.markAllRead", {}, "Hammasini o'qilgan deb belgilash")}
           </button>
         )}
       </div>
@@ -75,7 +75,7 @@ export function NotificationsPage() {
         {items.length === 0 ? (
           <div className="p-12 text-center">
             <Icon name="notifications_off" className="text-on-surface-variant text-[28px]" />
-            <p className="text-body-sm text-on-surface-variant mt-2">Hozircha bildirishnoma yo'q</p>
+            <p className="text-body-sm text-on-surface-variant mt-2">{t("notificationsPage.empty", {}, "Hozircha bildirishnoma yo'q")}</p>
           </div>
         ) : (
           <div className="divide-y divide-outline-variant/60">
@@ -103,7 +103,7 @@ export function NotificationsPage() {
                     {it.detail && <p className="text-xs text-on-surface-variant mt-0.5 break-words">{it.detail}</p>}
                     {it.time && <p className="text-xs text-on-surface-variant/70 mt-0.5">{it.time}</p>}
                   </div>
-                  {!read && <span className="text-xs text-primary shrink-0">O'qildi deb belgilash</span>}
+                  {!read && <span className="text-xs text-primary shrink-0">{t("notificationsPage.markRead", {}, "O'qildi deb belgilash")}</span>}
                 </button>
               );
             })}

@@ -4,9 +4,14 @@ const ApiResponse = require('../utils/ApiResponse');
 
 const isAdmin = (req) => ['ADMIN', 'SUPER_ADMIN'].includes(req.user.role);
 
-const getProducts = asyncHandler(async (req, res) => {
-  const result = await productService.getProducts(req.user.id, req.query, { isAdmin: isAdmin(req) });
+const browseProducts = asyncHandler(async (req, res) => {
+  const result = await productService.browseProducts(req.query);
   res.status(200).json(new ApiResponse(200, result, 'Products retrieved'));
+});
+
+const getShopProducts = asyncHandler(async (req, res) => {
+  const result = await productService.getShopProducts(req.params.id, req.user.id, req.query);
+  res.status(200).json(new ApiResponse(200, result, 'Shop products retrieved'));
 });
 
 const getProductById = asyncHandler(async (req, res) => {
@@ -20,7 +25,8 @@ const getProductBySlug = asyncHandler(async (req, res) => {
 });
 
 const createProduct = asyncHandler(async (req, res) => {
-  const product = await productService.createProduct(req.body, req.user.id);
+  const { shopId, ...productData } = req.body;
+  const product = await productService.createProduct(shopId, req.user.id, productData);
   res.status(201).json(new ApiResponse(201, { product }, 'Product created'));
 });
 
@@ -30,8 +36,18 @@ const updateProduct = asyncHandler(async (req, res) => {
 });
 
 const restockProduct = asyncHandler(async (req, res) => {
-  const product = await productService.restockProduct(req.params.id, req.user.id, req.body.quantity, { isAdmin: isAdmin(req) });
-  res.status(200).json(new ApiResponse(200, { product }, 'Product restocked'));
+  const { batch, ...product } = await productService.restockProduct(
+    req.params.id,
+    req.user.id,
+    req.body,
+    { isAdmin: isAdmin(req) }
+  );
+  res.status(200).json(new ApiResponse(200, { product, batch }, 'Product restocked'));
+});
+
+const getShopInventory = asyncHandler(async (req, res) => {
+  const result = await productService.getShopInventoryBatches(req.params.id, req.user.id, req.query);
+  res.status(200).json(new ApiResponse(200, result, 'Shop inventory batches retrieved'));
 });
 
 const deleteProduct = asyncHandler(async (req, res) => {
@@ -55,12 +71,14 @@ const getCategories = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
-  getProducts,
+  browseProducts,
+  getShopProducts,
   getProductById,
   getProductBySlug,
   createProduct,
   updateProduct,
   restockProduct,
+  getShopInventory,
   deleteProduct,
   addReview,
   getCategories,

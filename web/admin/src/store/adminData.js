@@ -537,7 +537,7 @@ export function AdminDataProvider({ children }) {
       supportMessages, replySupportTicket, deleteSupportTicket,
       pushToast, dismissToast,
       createUser, updateUser, toggleUserStatus, deleteUser,
-      grantAdminToUser, revokeAdminFromUser,
+      revokeAdminFromUser,
       toggleAdminStatus, updateAdmin,
       createContent, updateContentStatus, deleteContent,
       createRole, deleteRole,

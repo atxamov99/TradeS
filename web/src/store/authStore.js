@@ -111,6 +111,9 @@ const useAuthStore = create(
           }
           const { user } = res.data.data;
           set({ user, isLoading: false });
+          // Load shop memberships (OWNER/CASHIER) right away — without this the
+          // owner sees no revenue/profit and no Reports until the page is refreshed.
+          get().fetchMe();
           toast.success(i18n.t('toast_welcome_back', { name: user.name }));
           return user;
         } catch (err) {
@@ -154,6 +157,7 @@ const useAuthStore = create(
           const res = await authApi.resetPassword(data);
           const { user } = res.data.data;
           set({ user, isLoading: false });
+          get().fetchMe();
           return user;
         } catch (err) {
           set({ isLoading: false });

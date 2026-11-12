@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 
 /**
@@ -13,7 +14,10 @@ const generateAccessToken = (payload) => {
  * Generate JWT refresh token
  */
 const generateRefreshToken = (payload) => {
-  return jwt.sign(payload, process.env.JWT_REFRESH_SECRET, {
+  // jti makes every refresh token unique. Without it two tokens for the same user
+  // issued in the same second (double-click login, signup + auto-login, parallel
+  // refresh) are byte-identical and violate RefreshToken.token @unique -> 409.
+  return jwt.sign({ ...payload, jti: crypto.randomUUID() }, process.env.JWT_REFRESH_SECRET, {
     expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
   });
 };

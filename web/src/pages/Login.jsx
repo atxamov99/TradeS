@@ -169,9 +169,16 @@ export default function Login() {
     if (!/^\S+@\S+\.\S+$/.test(email.trim())) { setErrors({ email: tx.email_required }); return; }
     setErrors({});
     try {
-      await requestEmailOtp(email.trim().toLowerCase());
+      const res = await requestEmailOtp(email.trim().toLowerCase());
       setEmailStep('otp');
       toast.success(tx.otp_sent);
+      // Dev mode (no email provider configured): the backend returns the code in the
+      // response instead of emailing it. Show it, so the flow is not a dead end.
+      const devCode = res?.data?.devCode;
+      if (devCode) {
+        setCode(String(devCode));
+        toast('Email не настроен (режим разработки). Ваш код: ' + devCode, { icon: '🔧', duration: 20000 });
+      }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Xatolik yuz berdi');
     }

@@ -21,10 +21,10 @@ const TX = {
     tab_phone:      "Telefon",
     tab_email:      "Email",
     role_label:     "Kim bo'lib ro'yxatdan o'tasiz?",
-    role_user:      "Oddiy foydalanuvchi",
-    role_user_sub:  "Kimningdir do'konida ishlayman (kassir)",
-    role_owner:     "Do'kon egasi",
-    role_owner_sub: "O'z do'konimni ochaman",
+    role_user:      "O'zim uchun ishlayman",
+    role_user_sub:  "Shaxsiy hisob: mahsulot va savdolarni o'zim yuritaman",
+    role_owner:     "Biznes direktori",
+    role_owner_sub: "Xodimlar (kassirlar) bilan biznes ochaman",
     shop_name_label:"Do'kon nomi",
     shop_name_ph:   "Masalan: \"Aziz Market\"",
     name_label:     "To'liq ism",
@@ -54,10 +54,10 @@ const TX = {
     tab_phone:      "Телефон",
     tab_email:      "Email",
     role_label:     "Кем регистрируетесь?",
-    role_user:      "Обычный пользователь",
-    role_user_sub:  "Буду работать у кого-то (кассир)",
-    role_owner:     "Владелец магазина",
-    role_owner_sub: "Открываю свой магазин",
+    role_user:      "Работаю сам на себя",
+    role_user_sub:  "Личный аккаунт: веду товары и продажи сам",
+    role_owner:     "Директор бизнеса",
+    role_owner_sub: "Открываю бизнес с сотрудниками (кассирами)",
     shop_name_label:"Название магазина",
     shop_name_ph:   "Например: «Aziz Market»",
     name_label:     "Полное имя",
@@ -87,10 +87,10 @@ const TX = {
     tab_phone:      "Phone",
     tab_email:      "Email",
     role_label:     "What are you signing up as?",
-    role_user:      "Regular user",
-    role_user_sub:  "I'll work for someone (cashier)",
-    role_owner:     "Shop owner",
-    role_owner_sub: "I'm opening my own shop",
+    role_user:      "I work for myself",
+    role_user_sub:  "Personal account: I manage products and sales myself",
+    role_owner:     "Business director",
+    role_owner_sub: "I'm opening a business with employees (cashiers)",
     shop_name_label:"Shop name",
     shop_name_ph:   "e.g. \"Aziz Market\"",
     name_label:     "Full Name",
@@ -179,9 +179,16 @@ export default function Register() {
   const sendCode = async () => {
     try {
       if (method === 'email') {
-        await requestEmailOtp(form.email.trim().toLowerCase());
+        const res = await requestEmailOtp(form.email.trim().toLowerCase());
         setStep('otp');
         toast.success(tx.otp_desc_email);
+        // Dev mode (no email provider configured): the backend returns the code in the
+        // response instead of emailing it. Show it, so the flow is not a dead end.
+        const devCode = res?.data?.devCode;
+        if (devCode) {
+          setCode(String(devCode));
+          toast('Email не настроен (режим разработки). Ваш код: ' + devCode, { icon: '🔧', duration: 20000 });
+        }
       } else {
         await requestOtp(form.phone);
         setStep('otp');

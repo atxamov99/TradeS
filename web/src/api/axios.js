@@ -2,6 +2,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import i18n from '../i18n';
 import { getDeviceId } from '../utils/deviceId';
+import { notify } from '../store/notificationStore';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api/v1';
 
@@ -106,7 +107,12 @@ api.interceptors.response.use(
     // both transition to a dedicated "connect Telegram" screen that already
     // explains the situation in the active locale, so a global toast here would
     // just be a redundant (and untranslated) duplicate.
-    if (status !== 401 && status !== 422 && status !== 428) {
+    if (!error.response) {
+      // No answer at all: server down / no internet. One de-duplicated alert in the notification centre.
+      notify({ key: 'net', type: 'error', title: i18n.t('notif_network_error'), message: i18n.t('notif_network_error_desc') });
+    } else if (status >= 500) {
+      notify({ key: 'srv', type: 'error', title: i18n.t('notif_server_error'), message: i18n.t('notif_server_error_desc') });
+    } else if (status !== 401 && status !== 422 && status !== 428) {
       toast.error(resolveErrorMessage(error));
     }
 

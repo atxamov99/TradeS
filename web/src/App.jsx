@@ -1,6 +1,8 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
+import { ToastStack } from './components/notifications/Notifications';
+import ContextMenu from './components/common/ContextMenu';
 
 import AppLayout from './components/layout/AppLayout';
 import PosLayout from './components/layout/PosLayout';
@@ -79,6 +81,9 @@ export default function App() {
           },
         }}
       />
+
+      <ToastStack />
+      <ContextMenu />
 
       <Routes>
         {/* Public Landing Page */}

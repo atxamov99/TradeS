@@ -87,3 +87,8 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+/* custom context menu entrance */
+@keyframes ctxIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}

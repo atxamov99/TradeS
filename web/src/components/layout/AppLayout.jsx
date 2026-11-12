@@ -3,6 +3,7 @@ import { Home, Package, ShoppingCart, BarChart2, Settings, User, ShieldCheck, Lo
 import { useTranslation } from 'react-i18next';
 import useAuthStore from '../../store/authStore';
 import TestUserBanner from '../common/TestUserBanner';
+import { NotificationBell, useStockAlerts } from '../notifications/Notifications';
 
 function NavItem({ item, mobile = false }) {
   const Icon = item.icon;
@@ -57,6 +58,7 @@ export default function AppLayout() {
 
   const isAdmin = user?.role === 'ADMIN';
   const canSeeFinancials = useAuthStore((s) => s.canSeeShopFinancials());
+  useStockAlerts();
 
   const navItems = [
     { to: '/dashboard', label: t('dashboard'), icon: Home },
@@ -99,6 +101,7 @@ export default function AppLayout() {
             <p className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate">{user?.name}</p>
             <p className="text-[10px] text-slate-400 truncate">{user?.role}</p>
           </div>
+          <NotificationBell variant="sidebar" />
         </div>
 
         {/* Nav links */}
@@ -143,6 +146,8 @@ export default function AppLayout() {
       </aside>
 
       {/* ── Main content ─────────────────────────── */}
+      <NotificationBell variant="floating" />
+
       <main className="flex-1 md:ml-[220px] pb-20 md:pb-0">
         <TestUserBanner key={location.pathname} user={user} />
         <Outlet />

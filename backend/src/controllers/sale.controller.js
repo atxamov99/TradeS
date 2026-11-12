@@ -3,7 +3,9 @@ const asyncHandler = require('../utils/asyncHandler');
 const ApiResponse = require('../utils/ApiResponse');
 
 const createSale = asyncHandler(async (req, res) => {
-  const sale = await saleService.createSale(req.user.id, req.body);
+  // The real-time endpoint is never an offline replay: ignore any client-supplied
+  // isFromOffline, otherwise a cashier could set it to true and skip the stock check.
+  const sale = await saleService.createSale(req.user.id, { ...req.body, isFromOffline: false });
   res.status(201).json(new ApiResponse(201, { sale }, 'Sale recorded'));
 });
 

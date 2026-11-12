@@ -27,8 +27,12 @@ const createExpense = async (shopId, userId, { amount, category = 'other', note 
 const listExpenses = async (shopId, userId, { from, to } = {}) => {
   await requireOwner(shopId, userId);
   const createdAt = {};
-  if (from) createdAt.gte = new Date(from);
-  if (to) createdAt.lte = new Date(to);
+  for (const [key, raw, op] of [['from', from, 'gte'], ['to', to, 'lte']]) {
+    if (!raw) continue;
+    const d = new Date(raw);
+    if (Number.isNaN(d.getTime())) throw new ApiError(400, `Invalid '${key}' date`, [], '', 'INVALID_DATE');
+    createdAt[op] = d;
+  }
   const where = { shopId, ...(Object.keys(createdAt).length ? { createdAt } : {}) };
   const [expenses, agg] = await Promise.all([
     prisma.expense.findMany({ where, orderBy: { createdAt: 'desc' }, take: 500 }),

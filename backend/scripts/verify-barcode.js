@@ -1,6 +1,10 @@
 // One-off live verification (no test framework in this repo): barcode lookup,
 // restock-by-scan, duplicate guard, tenant isolation and RBAC.
 require('dotenv').config();
+if (!/@(localhost|127\.0\.0\.1)[:/]/.test(process.env.DATABASE_URL || '')) {
+  console.error('Refusing to run: DATABASE_URL is not a local database (this script creates and deletes test rows).');
+  process.exit(2);
+}
 const prisma = require('../src/config/prisma');
 const { generateAccessToken } = require('../src/utils/generateTokens');
 const BASE = process.env.VERIFY_BASE || 'http://localhost:5055/api/v1';

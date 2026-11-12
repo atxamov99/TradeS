@@ -2,6 +2,10 @@
 // real-time sales of qty 1 against stock 5 must yield exactly 5 successes,
 // 7 INSUFFICIENT_STOCK rejections and a final stock of 0 (never negative).
 require('dotenv').config();
+if (!/@(localhost|127\.0\.0\.1)[:/]/.test(process.env.DATABASE_URL || '')) {
+  console.error('Refusing to run: DATABASE_URL is not a local database (this script creates and deletes test rows).');
+  process.exit(2);
+}
 const prisma = require('../src/config/prisma');
 const { generateAccessToken } = require('../src/utils/generateTokens');
 const BASE = process.env.VERIFY_BASE || 'http://localhost:5055/api/v1';

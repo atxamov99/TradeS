@@ -3,6 +3,7 @@ const ApiError = require('../utils/ApiError');
 const { clampLimit } = require('../utils/pagination');
 const { assertTestUserWithinLimits } = require('../utils/testUserLimits');
 const { scopeToOwnerOrShop, scopeSalesForViewer } = require('../utils/shopAccess');
+const { createAuditLog } = require('./audit.service');
 
 const createSale = async (userId, saleData) => {
   const { product: productId, productName, quantity, sellPrice, buyPrice, unit, note, syncId, isFromOffline, createdAt } = saleData;
@@ -79,10 +80,20 @@ const createSale = async (userId, saleData) => {
     // (stock may go negative, see note above).
     if (productId) {
       if (isFromOffline) {
-        await tx.product.update({
+        const after = await tx.product.update({
           where: { id: productId },
           data: { stock: { decrement: qty } },
+          select: { id: true, name: true, stock: true, shopId: true },
         });
+        // Offline sales may legitimately drive stock below zero, but the owner must be
+        // able to see it (it can also be a cashier abusing the offline path).
+        if (after.stock < 0) {
+          createAuditLog({
+            action: 'STOCK_NEGATIVE', category: 'inventory', actor: userId, actorId: userId,
+            target: `product:${after.id}`, targetId: after.id,
+            metadata: { name: after.name, shopId: after.shopId, stockAfter: after.stock, soldQty: qty, syncId: syncId || null },
+          }).catch(() => {});
+        }
       } else {
         const { count } = await tx.product.updateMany({
           where: { id: productId, stock: { gte: qty } },

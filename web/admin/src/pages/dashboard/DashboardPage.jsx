@@ -106,7 +106,7 @@ export function DashboardPage() {
         <div>
           <h2 className="font-headline-md text-headline-md font-bold text-on-surface">{t("navigation.pageMeta.fallback.eyebrow")}</h2>
           <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">
-            Salom, {profile?.name} — bugungi holat va umumiy statistika
+            {t("dashboard.greeting", { name: profile?.name })}
           </p>
         </div>
       </div>
@@ -115,7 +115,7 @@ export function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter">
         <StatCard
           label={t("dashboard.stats.totalSales")}
-          value={`${formatMoney(dashboardStats.totalRevenue)} so'm`}
+          value={`${formatMoney(dashboardStats.totalRevenue)} ${t("common.currency")}`}
           icon="payments"
           iconWrap="bg-primary-container/15 text-primary-container"
         />
@@ -167,10 +167,10 @@ export function DashboardPage() {
                   </div>
                   <div className="text-right shrink-0">
                     <span className={`block text-body-sm font-bold ${critical ? "text-error" : "text-tertiary"}`}>
-                      {p.stock} dona
+                      {p.stock} {t("common.pcs")}
                     </span>
                     <span className={`font-label-caps text-label-caps px-2 py-0.5 rounded mt-1 inline-block ${critical ? "text-error bg-error-container" : "text-tertiary bg-tertiary-container/30"}`}>
-                      {critical ? "Zudlik bilan" : "Ogohlantirish"}
+                      {critical ? t("dashboard.urgent") : t("dashboard.warning")}
                     </span>
                   </div>
                 </li>

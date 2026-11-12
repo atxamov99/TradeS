@@ -11,6 +11,17 @@ import {
 } from "recharts";
 import { useI18n } from "../../../i18n";
 
+const UZ_MONTHS = ["yan", "fev", "mar", "apr", "may", "iyn", "iyl", "avg", "sen", "okt", "noy", "dek"];
+const INTL_LOCALE = { uz: "uz-UZ", ru: "ru-RU", en: "en-US" };
+const numberLocale = (locale) => INTL_LOCALE[locale] || "en-US";
+
+// The backend/demo data labels months in Uzbek ("Iyn", "Avg"...). Show them in the UI language.
+function monthLabel(raw, locale) {
+  const idx = UZ_MONTHS.indexOf(String(raw).trim().toLowerCase().slice(0, 3));
+  if (idx < 0) return raw;
+  return new Date(2000, idx, 1).toLocaleDateString(numberLocale(locale), { month: "short" });
+}
+
 const tooltipStyle = {
   backgroundColor: "rgb(var(--c-surface-container-lowest))",
   border: "1px solid rgb(var(--c-outline-variant))",
@@ -57,7 +68,7 @@ const formatRevenueTick = (v) => {
 };
 
 export function OrderRevenueChart({ data }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   return (
     <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-padding-card shadow-card">
       <div className="flex items-center justify-between mb-4">
@@ -76,16 +87,16 @@ export function OrderRevenueChart({ data }) {
       <ResponsiveContainer width="100%" height={200}>
         <BarChart data={data} margin={{ top: 4, right: -10, left: -25, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--c-outline-variant) / 0.6)" />
-          <XAxis dataKey="month" tick={axisTick} axisLine={false} tickLine={false} />
+          <XAxis dataKey="month" tick={axisTick} axisLine={false} tickLine={false} tickFormatter={(m) => monthLabel(m, locale)} />
           <YAxis yAxisId="left" tick={axisTick} axisLine={false} tickLine={false} />
           <YAxis yAxisId="right" orientation="right" tick={axisTick} axisLine={false} tickLine={false} tickFormatter={formatRevenueTick} />
           <Tooltip
             contentStyle={tooltipStyle}
             cursor={{ fill: "rgb(var(--c-outline) / 0.15)" }}
-            formatter={(v, n) => n === "revenue" ? [`${Number(v).toLocaleString("uz-UZ")} so'm`, "Daromad"] : [v, "Buyurtma"]}
+            formatter={(v, n) => n === "revenue" ? [`${Number(v).toLocaleString(numberLocale(locale))} ${t("common.currency")}`, t("dashboard.chart.revenue")] : [v, t("dashboard.chart.orderSingular")]}
           />
-          <Bar yAxisId="left" dataKey="orders" fill={COLOR_SECONDARY} radius={[4, 4, 0, 0]} name="Buyurtmalar" />
-          <Bar yAxisId="right" dataKey="revenue" fill={COLOR_PRIMARY} radius={[4, 4, 0, 0]} name="Daromad" />
+          <Bar yAxisId="left" dataKey="orders" fill={COLOR_SECONDARY} radius={[4, 4, 0, 0]} name={t("navigation.menu.orders.label")} />
+          <Bar yAxisId="right" dataKey="revenue" fill={COLOR_PRIMARY} radius={[4, 4, 0, 0]} name={t("dashboard.chart.revenue")} />
         </BarChart>
       </ResponsiveContainer>
     </div>

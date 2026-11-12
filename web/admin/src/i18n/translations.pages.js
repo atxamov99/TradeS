@@ -73,14 +73,17 @@ export const uzPages = {
     "everything": "Hammasi",
     "id": "ID",
     "from": "Dan",
-    "to": "Gacha"
+    "to": "Gacha",
+    "currency": "so'm",
+    "pcs": "dona"
   },
   "dashboard": {
     "chart": {
       "weeklyUsers": "Haftalik foydalanuvchilar",
       "totalActive": "Jami va faol",
       "monthly": "Oylik buyurtmalar va daromad",
-      "revenue": "Daromad"
+      "revenue": "Daromad",
+      "orderSingular": "Buyurtma"
     },
     "lowStock": "Kam qolgan mahsulotlar",
     "recentOrders": "Oxirgi buyurtmalar",
@@ -89,7 +92,10 @@ export const uzPages = {
       "totalProducts": "Jami mahsulotlar",
       "totalOrders": "Jami buyurtmalar",
       "totalRevenue": "Jami daromad"
-    }
+    },
+    "greeting": "Salom, {name} — bugungi holat va umumiy statistika",
+    "urgent": "Zudlik bilan",
+    "warning": "Ogohlantirish"
   },
   "orders": {
     "notFound": "Buyurtmalar topilmadi",
@@ -281,14 +287,17 @@ export const ruPages = {
     "everything": "Все",
     "id": "ID",
     "from": "С",
-    "to": "По"
+    "to": "По",
+    "currency": "сум",
+    "pcs": "шт."
   },
   "dashboard": {
     "chart": {
       "weeklyUsers": "Пользователи по неделям",
       "totalActive": "Всего и активные",
       "monthly": "Заказы и доход по месяцам",
-      "revenue": "Доход"
+      "revenue": "Доход",
+      "orderSingular": "Заказ"
     },
     "lowStock": "Заканчивающиеся товары",
     "recentOrders": "Последние заказы",
@@ -297,7 +306,10 @@ export const ruPages = {
       "totalProducts": "Всего товаров",
       "totalOrders": "Всего заказов",
       "totalRevenue": "Общий доход"
-    }
+    },
+    "greeting": "Здравствуйте, {name} — состояние на сегодня и общая статистика",
+    "urgent": "Срочно",
+    "warning": "Внимание"
   },
   "orders": {
     "notFound": "Заказы не найдены",
@@ -489,14 +501,17 @@ export const enPages = {
     "everything": "All",
     "id": "ID",
     "from": "From",
-    "to": "To"
+    "to": "To",
+    "currency": "UZS",
+    "pcs": "pcs"
   },
   "dashboard": {
     "chart": {
       "weeklyUsers": "Weekly users",
       "totalActive": "Total and active",
       "monthly": "Monthly orders and revenue",
-      "revenue": "Revenue"
+      "revenue": "Revenue",
+      "orderSingular": "Order"
     },
     "lowStock": "Low-stock products",
     "recentOrders": "Recent orders",
@@ -505,7 +520,10 @@ export const enPages = {
       "totalProducts": "Total products",
       "totalOrders": "Total orders",
       "totalRevenue": "Total revenue"
-    }
+    },
+    "greeting": "Hello, {name} — today's overview and overall statistics",
+    "urgent": "Urgent",
+    "warning": "Warning"
   },
   "orders": {
     "notFound": "No orders found",

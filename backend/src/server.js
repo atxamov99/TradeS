@@ -170,11 +170,32 @@ const startServer = async () => {
     await prisma.$connect();
     logger.info('Prisma connected to PostgreSQL');
 
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       logger.info(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
       logger.info(`API base: http://localhost:${PORT}/api/v1`);
       logger.info(`Health:   http://localhost:${PORT}/health`);
     });
+
+    // Graceful shutdown: stop accepting requests and release DB connections.
+    // Without this every redeploy (Render SIGTERM) / nodemon restart (SIGUSR2) left
+    // connections dangling until the DB closed them, which surfaced as sporadic
+    // "Timed out fetching a new connection from the connection pool".
+    let shuttingDown = false;
+    const shutdown = (signal) => () => {
+      if (shuttingDown) return;
+      shuttingDown = true;
+      logger.info(`${signal} received — shutting down`);
+      const force = setTimeout(() => process.exit(1), 10000);
+      force.unref();
+      server.close(async () => {
+        try { await prisma.$disconnect(); } catch (e) { logger.error(`prisma disconnect failed: ${e.message}`); }
+        if (signal === 'SIGUSR2') process.kill(process.pid, 'SIGUSR2'); // let nodemon restart us
+        else process.exit(0);
+      });
+      if (typeof server.closeIdleConnections === 'function') server.closeIdleConnections();
+    };
+    ['SIGTERM', 'SIGINT'].forEach((sig) => process.once(sig, shutdown(sig)));
+    process.once('SIGUSR2', shutdown('SIGUSR2'));
 
     // Local dev: pull Telegram updates via long-polling instead of a webhook,
     // since there's no stable public URL to register here. Production points

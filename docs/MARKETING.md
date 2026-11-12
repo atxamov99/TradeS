@@ -1,4 +1,4 @@
-# 📢 Savdo-E — Marketing Broşyura
+# 📢 TradeS — Marketing Broşyura
 
 > **Bir vaqtda Savdo, POS va Ombor Boshqaruvi — MDH (Markaziy Osiyo) tadbirkorlari uchun yaratilgan platforma.**
 
@@ -6,7 +6,7 @@
 
 ## 🎯 1. Biz kimmiz?
 
-**Savdo-E** — bu kichik va o'rta tadbirkorlar (do'konlar, chakana savdo nuqtalari, xizmat ko'rsatish shoxobchalari) uchun mo'ljallangan **savdo, POS (Point of Sale) va ombor boshqaruvi platformasi**. AI-texnologiyalar bilan qurollangan bo'lib, 830,000+ MDH (Markaziy Osiyo) tadbirkorlariga xizmat ko'rsatishga qaratilgan.
+**TradeS** — bu kichik va o'rta tadbirkorlar (do'konlar, chakana savdo nuqtalari, xizmat ko'rsatish shoxobchalari) uchun mo'ljallangan **savdo, POS (Point of Sale) va ombor boshqaruvi platformasi**. AI-texnologiyalar bilan qurollangan bo'lib, 830,000+ MDH (Markaziy Osiyo) tadbirkorlariga xizmat ko'rsatishga qaratilgan.
 
 ### 🌟 Nima uchun bizni tanlashadi?
 
@@ -23,7 +23,7 @@
 
 ### ❌ Muammolar:
 
-| Muammo | Yechim (Savdo-E) |
+| Muammo | Yechim (TradeS) |
 |--------|------------------|
 | Tadbirkorlar savdoni daftarga yoki Telegram guruhlarga yozadi — tartibsizlik, yo'qotishlar | Bulutli platforma — barcha ma'lumot bir joyda, xavfsiz |
 | Mavjud tizimlar (1C, Jowi) juda qimmat va murakkab | Bepul boshlang'ich tarif, sodda interfeys, 1 daqiqada tushuniladi |
@@ -92,10 +92,10 @@
 
 ## 🔧 5. Texnologiya Steki
 
-### Backend (Node.js/Express/MongoDB)
+### Backend (Node.js/Express/PostgreSQL)
 - **Runtime:** Node.js v18+ (asinxron, masshtablanadigan)
 - **Server:** Express.js (yengil API)
-- **Database:** MongoDB + Mongoose (moslashuvchan, kengaytiriladigan)
+- **Database:** PostgreSQL + Prisma ORM (ishonchli, tranzaksiyalar va aloqalar bilan)
 - **Auth:** JWT + Bcrypt (xavfsiz, stateless)
 - **AI:** Google Gemini API (ilg'or tahlil)
 - **Validatsiya:** Joi/Zod (tur xavfsizligi)
@@ -137,9 +137,9 @@
 | **Transport** | HTTPS (production) |
 | **Headers** | Helmet.js (CSP, HSTS) |
 | **CORS** | Faqat ruxsat berilgan domenlar |
-| **Rate Limiting** | 100 so'rov/15 daqiqa global, 10 ta auth uchun |
+| **Rate Limiting** | 1000 so'rov/15 daqiqa global, 20 ta auth uchun |
 | **Input Validatsiya** | Joi — barcha mutatsiyalarda |
-| **NoSQL Injection** | express-mongo-sanitize |
+| **SQL Injection** | Prisma — parametrlangan so'rovlar (xom SQL yo'q) |
 | **Parollar** | bcrypt (10 rounds) |
 | **Tokenlar** | Qisqa muddatli JWT (15 min) + aylanuvchi refresh (7 kun) |
 | **RBAC** | Har bir himoyalangan route'da rol tekshiruvi |
@@ -251,9 +251,9 @@
 
 ---
 
-## 🏆 12. Nima uchun Savdo-E?
+## 🏆 12. Nima uchun TradeS?
 
-| Xususiyat | Savdo-E | Boshqa tizimlar |
+| Xususiyat | TradeS | Boshqa tizimlar |
 |-----------|---------|-----------------|
 | **Narxi** | Bepul boshlang'ich | Qimmat ($100+/oy) |
 | **O'rnatish** | 1 daqiqada | Bir necha kun |
@@ -319,7 +319,7 @@
 
 ## 🎬 16. Xulosa
 
-**Savdo-E** — bu oddiy daftardan to'liq raqamli ekosistema o'tish uchun yagona platforma. Biz MDH tadbirkorlariga:
+**TradeS** — bu oddiy daftardan to'liq raqamli ekosistema o'tish uchun yagona platforma. Biz MDH tadbirkorlariga:
 - 💰 Pulni tejash
 - ⏱ Vaqtni tejash
 - 📊 Biznesni yaxshiroq tushunish
@@ -327,7 +327,7 @@
 
 imkonini beramiz.
 
-> **"Savdo-E — Savdo boshqaruvi sodda qilindi."**
+> **"TradeS — Savdo boshqaruvi sodda qilindi."**
 
 ---
 
@@ -337,6 +337,6 @@ MIT Litsenziya — erkin foydalanish, tijorat loyihalari uchun ham.
 
 ---
 
-**Savdo-E — MDH Tadbirkorlari Uchun Savdo Boshqaruvi Tizimi 🚀**
+**TradeS — MDH Tadbirkorlari Uchun Savdo Boshqaruvi Tizimi 🚀**
 
 *Yaratilgan: 2026 • Hozir: Faol rivojlanishda*

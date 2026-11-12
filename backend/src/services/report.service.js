@@ -146,13 +146,33 @@ const getMonthlyReport = async (userId, yearMonth) => {
   return { month: ym, stats, topProducts: products, dailySales };
 };
 
+// Expenses of the shops this viewer OWNS (a cashier never sees shop costs).
+// Returns null for viewers who own no shop, so callers can omit net profit.
+const sumOwnedShopExpenses = async (userId, startDate, endDate) => {
+  const owned = await prisma.shopMember.findMany({
+    where: { userId, role: 'OWNER' },
+    select: { shopId: true },
+  });
+  if (!owned.length) return null;
+  const agg = await prisma.expense.aggregate({
+    where: { shopId: { in: owned.map((m) => m.shopId) }, createdAt: { gte: startDate, lte: endDate } },
+    _sum: { amount: true },
+  });
+  return agg._sum.amount || 0;
+};
+
+const withNetProfit = (stats, expenses) =>
+  expenses === null ? stats : { ...stats, expenses, netProfit: stats.totalProfit - expenses };
+
 const getSummary = async (userId) => {
   const today = new Date().toISOString().slice(0, 10);
   const thisMonth = new Date().toISOString().slice(0, 7);
 
-  const [todayStats, monthStats, allTimeStats, lowStock] = await Promise.all([
-    aggregateSales(userId, ...Object.values(dayRange(today))),
-    aggregateSales(userId, ...Object.values(monthRange(thisMonth))),
+  const dayR = dayRange(today);
+  const monthR = monthRange(thisMonth);
+  const [todayStats0, monthStats0, allTimeStats0, lowStock, expToday, expMonth, expAll] = await Promise.all([
+    aggregateSales(userId, ...Object.values(dayR)),
+    aggregateSales(userId, ...Object.values(monthR)),
     aggregateSales(userId, new Date(0), new Date()),
     (async () => {
       const scope = await scopeToOwnerOrShop(userId, 'ownerId');
@@ -163,9 +183,17 @@ const getSummary = async (userId) => {
         take: 10,
       });
     })(),
+    sumOwnedShopExpenses(userId, dayR.start, dayR.end),
+    sumOwnedShopExpenses(userId, monthR.start, monthR.end),
+    sumOwnedShopExpenses(userId, new Date(0), new Date()),
   ]);
 
-  return { today: todayStats, thisMonth: monthStats, allTime: allTimeStats, lowStock };
+  return {
+    today: withNetProfit(todayStats0, expToday),
+    thisMonth: withNetProfit(monthStats0, expMonth),
+    allTime: withNetProfit(allTimeStats0, expAll),
+    lowStock,
+  };
 };
 
 // ── Admin-level Reports (cross-user) ────────────────────────────────────────

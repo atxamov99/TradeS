@@ -4,6 +4,16 @@ const slugify = require('slugify');
 const { clampLimit } = require('../utils/pagination');
 const { assertTestUserWithinLimits } = require('../utils/testUserLimits');
 const { scopeToOwnerOrShop, assertShopMember, assertShopOwner, getUserShopIds } = require('../utils/shopAccess');
+const { createAuditLog } = require('./audit.service');
+
+// Inventory audit trail: who did what to which product. Best-effort — a logging
+// failure must never fail the business operation itself.
+const auditInventory = (action, userId, product, metadata = {}) =>
+  createAuditLog({
+    action, category: 'inventory', actor: userId || '', actorId: userId || null,
+    target: `product:${product.id}`, targetId: product.id,
+    metadata: { name: product.name, shopId: product.shopId || null, ...metadata },
+  }).catch(() => {});
 
 const getProducts = async (userId, queryParams = {}, options = {}) => {
   const { search, page = 1, limit = 50, sortBy = 'createdAt', order = 'desc', scope } = queryParams;
@@ -139,6 +149,7 @@ const createProduct = async (productData, userId) => {
     await prisma.user.update({ where: { id: userId }, data: { testActionCount: { increment: 1 } } });
   }
 
+  await auditInventory('PRODUCT_CREATE', userId, product, { stock: product.stock, sellPrice: product.sellPrice, buyPrice: product.buyPrice });
   return product;
 };
 
@@ -231,6 +242,7 @@ const restockProduct = async (id, userId, quantity, options = {}) => {
     include: { images: true },
   });
 
+  await auditInventory('PRODUCT_RESTOCK', userId, updated, { quantity: qty, stockBefore: product.stock, stockAfter: updated.stock });
   return updated;
 };
 
@@ -279,11 +291,13 @@ const deleteProduct = async (id, userId, options = {}) => {
 
   if (orderItems || cartItems || inventoryBatches) {
     await prisma.product.update({ where: { id }, data: { isActive: false } });
+    await auditInventory('PRODUCT_ARCHIVE', userId, product);
     return { message: "Mahsulot arxivlandi (unga bog'liq tarix mavjud)", archived: true };
   }
 
   try {
     await prisma.product.delete({ where: { id } });
+    await auditInventory('PRODUCT_DELETE', userId, product);
     return { message: "Mahsulot o'chirildi" };
   } catch (err) {
     if (err.code === 'P2025') throw new ApiError(404, 'Product not found');

@@ -154,10 +154,12 @@ const cleanupOldSupportMessages = async () => {
   const cutoff = new Date();
   cutoff.setHours(cutoff.getHours() - SUPPORT_MESSAGE_TTL_HOURS);
   try {
+    // Only "answered" tickets age out — an "open" one must never disappear
+    // before an admin has had a chance to see and reply to it.
     const { count } = await prisma.supportMessage.deleteMany({
-      where: { createdAt: { lt: cutoff } },
+      where: { status: 'answered', createdAt: { lt: cutoff } },
     });
-    if (count > 0) logger.info(`Support message cleanup: removed ${count} message(s) older than 24h`);
+    if (count > 0) logger.info(`Support message cleanup: removed ${count} answered message(s) older than 24h`);
   } catch (err) {
     logger.error(`Support message cleanup failed: ${err.message}`);
   }

@@ -1,5 +1,6 @@
 import axios from "axios";
 import { useAuthStore } from "@/store/authStore";
+import { getDeviceId } from "@/utils/deviceId";
 
 export const API_URL =
   process.env.EXPO_PUBLIC_API_URL ?? "https://trades-backend-m2a6.onrender.com/api/v1";
@@ -16,6 +17,8 @@ export const api = axios.create({
 api.interceptors.request.use((config) => {
   const token = useAuthStore.getState().token;
   if (token) config.headers.Authorization = `Bearer ${token}`;
+  const deviceId = getDeviceId();
+  if (deviceId) config.headers["X-Device-Id"] = deviceId;
   return config;
 });
 

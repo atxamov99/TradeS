@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const adminController = require('../controllers/admin.controller');
+const supportController = require('../controllers/support.controller');
 const { protect } = require('../middlewares/auth.middleware');
 const { authorize } = require('../middlewares/rbac.middleware');
 const { validate } = require('../middlewares/validate.middleware');
@@ -28,6 +29,15 @@ router.patch('/users/:id', adminController.updateUserByAdmin);
 router.patch('/users/:id/block', adminController.blockUser);
 router.patch('/users/:id/unblock', adminController.unblockUser);
 router.delete('/users/:id', adminController.deleteUser);
+
+// Support inbox (Contact Support form + Telegram bot /support tickets)
+router.get('/support-messages', supportController.listSupportMessages);
+router.post('/support-messages/:id/reply', supportController.replySupportMessage);
+router.delete(
+  '/support-messages/:id',
+  authorize('SUPER_ADMIN'),
+  supportController.deleteSupportMessage
+);
 
 // Order management
 router.get('/orders', adminController.getAllOrders);

@@ -14,6 +14,8 @@ import { RolesPage } from "../pages/roles/RolesPage";
 import { PermissionsPage } from "../pages/permissions/PermissionsPage";
 import { ProductsPage } from "../pages/products/ProductsPage";
 import { OrdersPage } from "../pages/orders/OrdersPage";
+import { SupportPage } from "../pages/support/SupportPage";
+import { NotificationsPage } from "../pages/notifications/NotificationsPage";
 
 function RequireAuth({ children }) {
   const { isAuthenticated, auth } = useAuth();
@@ -47,10 +49,12 @@ export function AppRouter() {
         <Route element={<RequireAuth><AdminLayout /></RequireAuth>}>
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/users" element={<UsersPage />} />
           <Route path="/users/:id" element={<UserDetailPage />} />
           <Route path="/products" element={<ProductsPage />} />
           <Route path="/orders" element={<OrdersPage />} />
+          <Route path="/support" element={<SupportPage />} />
           <Route path="/customers" element={<Navigate to="/users" replace />} />
           <Route path="/content" element={<ContentPage />} />
           <Route path="/reports" element={<ReportsPage />} />

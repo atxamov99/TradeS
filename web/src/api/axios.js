@@ -1,6 +1,7 @@
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import i18n from '../i18n';
+import { getDeviceId } from '../utils/deviceId';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api/v1';
 
@@ -31,6 +32,7 @@ const api = axios.create({
 
 // ── Request interceptor — No longer need to manually attach token ──────────────────────
 api.interceptors.request.use((config) => {
+  config.headers['X-Device-Id'] = getDeviceId();
   return config;
 });
 

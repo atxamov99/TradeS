@@ -21,8 +21,8 @@ export default function Profile() {
   const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '' });
   const [savingPassword, setSavingPassword] = useState(false);
 
-  const inputCls = "w-full h-12 rounded-xl border border-[#E2E8F0] bg-white px-4 text-base text-[#0F172A] placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition";
-  const labelCls = "block text-sm font-semibold text-[#0F172A] mb-2";
+  const inputCls = "w-full h-12 rounded-xl border border-[#E2E8F0] dark:border-[#334155] bg-white dark:bg-[#0F172A] px-4 text-base text-[#0F172A] dark:text-slate-100 placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition";
+  const labelCls = "block text-sm font-semibold text-[#0F172A] dark:text-slate-100 mb-2";
 
   const handleProfileSave = async (e) => {
     e.preventDefault();
@@ -52,15 +52,15 @@ export default function Profile() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
-      <div className="bg-white border-b border-[#E2E8F0] px-5 py-4 sticky top-0 z-10">
-        <h1 className="text-lg font-bold text-[#0F172A]">{t('profile')}</h1>
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0F172A]">
+      <div className="bg-white dark:bg-[#1E293B] border-b border-[#E2E8F0] dark:border-[#334155] px-5 py-4 sticky top-0 z-10">
+        <h1 className="text-lg font-bold text-[#0F172A] dark:text-slate-100">{t('profile')}</h1>
       </div>
 
       <div className="px-4 sm:px-6 py-5 max-w-3xl mx-auto flex flex-col gap-4">
         {/* Profile card */}
-        <div className="bg-white rounded-2xl border border-[#E2E8F0] overflow-hidden">
-          <div className="px-5 py-3 border-b border-[#E2E8F0] flex items-center justify-between">
+        <div className="bg-white dark:bg-[#1E293B] rounded-2xl border border-[#E2E8F0] dark:border-[#334155] overflow-hidden">
+          <div className="px-5 py-3 border-b border-[#E2E8F0] dark:border-[#334155] flex items-center justify-between">
             <p className="text-xs font-semibold text-[#94A3B8] uppercase tracking-wider">{t('profile')}</p>
             {!editing && (
               <button
@@ -68,7 +68,7 @@ export default function Profile() {
                   setProfileForm({ name: user?.name || '', phone: user?.phone || '', email: user?.email || '' });
                   setEditing(true);
                 }}
-                className="flex items-center gap-1.5 text-sm font-semibold text-green-600 hover:text-green-700"
+                className="flex items-center gap-1.5 text-sm font-semibold text-green-600 dark:text-green-400 hover:text-green-700"
               >
                 <Pencil size={14} /> {t('edit')}
               </button>
@@ -92,7 +92,7 @@ export default function Profile() {
                 <input type="email" className={inputCls} value={profileForm.email} onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })} placeholder={t('enter_email')} />
               </div>
               <div className="flex gap-3">
-                <button type="button" onClick={() => setEditing(false)} className="flex-1 h-12 rounded-xl border border-[#E2E8F0] text-[#64748B] font-semibold hover:bg-slate-50 transition">
+                <button type="button" onClick={() => setEditing(false)} className="flex-1 h-12 rounded-xl border border-[#E2E8F0] dark:border-[#334155] text-[#64748B] dark:text-slate-400 font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition">
                   {t('cancel')}
                 </button>
                 <button
@@ -110,17 +110,17 @@ export default function Profile() {
                 <span className="text-white text-xl font-bold leading-none">{getInitials(user?.name)}</span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-base font-bold text-[#0F172A] truncate">{user?.name || '—'}</p>
-                <p className="text-sm text-[#64748B] truncate mt-0.5">{user?.phone || '—'}</p>
-                {user?.email && <p className="text-sm text-[#64748B] truncate mt-0.5">{user.email}</p>}
+                <p className="text-base font-bold text-[#0F172A] dark:text-slate-100 truncate">{user?.name || '—'}</p>
+                <p className="text-sm text-[#64748B] dark:text-slate-400 truncate mt-0.5">{user?.phone || '—'}</p>
+                {user?.email && <p className="text-sm text-[#64748B] dark:text-slate-400 truncate mt-0.5">{user.email}</p>}
               </div>
             </div>
           )}
         </div>
 
         {/* Change password card */}
-        <div className="bg-white rounded-2xl border border-[#E2E8F0] overflow-hidden">
-          <div className="px-5 py-3 border-b border-[#E2E8F0]">
+        <div className="bg-white dark:bg-[#1E293B] rounded-2xl border border-[#E2E8F0] dark:border-[#334155] overflow-hidden">
+          <div className="px-5 py-3 border-b border-[#E2E8F0] dark:border-[#334155]">
             <p className="text-xs font-semibold text-[#94A3B8] uppercase tracking-wider">{t('change_password')}</p>
           </div>
           <form onSubmit={handlePasswordSave} className="p-5 flex flex-col gap-4">

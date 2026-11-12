@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
-  Eye, EyeOff, LogIn, ShoppingBag, Globe, ChevronDown, Mail, KeyRound, ArrowLeft
+  Eye, EyeOff, LogIn, Globe, ChevronDown, Mail, KeyRound, ArrowLeft
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
@@ -109,6 +109,7 @@ export default function Login() {
   const [code, setCode] = useState('');
 
   const login = useAuthStore((s) => s.login);
+  const verifyNewDeviceLogin = useAuthStore((s) => s.verifyNewDeviceLogin);
   const requestEmailOtp = useAuthStore((s) => s.requestEmailOtp);
   const verifyEmailOtp = useAuthStore((s) => s.verifyEmailOtp);
   const registerTestUser = useAuthStore((s) => s.registerTestUser);
@@ -134,10 +135,32 @@ export default function Login() {
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setErrors({});
     try {
-      await login({ phone: form.phone.replace(/\s/g, ''), password: form.password });
+      const result = await login({ phone: form.phone.replace(/\s/g, ''), password: form.password });
+      if (result?.requiresDeviceConfirmation) {
+        setMode('device-confirm');
+        setCode('');
+        return;
+      }
       goAfterLogin();
     } catch (_) {
       // login() already surfaces toast errors
+    }
+  };
+
+  // Same phone+password (kept in `form`) plus the Telegram code — completes
+  // the login started by handleSubmit above once a new device was flagged.
+  const handleDeviceConfirm = async (e) => {
+    e.preventDefault();
+    if (code.replace(/\D/g, '').length !== 6) return;
+    try {
+      await verifyNewDeviceLogin({
+        phone: form.phone.replace(/\s/g, ''),
+        password: form.password,
+        code: code.replace(/\D/g, ''),
+      });
+      goAfterLogin();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Kod noto\'g\'ri');
     }
   };
 
@@ -196,9 +219,7 @@ export default function Login() {
       {/* Navbar */}
       <nav className="relative z-10 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between border-b border-[#2ECC71]/10">
         <Link to="/" className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#2ECC71] to-[#1ABC9C] flex items-center justify-center">
-            <ShoppingBag className="w-5 h-5 text-slate-950" />
-          </div>
+          <img src="/logo-dark.png" alt="TradeS" className="w-10 h-10 object-contain" />
           <span className="text-xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-slate-400">
             TradeS
           </span>
@@ -324,6 +345,42 @@ export default function Login() {
             </div>
           )}
 
+          {mode === 'device-confirm' && (
+            <form onSubmit={handleDeviceConfirm} noValidate className="flex flex-col gap-4">
+              <div className="flex flex-col items-center text-center gap-3 mb-1">
+                <div className="w-16 h-16 rounded-2xl bg-[#2ECC71]/15 flex items-center justify-center">
+                  <KeyRound className="w-8 h-8 text-[#2ECC71]" />
+                </div>
+                <p className="text-white font-bold text-sm">Yangi qurilma aniqlandi</p>
+                <p className="text-slate-400 text-sm">Telegramga yuborilgan 6 xonali kodni kiriting</p>
+              </div>
+              <input
+                type="text"
+                inputMode="numeric"
+                autoFocus
+                maxLength={6}
+                value={code}
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="••••••"
+                className="w-full h-14 rounded-xl border border-[#2ECC71]/20 bg-[#0E150F]/50 text-white text-center text-2xl font-extrabold tracking-[0.5em] placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-[#2ECC71]/30 focus:border-[#2ECC71]"
+              />
+              <button
+                type="submit"
+                disabled={isLoading || code.length !== 6}
+                className="w-full h-12 bg-[#2ECC71] hover:bg-[#2ecc71]/90 text-slate-950 text-sm font-extrabold rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+              >
+                {isLoading ? <span className="w-5 h-5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" /> : <><LogIn size={16} />{tx.verify_login}</>}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setMode('password'); setCode(''); }}
+                className="flex items-center justify-center gap-1.5 text-sm text-slate-400 hover:text-white transition"
+              >
+                <ArrowLeft size={14} /> {tx.back}
+              </button>
+            </form>
+          )}
+
           {mode === 'email' && emailStep === 'otp' && (
             <form onSubmit={handleEmailLogin} noValidate className="flex flex-col gap-4">
               <div className="flex flex-col items-center text-center gap-3 mb-1">
@@ -391,9 +448,7 @@ export default function Login() {
       <footer className="border-t border-[#2ECC71]/10 bg-[#0E150F] py-8 text-center text-slate-500 text-xs relative z-10">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-[#2ECC71] flex items-center justify-center">
-              <ShoppingBag className="w-3.5 h-3.5 text-slate-950" />
-            </div>
+            <img src="/logo-dark.png" alt="TradeS" className="w-6 h-6 object-contain" />
             <span className="font-bold text-slate-400">TradeS</span>
           </div>
           <div className="flex items-center gap-4">

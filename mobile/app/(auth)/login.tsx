@@ -61,11 +61,21 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState<"password" | "device-confirm">("password");
+  const [code, setCode] = useState("");
 
   const { setToken } = useAuthStore();
   const { setUser } = useUserStore();
 
   const isValid = identifier.trim().length > 0 && password.length > 0;
+
+  function credentialPayload() {
+    const cleanedId = cleanIdentifier(identifier);
+    const payload: { email?: string; phone?: string } = {};
+    if (cleanedId.includes("@")) payload.email = cleanedId;
+    else payload.phone = cleanedId;
+    return payload;
+  }
 
   async function handleLogin() {
     if (!isValid) {
@@ -74,20 +84,36 @@ export default function LoginScreen() {
     }
     setLoading(true);
     try {
-      const cleanedId = cleanIdentifier(identifier);
-      const payload: { password: string; email?: string; phone?: string } = {
-        password: password.trim(),
-      };
-      if (cleanedId.includes("@")) payload.email = cleanedId;
-      else payload.phone = cleanedId;
-
+      const payload = { ...credentialPayload(), password: password.trim() };
       const res = await api.post("/auth/login", payload);
       const data = res.data?.data ?? res.data;
+      if (data.requiresDeviceConfirmation) {
+        setCode("");
+        setMode("device-confirm");
+        return;
+      }
       await setUser(data.user);
       await setToken(data.accessToken, data.refreshToken);
       // token o'zgarishi root _layout guard'ini ishga tushiradi → (app) ga o'tadi
     } catch (e: any) {
       const msg = e?.response?.data?.message || "Kirishda xatolik. Ma'lumotlarni tekshiring";
+      Alert.alert("Xatolik", msg);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleDeviceConfirm() {
+    if (code.length !== 6) return;
+    setLoading(true);
+    try {
+      const payload = { ...credentialPayload(), password: password.trim(), code };
+      const res = await api.post("/auth/verify-new-device", payload);
+      const data = res.data?.data ?? res.data;
+      await setUser(data.user);
+      await setToken(data.accessToken, data.refreshToken);
+    } catch (e: any) {
+      const msg = e?.response?.data?.message || "Kod noto'g'ri";
       Alert.alert("Xatolik", msg);
     } finally {
       setLoading(false);
@@ -111,6 +137,8 @@ export default function LoginScreen() {
 
         {/* Card */}
         <View style={{ width: "100%", backgroundColor: c.bgCard, borderRadius: 16, padding: 24, borderWidth: 1, borderColor: c.border, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 15, elevation: 2 }}>
+          {mode === "password" ? (
+          <>
           <Text style={{ color: c.text, fontSize: 24, fontWeight: "700", marginBottom: 8 }}>Xush kelibsiz</Text>
           <Text style={{ color: c.textMuted, fontSize: 16, marginBottom: 24 }}>Hisobingizga kiring</Text>
 
@@ -159,6 +187,52 @@ export default function LoginScreen() {
           >
             <Text style={{ color: c.primary, fontWeight: "600", fontSize: 16 }}>Ro'yxatdan o'tish</Text>
           </TouchableOpacity>
+          </>
+          ) : (
+          <>
+          <View style={{ alignItems: "center", marginBottom: 8 }}>
+            <View style={{ width: 64, height: 64, borderRadius: 16, backgroundColor: c.primary + "20", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
+              <Ionicons name="key-outline" size={30} color={c.primary} />
+            </View>
+            <Text style={{ color: c.text, fontSize: 18, fontWeight: "800", textAlign: "center" }}>Yangi qurilma aniqlandi</Text>
+            <Text style={{ color: c.textMuted, fontSize: 14, marginTop: 6, textAlign: "center" }}>
+              Telegramga yuborilgan 6 xonali kodni kiriting
+            </Text>
+          </View>
+
+          <TextInput
+            style={{ backgroundColor: c.bgCard, borderRadius: 12, borderWidth: 1, borderColor: c.border, height: 56, fontSize: 24, fontWeight: "800", letterSpacing: 8, color: c.text, textAlign: "center", marginTop: 16, marginBottom: 20 }}
+            placeholder="••••••"
+            placeholderTextColor={c.textMuted}
+            value={code}
+            onChangeText={(v) => setCode(v.replace(/\D/g, "").slice(0, 6))}
+            keyboardType="number-pad"
+            maxLength={6}
+            autoFocus
+          />
+
+          <TouchableOpacity
+            onPress={handleDeviceConfirm}
+            disabled={loading || code.length !== 6}
+            activeOpacity={0.85}
+            style={{ height: 52, borderRadius: 12, backgroundColor: c.primary, flexDirection: "row", alignItems: "center", justifyContent: "center", opacity: loading || code.length !== 6 ? 0.6 : 1 }}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={{ color: "#fff", fontWeight: "600", fontSize: 16 }}>Kirish</Text>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => { setMode("password"); setCode(""); }}
+            activeOpacity={0.7}
+            style={{ height: 50, borderRadius: 12, alignItems: "center", justifyContent: "center", marginTop: 8 }}
+          >
+            <Text style={{ color: c.textMuted, fontWeight: "600", fontSize: 14 }}>Orqaga</Text>
+          </TouchableOpacity>
+          </>
+          )}
         </View>
 
         {/* Footer */}

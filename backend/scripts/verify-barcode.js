@@ -60,6 +60,9 @@ const mkUser = (n) => prisma.user.create({ data: { name: MARK + n, email: `${MAR
     await prisma.product.deleteMany({ where: { shopId: { in: [shop.id, shop2.id] } } });
     await prisma.shopMember.deleteMany({ where: { shopId: { in: [shop.id, shop2.id] } } });
     await prisma.shop.deleteMany({ where: { id: { in: [shop.id, shop2.id] } } });
+    const _own = await prisma.shop.findMany({ where: { ownerId: { in: [owner.id, cashier.id, outsider.id, owner2.id] } }, select: { id: true } });
+    await prisma.shopMember.deleteMany({ where: { shopId: { in: _own.map((s) => s.id) } } });
+    await prisma.shop.deleteMany({ where: { id: { in: _own.map((s) => s.id) } } });
     await prisma.user.deleteMany({ where: { id: { in: [owner.id, cashier.id, outsider.id, owner2.id] } } });
     console.log(`${pass} passed, ${fail} failed`);
     await prisma.$disconnect();

@@ -87,6 +87,17 @@ const isProductInScope = async (product, userId) => {
   return shopIds.includes(product.shopId);
 };
 
+// Barcodes must be unambiguous inside one scope (a shop, or one owner's
+// personal catalogue) — otherwise a scan can't tell which product is meant.
+const assertBarcodeFree = async (barcode, { shopId, ownerId, excludeId }) => {
+  const code = typeof barcode === 'string' ? barcode.trim() : barcode;
+  if (!code) return;
+  const where = shopId ? { barcode: code, shopId } : { barcode: code, shopId: null, ownerId };
+  if (excludeId) where.id = { not: excludeId };
+  const clash = await prisma.product.findFirst({ where, select: { id: true } });
+  if (clash) throw new ApiError(409, 'This barcode is already used by another product', [], '', 'BARCODE_EXISTS');
+};
+
 const createProduct = async (productData, userId) => {
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -107,6 +118,7 @@ const createProduct = async (productData, userId) => {
     // reopen the margin-manipulation risk RBAC on writes was meant to close.
     if (member.role !== 'OWNER') throw new ApiError(403, 'Only the shop owner can add products');
   }
+  await assertBarcodeFree(rest.barcode, { shopId: shopId || null, ownerId: userId });
   const slug = slugify(rest.name, { lower: true, strict: true }) + '-' + Date.now();
   const finalPrice = rest.price - (rest.price * (rest.discount || 0)) / 100;
 
@@ -159,6 +171,13 @@ const updateProduct = async (id, userId, updateData, options = {}) => {
   const effectiveBagWeight = newData.bagWeightKg !== undefined ? newData.bagWeightKg : product.bagWeightKg;
   if (effectiveUnit === 'box' && !(Number(effectiveBagWeight) > 0)) {
     throw new ApiError(400, 'Bag weight (kg) is required', [], '', 'BAG_WEIGHT_REQUIRED');
+  }
+  if (newData.barcode && newData.barcode !== product.barcode) {
+    await assertBarcodeFree(newData.barcode, {
+      shopId: product.shopId || null,
+      ownerId: product.ownerId,
+      excludeId: product.id,
+    });
   }
   if (name !== undefined) newData.name = name;
   if (price !== undefined) newData.price = price;
@@ -213,6 +232,27 @@ const restockProduct = async (id, userId, quantity, options = {}) => {
   });
 
   return updated;
+};
+
+// POS lookup: resolve a scanned barcode to ONE active product the viewer may
+// see (their shop's, or their own). Never leaks another tenant's catalogue.
+const findProductByBarcode = async (code, userId, options = {}) => {
+  const { isAdmin = false } = options;
+  const barcode = String(code || '').trim();
+  if (!barcode) throw new ApiError(400, 'Barcode is required', [], '', 'BARCODE_REQUIRED');
+  const where = { barcode, isActive: true };
+  if (!isAdmin && userId) Object.assign(where, await scopeToOwnerOrShop(userId));
+  const matches = await prisma.product.findMany({ where, take: 2, include: { images: true } });
+  if (matches.length === 0) throw new ApiError(404, 'No product with this barcode', [], '', 'BARCODE_NOT_FOUND');
+  if (matches.length > 1) throw new ApiError(409, 'Several products share this barcode', [], '', 'BARCODE_AMBIGUOUS');
+  return matches[0];
+};
+
+// Stock-in by scan. Reuses restockProduct so the same RBAC applies (shop
+// OWNER / platform admin only) and the increment stays atomic.
+const restockByBarcode = async (code, userId, quantity, options = {}) => {
+  const product = await findProductByBarcode(code, userId, options);
+  return restockProduct(product.id, userId, quantity, options);
 };
 
 const deleteProduct = async (id, userId, options = {}) => {
@@ -303,6 +343,8 @@ module.exports = {
   createProduct,
   updateProduct,
   restockProduct,
+  findProductByBarcode,
+  restockByBarcode,
   deleteProduct,
   addReview,
   getCategories,

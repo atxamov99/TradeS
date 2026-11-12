@@ -40,6 +40,16 @@ const restockProduct = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, { product }, 'Product restocked'));
 });
 
+const getProductByBarcode = asyncHandler(async (req, res) => {
+  const product = await productService.findProductByBarcode(req.params.code, req.user.id, { isAdmin: isAdmin(req) });
+  res.status(200).json(new ApiResponse(200, { product }, 'Product found'));
+});
+
+const restockByBarcode = asyncHandler(async (req, res) => {
+  const product = await productService.restockByBarcode(req.params.code, req.user.id, req.body.quantity, { isAdmin: isAdmin(req) });
+  res.status(200).json(new ApiResponse(200, { product }, 'Product restocked'));
+});
+
 const deleteProduct = asyncHandler(async (req, res) => {
   const result = await productService.deleteProduct(req.params.id, req.user.id, { isAdmin: isAdmin(req) });
   res.status(200).json(new ApiResponse(200, result, result.message));
@@ -67,6 +77,8 @@ module.exports = {
   createProduct,
   updateProduct,
   restockProduct,
+  getProductByBarcode,
+  restockByBarcode,
   deleteProduct,
   addReview,
   getCategories,

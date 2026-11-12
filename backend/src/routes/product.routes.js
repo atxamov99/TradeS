@@ -20,6 +20,10 @@ router.use(protect);
 router.get('/', productController.getProducts);
 router.get('/categories', productController.getCategories);
 router.get('/slug/:slug', productController.getProductBySlug);
+// POS barcode scan — static paths, so they must stay BEFORE '/:id'. Both need a
+// shop membership; restock-by-scan keeps the OWNER-only rule of /:id/restock.
+router.get('/barcode/:code', requireShopMember, productController.getProductByBarcode);
+router.patch('/barcode/:code/restock', requireShopMember, validate(restockSchema), productController.restockByBarcode);
 router.get('/:id', productController.getProductById);
 
 // Review — a buyer action, not a seller action: stays open to any user.

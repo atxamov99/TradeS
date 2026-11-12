@@ -37,7 +37,7 @@ const mkUser = (n) => prisma.user.create({ data: { name: MARK + n, email: `${MAR
     r = await call(tC, 'GET', '/products/barcode/BC-123');
     ck('cashier scan -> 200 with own shop product', r.status === 200 && r.json?.data?.product?.id === pid, r);
     r = await call(tX, 'GET', '/products/barcode/BC-123');
-    ck('user without shop -> 403', r.status === 403, r);
+    ck('user without shop gets own personal shop: lookup of unknown barcode = 404', r.status === 404, r);
     r = await call(tO2, 'GET', '/products/barcode/BC-123');
     ck('other shop sees ITS OWN product, not mine', r.status === 200 && r.json?.data?.product?.id !== pid, r);
     r = await call(tO, 'GET', '/products/barcode/NOPE-000');

@@ -51,7 +51,7 @@ async function main() {
       email: cashierEmail, code: record.otpCode, name: MARK + '-cashier', password: 'TestPass123',
     });
     check('plain USER signup = 200', r.status === 200, r);
-    check('plain USER signup created NO shop', r.json?.data?.shop === null, r);
+    check('plain USER signup gets a PERSONAL shop (not a business)', r.json?.data?.shop?.isBusiness === false, r);
 
     // 3. The owner looks the cashier-to-be up by email and adds them
     r = await call(ownerToken, 'POST', `/shops/${shopId}/members`, { email: cashierEmail });

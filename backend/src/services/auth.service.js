@@ -20,9 +20,14 @@ const REFRESH_TOKEN_EXPIRES_DAYS = 7;
 // until an existing shop owner adds them as a cashier via shop.service.js's
 // addMember. No-op unless accountType === 'OWNER'.
 const createOwnerShopIfRequested = async (user, accountType, shopName) => {
-  if (accountType !== 'OWNER') return null;
+  if (accountType === 'OWNER') {
+    return prisma.shop.create({
+      data: { name: shopName, ownerId: user.id, isBusiness: true, members: { create: { userId: user.id, role: 'OWNER' } } },
+    });
+  }
+  // Everyone else works for themselves: personal (non-business) shop.
   return prisma.shop.create({
-    data: { name: shopName, ownerId: user.id, members: { create: { userId: user.id, role: 'OWNER' } } },
+    data: { name: user.name || "Shaxsiy do'kon", ownerId: user.id, isBusiness: false, members: { create: { userId: user.id, role: 'OWNER' } } },
   });
 };
 

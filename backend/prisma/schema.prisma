@@ -59,6 +59,14 @@ model User {
 model Shop {
   id        String       @id @default(cuid())
   name      String
+  // false = personal ("solo") shop auto-created for a user who works for
+  // themselves: no employees, no business tools. true = a business with
+  // cashiers. Becomes true via the code-confirmed upgrade. Existing shops are
+  // businesses.
+  isBusiness            Boolean   @default(true)
+  upgradeCodeHash       String?
+  upgradeCodeExpiresAt  DateTime?
+  upgradeAttempts       Int       @default(0)
   ownerId   String
   owner     User         @relation("ShopOwner", fields: [ownerId], references: [id])
   createdAt DateTime     @default(now())

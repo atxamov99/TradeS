@@ -14,4 +14,9 @@ const addMemberSchema = Joi.object({
   .xor('userId', 'phone', 'email')
   .messages({ 'object.xor': 'Provide exactly one of userId, phone or email' });
 
-module.exports = { createShopSchema, addMemberSchema };
+const confirmUpgradeSchema = Joi.object({
+  code: Joi.string().trim().pattern(/^\d{6}$/).required(),
+  name: Joi.string().trim().max(200),
+});
+
+module.exports = { createShopSchema, addMemberSchema, confirmUpgradeSchema };

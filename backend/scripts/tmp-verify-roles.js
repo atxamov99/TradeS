@@ -63,7 +63,7 @@ async function main() {
   try {
     // 1. Plain USER with no shop cannot create a product
     let r = await call(tNoShop, 'POST', '/products', { name: MARK + '-p1', buyPrice: 1000, sellPrice: 1500 });
-    check('USER no-shop -> create product = 403 NO_SHOP_MEMBERSHIP', r.status === 403 && r.json?.code === 'NO_SHOP_MEMBERSHIP', r);
+    check('USER with no shop works for themselves: create product = 201 (personal shop auto-created)', r.status === 201, r);
 
     // 2. CASHIER is a shop member (passes route gate) but is NOT allowed to create shop products (OWNER-only)
     r = await call(tCashier, 'POST', '/products', { name: MARK + '-p2', buyPrice: 1000, sellPrice: 1500, shopId: shop.id });
@@ -93,7 +93,7 @@ async function main() {
     r = await call(tNoShop, 'POST', '/sales', {
       product: productId, productName: MARK + '-p3', quantity: 1, sellPrice: 1500, buyPrice: 1000,
     });
-    check('USER no-shop -> record sale = 403 NO_SHOP_MEMBERSHIP', r.status === 403 && r.json?.code === 'NO_SHOP_MEMBERSHIP', r);
+    check("USER cannot sell ANOTHER shop's product = 404 (IDOR still closed)", r.status === 404, r);
 
     // 8. ADMIN bypasses the shop-membership gate entirely (platform staff)
     r = await call(tAdmin, 'POST', '/products', { name: MARK + '-p4', buyPrice: 1, sellPrice: 2 });

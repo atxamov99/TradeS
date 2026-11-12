@@ -1,6 +1,6 @@
 const asyncHandler = require('../utils/asyncHandler');
 const ApiError = require('../utils/ApiError');
-const { getUserShopIds } = require('../utils/shopAccess');
+const { getUserShopIds, ensurePersonalShop } = require('../utils/shopAccess');
 
 const PLATFORM_STAFF = ['ADMIN'];
 
@@ -26,15 +26,12 @@ const requireShopMember = asyncHandler(async (req, res, next) => {
   if (!req.user) throw new ApiError(401, 'Not authenticated');
   if (PLATFORM_STAFF.includes(req.user.role)) return next();
 
-  const shopIds = await getUserShopIds(req.user.id);
+  let shopIds = await getUserShopIds(req.user.id);
   if (!shopIds.length) {
-    throw new ApiError(
-      403,
-      'You must belong to a shop to perform this action. Create a shop or ask an owner to add you.',
-      [],
-      '',
-      'NO_SHOP_MEMBERSHIP'
-    );
+    // A user who works for themselves needs no invitation: give them a personal
+    // shop on the spot (they own it). Employees/business tools stay locked until
+    // they upgrade it to a business with a confirmation code.
+    shopIds = await ensurePersonalShop(req.user.id);
   }
 
   // Memoize so downstream handlers don't re-query the same membership set.

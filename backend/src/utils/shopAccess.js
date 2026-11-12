@@ -9,6 +9,28 @@ const getUserShopIds = async (userId) => {
   return memberships.map((m) => m.shopId);
 };
 
+// A user who works for themselves gets a PERSONAL shop (isBusiness=false) of
+// which they are the OWNER — so every seller, solo or business, goes through the
+// same shop-scoped rules and catalogue isolation. Idempotent and self-healing:
+// legacy accounts with no shop get one the first time they act. The membership
+// re-check inside the transaction prevents two concurrent requests creating two.
+const ensurePersonalShop = async (userId) => {
+  return prisma.$transaction(async (tx) => {
+    const existing = await tx.shopMember.findMany({ where: { userId }, select: { shopId: true } });
+    if (existing.length) return existing.map((m) => m.shopId);
+    const user = await tx.user.findUnique({ where: { id: userId }, select: { name: true } });
+    const shop = await tx.shop.create({
+      data: {
+        name: user?.name || "Shaxsiy do'kon",
+        ownerId: userId,
+        isBusiness: false,
+        members: { create: { userId, role: 'OWNER' } },
+      },
+    });
+    return [shop.id];
+  });
+};
+
 // Prisma where-fragment for "rows this user may act on": either the legacy
 // direct-ownership field (ownerId/userId — pre-Shop, single-tenant accounts)
 // OR any shop the user is a member of. Additive — doesn't break rows that
@@ -53,4 +75,4 @@ const scopeSalesForViewer = async (userId) => {
   return { OR: or };
 };
 
-module.exports = { getUserShopIds, scopeToOwnerOrShop, assertShopMember, assertShopOwner, scopeSalesForViewer };
+module.exports = { getUserShopIds, ensurePersonalShop, scopeToOwnerOrShop, assertShopMember, assertShopOwner, scopeSalesForViewer };

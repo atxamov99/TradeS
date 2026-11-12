@@ -27,4 +27,14 @@ const removeMember = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, result, result.message));
 });
 
-module.exports = { createShop, getMyShops, getShopMembers, addMember, removeMember };
+const requestBusinessUpgrade = asyncHandler(async (req, res) => {
+  const data = await shopService.requestBusinessUpgrade(req.params.shopId, req.user.id);
+  res.status(200).json(new ApiResponse(200, data, 'Confirmation code sent'));
+});
+
+const confirmBusinessUpgrade = asyncHandler(async (req, res) => {
+  const shop = await shopService.confirmBusinessUpgrade(req.params.shopId, req.user.id, req.body, { ip: req.ip });
+  res.status(200).json(new ApiResponse(200, { shop }, 'Upgraded to a business account'));
+});
+
+module.exports = { createShop, getMyShops, getShopMembers, addMember, removeMember, requestBusinessUpgrade, confirmBusinessUpgrade };

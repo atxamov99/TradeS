@@ -111,12 +111,21 @@ const assertBarcodeFree = async (barcode, { shopId, ownerId, excludeId }) => {
 const createProduct = async (productData, userId) => {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { isTestUser: true, testExpiresAt: true, testActionCount: true },
+    select: { isTestUser: true, testExpiresAt: true, testActionCount: true, role: true },
   });
   assertTestUserWithinLimits(user);
 
   // images is a relation (ProductImage[]) — Prisma needs { create: [...] }, not a raw array
-  const { images = [], shopId, ...rest } = productData;
+  const { images = [], shopId: requestedShopId, ...rest } = productData;
+  // No shopId given: default to the user's single owned shop (solo or business).
+  // A pure cashier owns none -> cannot create products; several owned shops -> must choose.
+  let shopId = requestedShopId;
+  if (!shopId) {
+    const owned = await prisma.shopMember.findMany({ where: { userId, role: 'OWNER' }, select: { shopId: true } });
+    if (owned.length === 1) shopId = owned[0].shopId;
+    else if (owned.length > 1) throw new ApiError(400, 'shopId is required (you own several shops)', [], '', 'SHOP_REQUIRED');
+    else if (user.role !== 'ADMIN') throw new ApiError(403, 'Only a shop owner can add products', [], '', 'OWNER_ONLY');
+  }
   if (rest.unit === 'box' && !(Number(rest.bagWeightKg) > 0)) {
     throw new ApiError(400, 'Bag weight (kg) is required', [], '', 'BAG_WEIGHT_REQUIRED');
   }

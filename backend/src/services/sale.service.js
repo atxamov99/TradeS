@@ -71,12 +71,28 @@ const createSale = async (userId, saleData) => {
       },
     });
 
-    // Deduct stock only after sale is successfully persisted
+    // Deduct stock only after sale is successfully persisted.
+    // Real-time sales use a conditional atomic decrement (stock >= qty) so two
+    // concurrent sales of the last items can't both succeed and oversell (the
+    // read-check above is advisory only — it is outside this transaction).
+    // Offline-synced sales already happened physically, so they always decrement
+    // (stock may go negative, see note above).
     if (productId) {
-      await tx.product.update({
-        where: { id: productId },
-        data: { stock: { decrement: qty } },
-      });
+      if (isFromOffline) {
+        await tx.product.update({
+          where: { id: productId },
+          data: { stock: { decrement: qty } },
+        });
+      } else {
+        const { count } = await tx.product.updateMany({
+          where: { id: productId, stock: { gte: qty } },
+          data: { stock: { decrement: qty } },
+        });
+        if (count === 0) {
+          // Throwing inside the transaction rolls back the sale row created above.
+          throw new ApiError(400, 'Insufficient stock', [], '', 'INSUFFICIENT_STOCK');
+        }
+      }
     }
 
     if (user.isTestUser) {

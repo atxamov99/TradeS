@@ -772,7 +772,11 @@ const requestEmailOtp = async (rawEmail) => {
     create: { email, otpCode: code, otpExpiresAt, attempts: 0 },
   });
 
-  await emailService.sendCode(email, code);
+  const sent = await emailService.sendCode(email, code);
+  // A configured provider that failed must NOT be reported as "sent" — the user would wait for a code forever.
+  if (emailService.isConfigured() && !sent.delivered) {
+    throw new ApiError(502, "Email yuborilmadi. Birozdan so'ng qayta urinib ko'ring.", [], '', 'EMAIL_SEND_FAILED');
+  }
 
   const result = { message: 'Tasdiqlash kodi emailga yuborildi' };
   // Dev-safe: without a provider, surface the code so the flow is testable.

@@ -9,6 +9,7 @@ import {
   XAxis,
   YAxis
 } from "recharts";
+import { useI18n } from "../../../i18n";
 
 const tooltipStyle = {
   backgroundColor: "rgb(var(--c-surface-container-lowest))",
@@ -24,11 +25,12 @@ const COLOR_PRIMARY = "#10b981";
 const COLOR_SECONDARY = "#4648d4";
 
 export function UserActivityChart({ data }) {
+  const { t } = useI18n();
   return (
     <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-padding-card shadow-card">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-title-sm text-title-sm text-on-surface">Haftalik foydalanuvchilar</h3>
-        <span className="text-body-sm text-on-surface-variant">Jami va faol</span>
+        <h3 className="font-title-sm text-title-sm text-on-surface">{t("dashboard.chart.weeklyUsers")}</h3>
+        <span className="text-body-sm text-on-surface-variant">{t("dashboard.chart.totalActive")}</span>
       </div>
       <ResponsiveContainer width="100%" height={200}>
         <LineChart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
@@ -55,18 +57,19 @@ const formatRevenueTick = (v) => {
 };
 
 export function OrderRevenueChart({ data }) {
+  const { t } = useI18n();
   return (
     <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-padding-card shadow-card">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-title-sm text-title-sm text-on-surface">Oylik buyurtmalar va daromad</h3>
+        <h3 className="font-title-sm text-title-sm text-on-surface">{t("dashboard.chart.monthly")}</h3>
         <div className="flex gap-3 text-body-sm">
           <span className="flex items-center gap-1 text-on-surface-variant">
             <span className="w-2.5 h-2.5 rounded-sm" style={{ background: COLOR_SECONDARY }} />
-            Buyurtmalar
+            {t("navigation.menu.orders.label")}
           </span>
           <span className="flex items-center gap-1 text-on-surface-variant">
             <span className="w-2.5 h-2.5 rounded-sm" style={{ background: COLOR_PRIMARY }} />
-            Daromad
+            {t("dashboard.chart.revenue")}
           </span>
         </div>
       </div>

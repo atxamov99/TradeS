@@ -307,7 +307,7 @@ export function AdminDataProvider({ children }) {
 
   async function updateAdmin(id, payload) {
     const admin = admins.find((a) => a.id === id);
-    if (admin?.isPrimary) { pushToast("Super adminni tahrirlab bo'lmaydi", "danger"); return; }
+    if (admin?.isPrimary) { pushToast("Asosiy adminni tahrirlab bo'lmaydi", "danger"); return; }
     try {
       // Admins are users with role ADMIN — reuse the users update endpoint.
       const res = await usersApi.update(id, payload);

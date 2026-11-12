@@ -13,18 +13,18 @@ const STATUS_BADGE = {
 };
 
 const STATUS_LABELS = {
-  pending: "Kutilmoqda",
-  processing: "Jarayonda",
-  shipped: "Yo'lda",
-  delivered: "Yetkazildi",
-  cancelled: "Bekor qilindi"
+  pending: "labels.statuses.pending",
+  processing: "orders.status.inProgress",
+  shipped: "orders.status.shipped",
+  delivered: "orders.status.delivered",
+  cancelled: "orders.status.cancelled"
 };
 
 const PAYMENT_LABELS = {
-  pending: "Kutilmoqda",
-  paid: "To'langan",
-  failed: "Muvaffaqiyatsiz",
-  refunded: "Qaytarilgan"
+  pending: "labels.statuses.pending",
+  paid: "orders.payment.paid",
+  failed: "orders.payment.failed",
+  refunded: "orders.payment.refunded"
 };
 
 const PAYMENT_DOT = {
@@ -35,11 +35,11 @@ const PAYMENT_DOT = {
 };
 
 const TABS = [
-  { key: "all", label: "Hammasi" },
-  { key: "pending", label: "Kutilmoqda" },
-  { key: "processing", label: "Jarayonda" },
-  { key: "delivered", label: "Yetkazildi" },
-  { key: "cancelled", label: "Bekor qilindi" }
+  { key: "all", label: "common.everything" },
+  { key: "pending", label: "labels.statuses.pending" },
+  { key: "processing", label: "orders.status.inProgress" },
+  { key: "delivered", label: "orders.status.delivered" },
+  { key: "cancelled", label: "orders.status.cancelled" }
 ];
 
 export function OrdersPage() {
@@ -98,14 +98,14 @@ export function OrdersPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="font-headline-md text-headline-md font-bold text-on-surface">Buyurtmalar</h2>
-          <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">Barcha mijozlar buyurtmalarini boshqarish va kuzatish</p>
+          <h2 className="font-headline-md text-headline-md font-bold text-on-surface">{t("navigation.menu.orders.label")}</h2>
+          <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">{t("orders.subtitle")}</p>
         </div>
         <div className="relative w-full md:w-72">
           <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]" />
           <input
             type="text"
-            placeholder="ID yoki mijoz..."
+            placeholder={t("orders.searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-9 pr-4 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-sm text-on-surface focus:outline-none focus:border-primary transition-all"
@@ -127,7 +127,7 @@ export function OrdersPage() {
                   tab === tb.key ? "text-primary font-bold border-b-2 border-primary" : "text-on-surface-variant hover:text-primary"
                 }`}
               >
-                {tb.label} ({counts[tb.key] || 0})
+                {t(tb.label)} ({counts[tb.key] || 0})
               </button>
             </li>
           ))}
@@ -137,24 +137,24 @@ export function OrdersPage() {
       {/* Table */}
       <div className="bg-surface-bright border border-outline-variant rounded-xl overflow-hidden shadow-sm">
         {loading ? (
-          <div className="p-12 text-center text-on-surface-variant">Yuklanmoqda...</div>
+          <div className="p-12 text-center text-on-surface-variant">{t("common.loading")}</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-surface-bright border-b border-outline-variant font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">
-                  <th className="py-4 px-6">ID</th>
-                  <th className="py-4 px-6">Mijoz</th>
-                  <th className="py-4 px-6">Sana</th>
-                  <th className="py-4 px-6 text-right">Summa</th>
-                  <th className="py-4 px-6">To'lov holati</th>
-                  <th className="py-4 px-6">Buyurtma holati</th>
+                  <th className="py-4 px-6">{t("common.id")}</th>
+                  <th className="py-4 px-6">{t("common.customer")}</th>
+                  <th className="py-4 px-6">{t("common.date")}</th>
+                  <th className="py-4 px-6 text-right">{t("common.amount")}</th>
+                  <th className="py-4 px-6">{t("orders.paymentStatus")}</th>
+                  <th className="py-4 px-6">{t("orders.orderStatus")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant bg-surface-container-lowest">
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-12 text-center text-on-surface-variant">Buyurtmalar topilmadi</td>
+                    <td colSpan={6} className="py-12 text-center text-on-surface-variant">{t("orders.notFound")}</td>
                   </tr>
                 ) : (
                   filtered.map((o) => {
@@ -189,7 +189,7 @@ export function OrdersPage() {
                               className="font-body-sm text-on-surface bg-transparent border-none focus:outline-none cursor-pointer"
                             >
                               {Object.entries(PAYMENT_LABELS).map(([val, label]) => (
-                                <option key={val} value={val}>{label}</option>
+                                <option key={val} value={val}>{t(label)}</option>
                               ))}
                             </select>
                           </div>
@@ -202,7 +202,7 @@ export function OrdersPage() {
                             className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border-none focus:outline-none cursor-pointer ${STATUS_BADGE[o.orderStatus] || "bg-surface-variant text-on-surface-variant"}`}
                           >
                             {Object.entries(STATUS_LABELS).map(([val, label]) => (
-                              <option key={val} value={val}>{label}</option>
+                              <option key={val} value={val}>{t(label)}</option>
                             ))}
                           </select>
                         </td>

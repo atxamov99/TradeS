@@ -1,7 +1,7 @@
 export const ru = {
   app: {
     name: "TradeS",
-    description: "Ролевая админ-панель и панель супер-админа для TradeS"
+    description: "Ролевая админ-панель и панель админа для TradeS"
   },
   common: {
     close: "Закрыть",
@@ -56,11 +56,11 @@ export const ru = {
     scoped: "Ограниченный доступ"
   },
   workspace: {
-    superAdmin: "Рабочая зона супер-админа",
+    superAdmin: "Рабочая зона админа",
     admin: "Рабочая зона админа"
   },
   titles: {
-    platformSuperAdmin: "Супер-админ платформы",
+    platformAdmin: "Админ платформы",
     operationsAdmin: "Операционный админ"
   },
   time: {
@@ -82,7 +82,7 @@ export const ru = {
       },
       admins: {
         label: "Админы",
-        description: "Аккаунты админов и контроль единственного супер-админа"
+        description: "Аккаунты админов и контроль единственного админа"
       },
       roles: {
         label: "Роли",
@@ -131,8 +131,8 @@ export const ru = {
         description: "Список пользователей, фильтры и действия модерации."
       },
       admins: {
-        eyebrow: "Только для супер-админа",
-        description: "Аккаунты админов, назначение ролей и правила единственного супер-админа."
+        eyebrow: "Только для админа",
+        description: "Аккаунты админов, назначение ролей и правила единственного админа."
       },
       roles: {
         eyebrow: "Дизайн доступа",
@@ -176,7 +176,7 @@ export const ru = {
       },
       login: {
         eyebrow: "Аутентификация",
-        description: "Вход как админ или супер-админ."
+        description: "Вход как админ или админ."
       },
       userDetail: {
         title: "Детали пользователя",
@@ -197,25 +197,25 @@ export const ru = {
   },
   auth: {
     heroEyebrow: "Центр управления TradeS",
-    heroTitle: "Старт админ-панели и панели супер-админа готов.",
+    heroTitle: "Старт админ-панели и панели админа готов.",
     heroDescription:
       "Сейчас работает demo auth. Позже этот flow подключится к `POST /auth/login`, `POST /auth/refresh` и `GET /me`.",
     routeProtectionTitle: "Защита маршрутов",
     routeProtectionDescription:
-      "Подключены private route и guard для страниц только супер-админа.",
+      "Подключены private route и guard для страниц только админа.",
     roleMenuTitle: "Меню по ролям",
     roleMenuDescription:
       "Sidebar рендерится в зависимости от роли после входа.",
     singletonTitle: "Правило singleton",
     singletonDescription:
-      "Создание второго супер-админа заблокировано на уровне UI.",
+      "Создание второго админа заблокировано на уровне UI.",
     cardEyebrow: "Аутентификация",
     signIn: "Войти",
     signInDescription:
-      "Если email содержит `super`, вход выполняется как супер-админ, иначе как админ.",
+      "Если email содержит `super`, вход выполняется как админ, иначе как админ.",
     continue: "Продолжить",
     demoAdmin: "Демо админ",
-    demoSuperAdmin: "Демо супер-админ",
+    demoAdmin: "Демо админ",
     demoAccounts: "Демо аккаунты",
     forgotPassword: "Забыли пароль",
     resetPassword: "Сброс пароля",
@@ -239,7 +239,7 @@ export const ru = {
   dashboard: {
     pageTitle: "Дашборд",
     heroEyebrow: "Старт MVP",
-    superAdminTitle: "Центр управления Super Admin",
+    superAdminTitle: "Центр управления Admin",
     adminTitle: "Операционная зона админа",
     heroDescription:
       "Дашборд теперь работает на local state: users, admins, audit и notifications обновляются после CRUD-действий.",
@@ -326,11 +326,11 @@ export const ru = {
     pageTitle: "Админы",
     title: "Управление админами",
     description:
-      "Доступно только супер-админу. Активны действия create, edit и suspend.",
+      "Доступно только админу. Активны действия create, edit и suspend.",
     createAdmin: "Создать админа",
     singletonTitle: "Правило singleton",
     singletonDescription:
-      "Выбор `super_admin` заблокирован. И demo, и backend должны отклонять второго супер-админа.",
+      "Выбор `super_admin` заблокирован. И demo, и backend должны отклонять второго админа.",
     adminColumn: "Админ",
     editAdmin: "Редактировать админа",
     createAdminModal: "Создать админа",
@@ -416,7 +416,7 @@ export const ru = {
     languagePreference: "Предпочитаемый язык",
     themePreference: "Предпочтение темы",
     systemReadiness: "Готовность системы",
-    superAdminScope: "Область супер-админа",
+    superAdminScope: "Область админа",
     adminScope: "Область админа",
     authFlow: "Auth flow",
     authFlowDescription:
@@ -448,7 +448,7 @@ export const ru = {
   },
   labels: {
     roles: {
-      super_admin: "Супер-админ",
+      super_admin: "Админ",
       admin: "Админ",
       support: "Поддержка",
       viewer: "Наблюдатель",
@@ -510,7 +510,7 @@ export const ru = {
       permissionRollout: {
         title: "Permission rollout",
         description:
-          "Role matrix готова для module-level access checks и валидации единственного супер-админа."
+          "Role matrix готова для module-level access checks и валидации единственного админа."
       },
       apiReadiness: {
         title: "Готовность API",
@@ -546,8 +546,8 @@ export const ru = {
         detail: "UI-архитектура готова, backend-требование пока открыто."
       },
       singleton: {
-        title: "Единственный супер-админ",
-        detail: "Создание второго супер-админа отключено в UI и также должно валидироваться API."
+        title: "Единственный админ",
+        detail: "Создание второго админа отключено в UI и также должно валидироваться API."
       },
       auditExport: {
         title: "Экспорт аудита",
@@ -628,12 +628,12 @@ export const ru = {
     userUpdated: "Пользователь обновлен",
     userDeleted: "Пользователь удален: {name}",
     userStatus: "Статус пользователя: {status}",
-    onlyOneSuperAdmin: "Разрешен только один супер-админ",
+    onlyOneAdmin: "Разрешен только один админ",
     adminCreated: "Админ создан: {name}",
     adminUpdated: "Админ обновлен",
     adminStatus: "Статус админа: {status}",
     superAdminTransferDisabled:
-      "Передача роли супер-админа отключена в этом demo",
+      "Передача роли админа отключена в этом demo",
     roleCreated: "Роль создана: {name}",
     permissionsSaved: "Права сохранены",
     contentCreated: "Контент создан: {name}",

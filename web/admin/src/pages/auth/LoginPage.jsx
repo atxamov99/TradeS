@@ -2,8 +2,10 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../store";
 import { Icon } from "../../components/shared/Icon";
+import { useI18n } from "../../i18n";
 
 export function LoginPage() {
+  const { t } = useI18n();
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -49,11 +51,11 @@ export function LoginPage() {
         {/* Header */}
         <header className="flex flex-col items-center text-center w-full mb-section-gap">
           <div className="w-14 h-14 bg-surface-container-lowest border border-outline-variant rounded-lg flex items-center justify-center overflow-hidden mb-gutter shadow-sm">
-            <img src="/logo.png" alt="TradeS" className="w-full h-full object-contain p-1" />
+            <img src="/logo.png" alt={t("app.name")} className="w-full h-full object-contain p-1" />
           </div>
           <h1 className="font-display-lg-mobile text-display-lg-mobile text-on-surface">TradeS Admin</h1>
           <p className="font-body-sm text-body-sm text-on-surface-variant mt-2">
-            Boshqaruv paneliga xush kelibsiz
+            {t("auth.loginSubtitle")}
           </p>
         </header>
 
@@ -67,7 +69,7 @@ export function LoginPage() {
           {/* Identifier */}
           <div className="flex flex-col gap-element-gap">
             <label htmlFor="identifier" className="font-label-caps text-label-caps text-on-surface-variant uppercase">
-              Email yoki telefon
+              {t("auth.identifier")}
             </label>
             <div className="relative w-full">
               <Icon name="mail" className="absolute left-4 top-1/2 -translate-y-1/2 text-outline-variant text-[20px]" />
@@ -87,7 +89,7 @@ export function LoginPage() {
           {/* Password */}
           <div className="flex flex-col gap-element-gap">
             <label htmlFor="password" className="font-label-caps text-label-caps text-on-surface-variant uppercase">
-              Parol
+              {t("common.password")}
             </label>
             <div className="relative w-full">
               <Icon name="lock" className="absolute left-4 top-1/2 -translate-y-1/2 text-outline-variant text-[20px]" />
@@ -105,7 +107,7 @@ export function LoginPage() {
                 type="button"
                 onClick={() => setShowPw((v) => !v)}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-outline-variant hover:text-on-surface transition-colors"
-                aria-label="Parolni ko'rsatish"
+                aria-label={t("auth.showPassword")}
               >
                 <Icon name={showPw ? "visibility" : "visibility_off"} className="text-[20px]" />
               </button>

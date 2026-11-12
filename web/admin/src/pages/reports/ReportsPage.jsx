@@ -41,17 +41,17 @@ export function ReportsPage() {
       if (type === "admin-activity") {
         data = await reportsApi.getAdminActivity({ from, to });
         setCards([
-          { title: "Umumiy adminlar", value: formatNum(data.totalAdmins ?? 0), note: "Barcha ro'yxatdan o'tganlar" },
-          { title: "Faol adminlar", value: formatNum(data.activeAdmins ?? 0), note: "Tizimga ruxsati borlar" },
-          { title: "Bloklanganlar", value: formatNum((data.totalAdmins || 0) - (data.activeAdmins || 0)), note: "Tizimga kirolmaydiganlar" }
+          { title: t("reports.totalAdmins"), value: formatNum(data.totalAdmins ?? 0), note: t("reports.notes.allRegistered") },
+          { title: t("reports.activeAdmins"), value: formatNum(data.activeAdmins ?? 0), note: t("reports.notes.canAccess") },
+          { title: t("reports.blocked"), value: formatNum((data.totalAdmins || 0) - (data.activeAdmins || 0)), note: t("reports.notes.cannotLogin") }
         ]);
         setChartData((data.logs || []).map((a) => ({ name: a.name?.split(" ")[0] || "Admin", qiymat: a.status === "active" ? 1 : 0 })));
       } else if (type === "security") {
         data = await reportsApi.getSecurity({ from, to });
         setCards([
-          { title: "Bloklanganlar (yangi)", value: formatNum(data.blockedUsers ?? 0), note: "Tanlangan davrda bloklangan" },
-          { title: "Jami bloklanganlar", value: formatNum(data.blockedAccounts ?? 0), note: "Umumiy bloklangan foydalanuvchilar" },
-          { title: "Xato kirishlar", value: formatNum(data.failedAttempts ?? 0), note: "Noto'g'ri parol kiritishlar" }
+          { title: t("reports.blockedNew"), value: formatNum(data.blockedUsers ?? 0), note: t("reports.notes.blockedInPeriod") },
+          { title: t("reports.totalBlocked"), value: formatNum(data.blockedAccounts ?? 0), note: t("reports.notes.allBlocked") },
+          { title: t("reports.failedLogins"), value: formatNum(data.failedAttempts ?? 0), note: t("reports.notes.wrongPassword") }
         ]);
         setChartData([
           { name: "Bloklangan", qiymat: data.blockedUsers ?? 0 },
@@ -61,9 +61,9 @@ export function ReportsPage() {
       } else {
         data = await reportsApi.getOverview({ from, to });
         setCards([
-          { title: "Jami foydalanuvchilar", value: formatNum(data.totalUsers ?? 0), note: "Tizimda ro'yxatdan o'tganlar" },
-          { title: "Jami daromad", value: formatNum(data.totalRevenue ?? 0) + " UZS", note: "Tasdiqlangan to'lovlar (davr)" },
-          { title: "Jami buyurtmalar", value: formatNum(data.totalOrders ?? 0), note: "Barcha xaridlar soni" }
+          { title: t("dashboard.stats.totalUsers"), value: formatNum(data.totalUsers ?? 0), note: t("reports.notes.registeredInSystem") },
+          { title: t("reports.totalRevenue"), value: formatNum(data.totalRevenue ?? 0) + " UZS", note: t("reports.notes.confirmedPayments") },
+          { title: t("dashboard.stats.totalOrders"), value: formatNum(data.totalOrders ?? 0), note: t("reports.notes.allPurchases") }
         ]);
         setChartData([
           { name: "Foydalanuvchilar", qiymat: data.totalUsers ?? 0 },
@@ -106,8 +106,8 @@ export function ReportsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="font-headline-md text-headline-md text-on-surface">Sotuvlar</h2>
-          <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">Barcha sotuvlar tarixi va tahlili</p>
+          <h2 className="font-headline-md text-headline-md text-on-surface">{t("navigation.menu.reports.label")}</h2>
+          <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">{t("reports.subtitle")}</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           {hasPermission && hasPermission("reports.export") && (
@@ -117,7 +117,7 @@ export function ReportsPage() {
               className="flex items-center gap-2 px-4 py-2 border border-outline-variant bg-surface-container-lowest rounded-lg text-body-sm text-on-surface-variant hover:bg-surface-container-low transition-colors"
             >
               <Icon name="download" className="text-[20px]" />
-              CSV Eksport
+              {t("reports.exportCsv")}
             </button>
           )}
           <button
@@ -134,20 +134,20 @@ export function ReportsPage() {
       {/* Filters */}
       <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-1.5">
-          <label className="text-body-sm text-on-surface-variant">Dan</label>
+          <label className="text-body-sm text-on-surface-variant">{t("reports.from")}</label>
           <input type="date" value={from} onChange={(e) => setFrom(e.target.value)}
             className="px-3 py-2 text-body-sm border border-outline-variant rounded-lg bg-surface text-on-surface focus:outline-none focus:border-primary" />
         </div>
         <div className="flex items-center gap-1.5">
-          <label className="text-body-sm text-on-surface-variant">Gacha</label>
+          <label className="text-body-sm text-on-surface-variant">{t("reports.to")}</label>
           <input type="date" value={to} onChange={(e) => setTo(e.target.value)}
             className="px-3 py-2 text-body-sm border border-outline-variant rounded-lg bg-surface text-on-surface focus:outline-none focus:border-primary" />
         </div>
         <select value={type} onChange={(e) => setType(e.target.value)}
           className="px-4 py-2 text-body-sm border border-outline-variant rounded-lg bg-surface text-on-surface focus:outline-none focus:border-primary cursor-pointer">
-          <option value="overview">Umumiy</option>
-          <option value="admin-activity">Admin faoliyati</option>
-          <option value="security">Xavfsizlik</option>
+          <option value="overview">{t("reports.tab.overview")}</option>
+          <option value="admin-activity">{t("reports.tab.adminActivity")}</option>
+          <option value="security">{t("reports.security")}</option>
         </select>
       </div>
 
@@ -172,11 +172,11 @@ export function ReportsPage() {
       {/* Chart */}
       <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-padding-card shadow-sm h-80">
         {loading ? (
-          <div className="h-full flex items-center justify-center text-on-surface-variant text-body-sm">Yuklanmoqda...</div>
+          <div className="h-full flex items-center justify-center text-on-surface-variant text-body-sm">{t("common.loading")}</div>
         ) : error ? (
           <div className="h-full flex items-center justify-center text-error text-body-sm">{error}</div>
         ) : chartData.length === 0 ? (
-          <div className="h-full flex items-center justify-center text-on-surface-variant text-body-sm">Ma'lumot yo'q</div>
+          <div className="h-full flex items-center justify-center text-on-surface-variant text-body-sm">{t("common.noData")}</div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 16, right: 16, left: 0, bottom: 16 }}>

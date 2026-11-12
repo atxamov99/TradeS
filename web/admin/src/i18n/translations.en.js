@@ -1,7 +1,7 @@
 export const en = {
   app: {
     name: "TradeS",
-    description: "Role-based admin and super admin panel for TradeS"
+    description: "Role-based admin and admin panel for TradeS"
   },
   common: {
     close: "Close",
@@ -59,11 +59,11 @@ export const en = {
     scoped: "Scoped access"
   },
   workspace: {
-    superAdmin: "Super admin workspace",
+    superAdmin: "Admin workspace",
     admin: "Admin workspace"
   },
   titles: {
-    platformSuperAdmin: "Platform Super Admin",
+    platformAdmin: "Platform Admin",
     operationsAdmin: "Operations Admin"
   },
   time: {
@@ -85,7 +85,7 @@ export const en = {
       },
       admins: {
         label: "Admins",
-        description: "Admin accounts and singleton super admin control"
+        description: "Admin accounts and singleton admin control"
       },
       roles: {
         label: "Roles",
@@ -134,8 +134,8 @@ export const en = {
         description: "User list, filters and moderation actions."
       },
       admins: {
-        eyebrow: "Super admin only",
-        description: "Admin accounts, role assignment and singleton super admin rules."
+        eyebrow: "Admin only",
+        description: "Admin accounts, role assignment and singleton admin rules."
       },
       roles: {
         eyebrow: "Access design",
@@ -179,7 +179,7 @@ export const en = {
       },
       login: {
         eyebrow: "Authentication",
-        description: "Sign in as admin or super admin."
+        description: "Sign in as admin or admin."
       },
       userDetail: {
         title: "User Detail",
@@ -200,7 +200,7 @@ export const en = {
   },
   auth: {
     heroEyebrow: "TradeS control room",
-    heroTitle: "Admin and Super Admin panel starter is ready.",
+    heroTitle: "Admin and Admin panel starter is ready.",
     heroDescription:
       "Demo auth is active for now. Later this flow will connect to `POST /auth/login`, `POST /auth/refresh` and `GET /me`.",
     routeProtectionTitle: "Route protection",
@@ -210,14 +210,14 @@ export const en = {
     roleMenuDescription: "The sidebar renders according to the signed-in role.",
     singletonTitle: "Singleton rule",
     singletonDescription:
-      "Creating a second super admin is blocked at the UI level.",
+      "Creating a second admin is blocked at the UI level.",
     cardEyebrow: "Authentication",
     signIn: "Sign in",
     signInDescription:
-      "If the email contains `super`, it signs in as super admin, otherwise as admin.",
+      "If the email contains `super`, it signs in as admin, otherwise as admin.",
     continue: "Continue",
     demoAdmin: "Demo Admin",
-    demoSuperAdmin: "Demo Super Admin",
+    demoAdmin: "Demo Admin",
     demoAccounts: "Demo accounts",
     forgotPassword: "Forgot password",
     resetPassword: "Reset password",
@@ -241,7 +241,7 @@ export const en = {
   dashboard: {
     pageTitle: "Dashboard",
     heroEyebrow: "MVP kickoff",
-    superAdminTitle: "Super Admin control center",
+    superAdminTitle: "Admin control center",
     adminTitle: "Admin operations workspace",
     heroDescription:
       "The dashboard is now powered by local state: users, admins, audit and notifications refresh after CRUD actions.",
@@ -326,11 +326,11 @@ export const en = {
     pageTitle: "Admins",
     title: "Admin management",
     description:
-      "Visible only to super admins. Create, edit and suspend actions are active.",
+      "Visible only to admins. Create, edit and suspend actions are active.",
     createAdmin: "Create admin",
     singletonTitle: "Singleton rule",
     singletonDescription:
-      "Selecting `super_admin` is blocked. Both the demo and the backend should reject a second super admin.",
+      "Selecting `super_admin` is blocked. Both the demo and the backend should reject a second admin.",
     adminColumn: "Admin",
     editAdmin: "Edit admin",
     createAdminModal: "Create admin",
@@ -417,7 +417,7 @@ export const en = {
     languagePreference: "Language preference",
     themePreference: "Theme preference",
     systemReadiness: "System readiness",
-    superAdminScope: "Super admin scope",
+    superAdminScope: "Admin scope",
     adminScope: "Admin scope",
     authFlow: "Auth flow",
     authFlowDescription:
@@ -449,7 +449,7 @@ export const en = {
   },
   labels: {
     roles: {
-      super_admin: "Super Admin",
+      super_admin: "Admin",
       admin: "Admin",
       support: "Support",
       viewer: "Viewer",
@@ -511,7 +511,7 @@ export const en = {
       permissionRollout: {
         title: "Permission rollout",
         description:
-          "The role matrix is ready for module-level access checks and singleton super admin validation."
+          "The role matrix is ready for module-level access checks and singleton admin validation."
       },
       apiReadiness: {
         title: "API readiness",
@@ -547,8 +547,8 @@ export const en = {
         detail: "UI architecture is ready, backend requirement is still open."
       },
       singleton: {
-        title: "Super admin singleton",
-        detail: "Second super admin creation is disabled in UI and must be validated by the API as well."
+        title: "Admin singleton",
+        detail: "Second admin creation is disabled in UI and must be validated by the API as well."
       },
       auditExport: {
         title: "Audit export",
@@ -629,12 +629,12 @@ export const en = {
     userUpdated: "User updated",
     userDeleted: "User deleted: {name}",
     userStatus: "User status: {status}",
-    onlyOneSuperAdmin: "Only one super admin is allowed",
+    onlyOneAdmin: "Only one admin is allowed",
     adminCreated: "Admin created: {name}",
     adminUpdated: "Admin updated",
     adminStatus: "Admin status: {status}",
     superAdminTransferDisabled:
-      "Super admin role transfer is disabled in this demo",
+      "Admin role transfer is disabled in this demo",
     roleCreated: "Role created: {name}",
     permissionsSaved: "Permissions saved",
     contentCreated: "Content created: {name}",

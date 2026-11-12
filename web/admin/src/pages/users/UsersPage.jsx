@@ -13,7 +13,6 @@ const statusStyle = {
 };
 
 const roleStyle = {
-  super_admin: "bg-secondary-fixed text-on-secondary-fixed",
   admin: "bg-surface-variant text-on-surface",
   user: "bg-[#E5E7EB] text-[#4B5563]"
 };
@@ -46,7 +45,7 @@ export function UsersPage() {
   const [grantTarget, setGrantTarget] = useState(null);
 
   const regularUsers = useMemo(
-    () => users.filter((u) => u.role === "user" || (u.role !== "admin" && u.role !== "super_admin")),
+    () => users.filter((u) => u.role === "user" || u.role !== "admin"),
     [users]
   );
   const allAdmins = useMemo(() => admins.filter((a) => !a.isPrimary), [admins]);
@@ -124,7 +123,7 @@ export function UsersPage() {
             className="flex items-center gap-2 bg-primary-container hover:bg-primary text-on-primary-container hover:text-on-primary transition-colors rounded-lg py-2.5 px-5 font-semibold shadow-sm shrink-0"
           >
             <Icon name="add" className="text-[20px]" />
-            Yangi foydalanuvchi
+            {t("users.new")}
           </button>
         )}
       </div>
@@ -148,10 +147,10 @@ export function UsersPage() {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="w-full md:w-48 px-4 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-on-surface text-body-sm focus:outline-none focus:border-primary cursor-pointer"
             >
-              <option value="all">Barcha holatlar</option>
-              <option value="active">Faol</option>
-              <option value="pending">Kutilmoqda</option>
-              <option value="blocked">Bloklangan</option>
+              <option value="all">{t("users.allStatuses")}</option>
+              <option value="active">{t("labels.statuses.active")}</option>
+              <option value="pending">{t("labels.statuses.pending")}</option>
+              <option value="blocked">{t("labels.statuses.blocked")}</option>
             </select>
           </div>
         )}
@@ -207,7 +206,7 @@ export function UsersPage() {
                           type="button"
                           onClick={() => openEditAdmin(admin)}
                           className="p-1 text-on-surface-variant hover:text-secondary transition-colors"
-                          title="Tahrirlash"
+                          title={t("common.edit")}
                         >
                           <Icon name="edit" className="text-xl" />
                         </button>
@@ -223,7 +222,7 @@ export function UsersPage() {
                           type="button"
                           onClick={() => setGrantTarget({ user: admin, action: "revoke" })}
                           className="p-1 text-on-surface-variant hover:text-error transition-colors"
-                          title="Adminlikdan olish"
+                          title={t("users.revokeAdmin")}
                         >
                           <Icon name="person_remove" className="text-xl" />
                         </button>
@@ -259,10 +258,10 @@ export function UsersPage() {
                     <td className="px-6 py-4 text-body-sm text-on-surface-variant whitespace-nowrap">{u.createdAt || "—"}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <Link to={`/users/${u.id}`} className="p-1 text-on-surface-variant hover:text-primary transition-colors" title="Ko'rish">
+                        <Link to={`/users/${u.id}`} className="p-1 text-on-surface-variant hover:text-primary transition-colors" title={t("common.view")}>
                           <Icon name="visibility" className="text-xl" />
                         </Link>
-                        <button type="button" onClick={() => openEdit(u)} className="p-1 text-on-surface-variant hover:text-secondary transition-colors" title="Tahrirlash">
+                        <button type="button" onClick={() => openEdit(u)} className="p-1 text-on-surface-variant hover:text-secondary transition-colors" title={t("common.edit")}>
                           <Icon name="edit" className="text-xl" />
                         </button>
                         <button
@@ -273,7 +272,7 @@ export function UsersPage() {
                         >
                           <Icon name={u.status === "blocked" ? "lock_open" : "block"} className="text-xl" />
                         </button>
-                        <button type="button" onClick={() => setDeleteTarget(u)} className="p-1 text-on-surface-variant hover:text-error transition-colors" title="O'chirish">
+                        <button type="button" onClick={() => setDeleteTarget(u)} className="p-1 text-on-surface-variant hover:text-error transition-colors" title={t("common.delete")}>
                           <Icon name="delete" className="text-xl" />
                         </button>
                       </div>
@@ -285,7 +284,7 @@ export function UsersPage() {
           </table>
         </div>
         <div className="bg-surface-container-lowest px-6 py-3 border-t border-outline-variant text-body-sm text-on-surface-variant">
-          Jami <span className="font-medium text-on-surface">{rows.length}</span> ta
+          {t("common.total")} <span className="font-medium text-on-surface">{rows.length}</span> ta
         </div>
       </div>
 
@@ -296,7 +295,7 @@ export function UsersPage() {
         onClose={closeModal}
         footer={
           <>
-            <button type="button" onClick={closeModal} className="px-5 py-2.5 text-body-sm border border-outline-variant rounded-lg hover:bg-surface-container-low text-on-surface">Bekor qilish</button>
+            <button type="button" onClick={closeModal} className="px-5 py-2.5 text-body-sm border border-outline-variant rounded-lg hover:bg-surface-container-low text-on-surface">{t("common.cancel")}</button>
             <button type="submit" form="user-form" className="px-5 py-2.5 bg-primary-container text-on-primary-container text-body-sm font-medium rounded-lg hover:bg-primary hover:text-on-primary transition-colors">
               {editId ? "Saqlash" : "Yaratish"}
             </button>
@@ -305,9 +304,9 @@ export function UsersPage() {
       >
         <form id="user-form" onSubmit={handleSubmit} className="space-y-4">
           {[
-            { label: "To'liq ism", name: "name", type: "text", required: true },
-            { label: "Email (ixtiyoriy)", name: "email", type: "email", required: false },
-            { label: "Telefon (ixtiyoriy)", name: "phone", type: "text", required: false },
+            { label: t("users.fullName"), name: "name", type: "text", required: true },
+            { label: t("users.emailOptional"), name: "email", type: "email", required: false },
+            { label: t("users.phoneOptional"), name: "phone", type: "text", required: false },
             { label: editId ? "Parol (bo'sh — o'zgarmaydi)" : "Parol *", name: "password", type: "password", required: !editId }
           ].map((f) => (
             <div key={f.name} className="flex flex-col gap-1.5">
@@ -322,18 +321,18 @@ export function UsersPage() {
               />
             </div>
           ))}
-          <p className="text-xs text-on-surface-variant">* Email yoki telefondan kamida bittasi to'ldirilishi shart</p>
+          <p className="text-xs text-on-surface-variant">{t("users.contactRequired")}</p>
           <div className="flex flex-col gap-1.5">
-            <label className="text-body-sm font-medium text-on-surface">Holat</label>
+            <label className="text-body-sm font-medium text-on-surface">{t("common.status")}</label>
             <select
               name="status"
               value={form.status}
               onChange={(e) => setForm((c) => ({ ...c, status: e.target.value }))}
               className="w-full px-4 py-2.5 bg-surface border border-outline-variant rounded-lg text-on-surface font-body-md focus:outline-none focus:border-primary cursor-pointer"
             >
-              <option value="active">Faol</option>
-              <option value="pending">Kutilmoqda</option>
-              <option value="blocked">Bloklangan</option>
+              <option value="active">{t("labels.statuses.active")}</option>
+              <option value="pending">{t("labels.statuses.pending")}</option>
+              <option value="blocked">{t("labels.statuses.blocked")}</option>
             </select>
           </div>
         </form>
@@ -342,23 +341,23 @@ export function UsersPage() {
       {/* Delete confirm */}
       <Modal
         open={Boolean(deleteTarget)}
-        title="Foydalanuvchini o'chirish"
+        title={t("users.deleteTitle")}
         description={deleteTarget ? `"${deleteTarget.name}"` : ""}
         onClose={() => setDeleteTarget(null)}
         footer={
           <>
-            <button type="button" onClick={() => setDeleteTarget(null)} className="px-5 py-2.5 text-body-sm border border-outline-variant rounded-lg hover:bg-surface-container-low text-on-surface">Bekor qilish</button>
+            <button type="button" onClick={() => setDeleteTarget(null)} className="px-5 py-2.5 text-body-sm border border-outline-variant rounded-lg hover:bg-surface-container-low text-on-surface">{t("common.cancel")}</button>
             <button
               type="button"
               onClick={() => { deleteUser(deleteTarget.id); setDeleteTarget(null); }}
               className="px-5 py-2.5 bg-error text-on-error text-body-sm font-medium rounded-lg hover:bg-error/90"
             >
-              O'chirish
+              {t("common.delete")}
             </button>
           </>
         }
       >
-        <p className="text-body-sm text-on-surface-variant">Bu amalni qaytarib bo'lmaydi. Foydalanuvchi tarixi saqlanishi mumkin.</p>
+        <p className="text-body-sm text-on-surface-variant">{t("users.deleteHint")}</p>
       </Modal>
 
       {/* Revoke admin — there's exactly one ADMIN account system-wide (owner
@@ -366,12 +365,12 @@ export function UsersPage() {
           ever offers to revoke, never to grant. */}
       <Modal
         open={Boolean(grantTarget)}
-        title="Admin huquqini olish"
+        title={t("users.revokeAdminTitle")}
         description={grantTarget ? `"${grantTarget.user.name}"` : ""}
         onClose={() => setGrantTarget(null)}
         footer={
           <>
-            <button type="button" onClick={() => setGrantTarget(null)} className="px-5 py-2.5 text-body-sm border border-outline-variant rounded-lg hover:bg-surface-container-low text-on-surface">Bekor qilish</button>
+            <button type="button" onClick={() => setGrantTarget(null)} className="px-5 py-2.5 text-body-sm border border-outline-variant rounded-lg hover:bg-surface-container-low text-on-surface">{t("common.cancel")}</button>
             <button
               type="button"
               onClick={async () => {
@@ -380,13 +379,13 @@ export function UsersPage() {
               }}
               className="px-5 py-2.5 text-body-sm font-medium rounded-lg transition-colors bg-error text-on-error hover:bg-error/90"
             >
-              Adminlikdan olish
+              {t("users.revokeAdmin")}
             </button>
           </>
         }
       >
         <p className="text-body-sm text-on-surface-variant">
-          Ushbu foydalanuvchidan admin huquqi olib tashlanadi va u oddiy foydalanuvchiga aylanadi.
+          {t("users.revokeAdminHint")}
         </p>
       </Modal>
     </div>

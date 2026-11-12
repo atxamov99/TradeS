@@ -76,7 +76,7 @@ export function NotificationBell() {
         type="button"
         onClick={toggle}
         className="relative text-on-surface-variant hover:text-primary transition-colors"
-        aria-label="Bildirishnomalar"
+        aria-label={t("dashboard.stats.notifications")}
         aria-expanded={open}
       >
         <Icon name="notifications" fill={open} />
@@ -90,7 +90,7 @@ export function NotificationBell() {
       {open && (
         <div className="absolute right-0 mt-3 w-80 max-w-[calc(100vw-2rem)] bg-surface-container-lowest border border-outline-variant rounded-xl shadow-modal overflow-hidden z-50">
           <div className="px-4 py-3 border-b border-outline-variant flex items-center justify-between bg-surface-bright">
-            <h3 className="font-title-sm text-title-sm text-on-surface">Bildirishnomalar</h3>
+            <h3 className="font-title-sm text-title-sm text-on-surface">{t("dashboard.stats.notifications")}</h3>
             {items.length > 0 && (
               <span className="text-xs text-on-surface-variant bg-surface-variant px-2 py-0.5 rounded-full">{items.length}</span>
             )}
@@ -100,7 +100,7 @@ export function NotificationBell() {
             {items.length === 0 ? (
               <div className="px-4 py-10 text-center">
                 <Icon name="notifications_off" className="text-on-surface-variant text-[28px]" />
-                <p className="text-body-sm text-on-surface-variant mt-2">Hozircha bildirishnoma yo'q</p>
+                <p className="text-body-sm text-on-surface-variant mt-2">{t("notifications.empty")}</p>
               </div>
             ) : (
               items.map((it) => {

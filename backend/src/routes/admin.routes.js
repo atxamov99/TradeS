@@ -33,11 +33,7 @@ router.delete('/users/:id', adminController.deleteUser);
 // Support inbox (Contact Support form + Telegram bot /support tickets)
 router.get('/support-messages', supportController.listSupportMessages);
 router.post('/support-messages/:id/reply', supportController.replySupportMessage);
-router.delete(
-  '/support-messages/:id',
-  authorize('SUPER_ADMIN'),
-  supportController.deleteSupportMessage
-);
+router.delete('/support-messages/:id', supportController.deleteSupportMessage);
 
 // Order management
 router.get('/orders', adminController.getAllOrders);

@@ -1,7 +1,7 @@
 export const uz = {
   app: {
     name: "TradeS",
-    description: "TradeS uchun role-based admin va super admin paneli"
+    description: "TradeS uchun role-based admin va admin paneli"
   },
   common: {
     close: "Yopish",
@@ -59,11 +59,11 @@ export const uz = {
     scoped: "Cheklangan kirish"
   },
   workspace: {
-    superAdmin: "Super admin ish maydoni",
+    superAdmin: "Admin ish maydoni",
     admin: "Admin ish maydoni"
   },
   titles: {
-    platformSuperAdmin: "Platforma super admini",
+    platformAdmin: "Platforma admini",
     operationsAdmin: "Operatsion admin"
   },
   time: {
@@ -85,7 +85,7 @@ export const uz = {
       },
       admins: {
         label: "Adminlar",
-        description: "Admin accountlari va yagona super admin nazorati"
+        description: "Admin accountlari va yagona admin nazorati"
       },
       roles: {
         label: "Rollar",
@@ -134,8 +134,8 @@ export const uz = {
         description: "Foydalanuvchilar ro'yxati, filterlar va moderation actionlari."
       },
       admins: {
-        eyebrow: "Faqat super admin",
-        description: "Admin accountlar, role assign va super admin qoidalari."
+        eyebrow: "Faqat admin",
+        description: "Admin accountlar, role assign va admin qoidalari."
       },
       roles: {
         eyebrow: "Access dizayni",
@@ -179,7 +179,7 @@ export const uz = {
       },
       login: {
         eyebrow: "Autentifikatsiya",
-        description: "Admin yoki super admin sifatida tizimga kirish."
+        description: "Admin yoki admin sifatida tizimga kirish."
       },
       userDetail: {
         title: "Foydalanuvchi tafsiloti",
@@ -200,24 +200,24 @@ export const uz = {
   },
   auth: {
     heroEyebrow: "TradeS boshqaruv markazi",
-    heroTitle: "Admin va Super Admin panel starti tayyor.",
+    heroTitle: "Admin va Admin panel starti tayyor.",
     heroDescription:
       "Hozircha demo auth ishlaydi. Keyin bu flow `POST /auth/login`, `POST /auth/refresh` va `GET /me` bilan ulanadi.",
     routeProtectionTitle: "Route himoyasi",
     routeProtectionDescription:
-      "Private route va super admin only page guard ulangan.",
+      "Private route va admin only page guard ulangan.",
     roleMenuTitle: "Role-based menyu",
     roleMenuDescription: "Sidebar login qilingan role bo'yicha render bo'ladi.",
-    singletonTitle: "Yagona super admin qoidasi",
+    singletonTitle: "Yagona admin qoidasi",
     singletonDescription:
-      "Ikkinchi super admin yaratish UI darajasida yopiq.",
+      "Ikkinchi admin yaratish UI darajasida yopiq.",
     cardEyebrow: "Autentifikatsiya",
     signIn: "Kirish",
     signInDescription:
-      "Email ichida `super` bo'lsa super admin, aks holda admin sifatida kiradi.",
+      "Email ichida `super` bo'lsa admin, aks holda admin sifatida kiradi.",
     continue: "Davom etish",
     demoAdmin: "Demo admin",
-    demoSuperAdmin: "Demo super admin",
+    demoAdmin: "Demo admin",
     demoAccounts: "Demo akkauntlar",
     forgotPassword: "Parolni unutdingizmi",
     resetPassword: "Parolni tiklash",
@@ -241,7 +241,7 @@ export const uz = {
   dashboard: {
     pageTitle: "Dashboard",
     heroEyebrow: "MVP start",
-    superAdminTitle: "Super Admin nazorat markazi",
+    superAdminTitle: "Admin nazorat markazi",
     adminTitle: "Admin operatsion maydoni",
     heroDescription:
       "Dashboard endi lokal state bilan jonlandi: users, admins, audit va notifications ko'rsatkichlari CRUD actionlardan keyin yangilanadi.",
@@ -331,11 +331,11 @@ export const uz = {
     pageTitle: "Adminlar",
     title: "Admin boshqaruvi",
     description:
-      "Faqat super admin ko'radi. Create, edit va suspend actionlari ishlaydi.",
+      "Faqat admin ko'radi. Create, edit va suspend actionlari ishlaydi.",
     createAdmin: "Admin yaratish",
     singletonTitle: "Yagona qoidasi",
     singletonDescription:
-      "`super_admin` tanlash bloklangan. Demo ham, backend ham ikkinchi super adminni rad etishi kerak.",
+      "`super_admin` tanlash bloklangan. Demo ham, backend ham ikkinchi adminni rad etishi kerak.",
     adminColumn: "Admin",
     editAdmin: "Adminni tahrirlash",
     createAdminModal: "Admin yaratish",
@@ -422,7 +422,7 @@ export const uz = {
     languagePreference: "Til afzalligi",
     themePreference: "Mavzu afzalligi",
     systemReadiness: "Tizim tayyorgarligi",
-    superAdminScope: "Super admin qamrovi",
+    superAdminScope: "Admin qamrovi",
     adminScope: "Admin qamrovi",
     authFlow: "Auth flow",
     authFlowDescription:
@@ -454,7 +454,7 @@ export const uz = {
   },
   labels: {
     roles: {
-      super_admin: "Super admin",
+      super_admin: "Admin",
       admin: "Admin",
       support: "Support",
       viewer: "Viewer",
@@ -516,7 +516,7 @@ export const uz = {
       permissionRollout: {
         title: "Permission rollout",
         description:
-          "Role matrix modul darajasidagi access check va yagona super admin validatsiyasi uchun tayyor."
+          "Role matrix modul darajasidagi access check va yagona admin validatsiyasi uchun tayyor."
       },
       apiReadiness: {
         title: "API tayyorgarligi",
@@ -552,8 +552,8 @@ export const uz = {
         detail: "UI arxitekturasi tayyor, backend talabi hali ochiq."
       },
       singleton: {
-        title: "Yagona super admin",
-        detail: "Ikkinchi super admin yaratish UI darajasida yopiq va API ham buni validatsiya qilishi kerak."
+        title: "Yagona admin",
+        detail: "Ikkinchi admin yaratish UI darajasida yopiq va API ham buni validatsiya qilishi kerak."
       },
       auditExport: {
         title: "Audit export",
@@ -634,12 +634,12 @@ export const uz = {
     userUpdated: "User yangilandi",
     userDeleted: "User o'chirildi: {name}",
     userStatus: "User holati: {status}",
-    onlyOneSuperAdmin: "Faqat bitta super admin bo'lishi mumkin",
+    onlyOneAdmin: "Faqat bitta admin bo'lishi mumkin",
     adminCreated: "Admin yaratildi: {name}",
     adminUpdated: "Admin yangilandi",
     adminStatus: "Admin holati: {status}",
     superAdminTransferDisabled:
-      "Bu demo ichida super admin rolini ko'chirish o'chirilgan",
+      "Bu demo ichida admin rolini ko'chirish o'chirilgan",
     roleCreated: "Rol yaratildi: {name}",
     permissionsSaved: "Ruxsatlar saqlandi",
     contentCreated: "Kontent yaratildi: {name}",

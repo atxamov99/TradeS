@@ -54,7 +54,7 @@ export function NotificationsPage() {
     <div className="space-y-section-gap">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="font-headline-md text-headline-md font-bold text-on-surface">Bildirishnomalar</h2>
+          <h2 className="font-headline-md text-headline-md font-bold text-on-surface">{t("dashboard.stats.notifications")}</h2>
           <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">
             Tizimdagi ogohlantirishlar va so'nggi harakatlar
             {unreadCount > 0 && <span className="ml-2 text-error font-medium">({unreadCount} ta o'qilmagan)</span>}
@@ -66,7 +66,7 @@ export function NotificationsPage() {
             onClick={() => markAllRead(items.map((it) => it.key))}
             className="px-4 py-2 rounded-lg bg-surface-container-lowest border border-outline-variant text-body-sm text-on-surface hover:border-primary transition-colors"
           >
-            Hammasini o'qilgan deb belgilash
+            {t("notifications.markAllRead")}
           </button>
         )}
       </div>
@@ -75,7 +75,7 @@ export function NotificationsPage() {
         {items.length === 0 ? (
           <div className="p-12 text-center">
             <Icon name="notifications_off" className="text-on-surface-variant text-[28px]" />
-            <p className="text-body-sm text-on-surface-variant mt-2">Hozircha bildirishnoma yo'q</p>
+            <p className="text-body-sm text-on-surface-variant mt-2">{t("notifications.empty")}</p>
           </div>
         ) : (
           <div className="divide-y divide-outline-variant/60">
@@ -103,7 +103,7 @@ export function NotificationsPage() {
                     {it.detail && <p className="text-xs text-on-surface-variant mt-0.5 break-words">{it.detail}</p>}
                     {it.time && <p className="text-xs text-on-surface-variant/70 mt-0.5">{it.time}</p>}
                   </div>
-                  {!read && <span className="text-xs text-primary shrink-0">O'qildi deb belgilash</span>}
+                  {!read && <span className="text-xs text-primary shrink-0">{t("notifications.markRead")}</span>}
                 </button>
               );
             })}

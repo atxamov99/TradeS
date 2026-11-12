@@ -3,7 +3,7 @@ import { useI18n } from "../../i18n";
 import { getActionLabel, getModuleLabel, getRoleLabel } from "../../i18n/labels";
 import { useAdminData } from "../../store/adminData";
 
-const roleKeys = ["super_admin", "admin", "editor", "viewer"];
+const roleKeys = ["admin", "editor", "viewer"];
 const permissionOptions = ["view", "create", "update", "delete", "export", "manage"];
 
 export function PermissionsPage() {

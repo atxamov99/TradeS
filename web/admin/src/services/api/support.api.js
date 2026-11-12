@@ -9,7 +9,7 @@ export const supportApi = {
   reply: (id, reply) =>
     http.post(`/admin/support-messages/${id}/reply`, { reply }),
 
-  /** DELETE /api/admin/support-messages/:id (SUPER_ADMIN only) */
+  /** DELETE /api/admin/support-messages/:id (admin only) */
   remove: (id) =>
     http.delete(`/admin/support-messages/${id}`),
 };

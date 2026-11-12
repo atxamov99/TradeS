@@ -27,10 +27,10 @@ export function UserDetailPage() {
   if (!user) {
     return (
       <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-8 text-center max-w-lg mx-auto">
-        <h2 className="font-title-sm text-title-sm text-on-surface mb-2">Foydalanuvchi topilmadi</h2>
+        <h2 className="font-title-sm text-title-sm text-on-surface mb-2">{t("users.userNotFound")}</h2>
         <p className="text-body-sm text-on-surface-variant mb-4">ID: {id}</p>
         <Link to="/users" className="text-primary hover:underline text-body-sm inline-flex items-center gap-1">
-          <Icon name="arrow_back" className="text-[18px]" /> Foydalanuvchilarga qaytish
+          <Icon name="arrow_back" className="text-[18px]" /> {t("users.backToUsers")}
         </Link>
       </div>
     );
@@ -38,16 +38,16 @@ export function UserDetailPage() {
 
   const rows = [
     { label: "ID", value: user.id },
-    { label: "Telefon", value: user.phone || "—" },
-    { label: "Rol", value: getRoleLabel(t, user.role) },
-    { label: "Ro'yxatdan o'tgan", value: user.createdAt || "—" },
-    { label: "Oxirgi kirish", value: formatRelativeTime(t, user.lastLogin) }
+    { label: t("common.phone"), value: user.phone || "—" },
+    { label: t("common.role"), value: getRoleLabel(t, user.role) },
+    { label: t("users.registeredAt"), value: user.createdAt || "—" },
+    { label: t("common.lastLogin"), value: formatRelativeTime(t, user.lastLogin) }
   ];
 
   return (
     <div className="space-y-section-gap">
       <Link to="/users" className="text-body-sm text-on-surface-variant hover:text-primary inline-flex items-center gap-1">
-        <Icon name="arrow_back" className="text-[18px]" /> Foydalanuvchilar
+        <Icon name="arrow_back" className="text-[18px]" /> {t("navigation.menu.users.label")}
       </Link>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -80,7 +80,7 @@ export function UserDetailPage() {
 
         {/* Activity */}
         <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6">
-          <h3 className="font-title-sm text-title-sm text-on-surface mb-4">Faoliyat tarixi</h3>
+          <h3 className="font-title-sm text-title-sm text-on-surface mb-4">{t("users.activityHistory")}</h3>
           <div className="space-y-4">
             {userActivity.length ? (
               userActivity.map((item, i) => (
@@ -95,7 +95,7 @@ export function UserDetailPage() {
                 </div>
               ))
             ) : (
-              <p className="text-body-sm text-on-surface-variant">Faoliyat tarixi hozircha yo'q.</p>
+              <p className="text-body-sm text-on-surface-variant">{t("users.noActivity")}</p>
             )}
           </div>
         </div>

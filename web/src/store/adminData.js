@@ -33,7 +33,7 @@ function normalizeUser(u) {
     status: u.isBlocked ? "blocked" : "active",
     createdAt: u.createdAt ? u.createdAt.slice(0, 10) : "",
     lastLogin: u.lastLoginAt ? u.lastLoginAt.slice(0, 16).replace("T", " ") : null,
-    isAdmin: ["admin", "super_admin"].includes((u.role || "").toLowerCase())
+    isAdmin: ["admin"].includes((u.role || "").toLowerCase())
   };
 }
 

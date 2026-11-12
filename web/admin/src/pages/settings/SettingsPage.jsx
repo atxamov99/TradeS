@@ -5,9 +5,9 @@ import { useAdminData } from "../../store/adminData";
 import { Icon } from "../../components/shared/Icon";
 
 const NAV = [
-  { id: "profile", label: "Profil", icon: "person" },
-  { id: "security", label: "Xavfsizlik", icon: "security" },
-  { id: "preference", label: "Tizim", icon: "build" }
+  { id: "profile", label: "navigation.menu.profile.label", icon: "person" },
+  { id: "security", label: "reports.security", icon: "security" },
+  { id: "preference", label: "settings.system", icon: "build" }
 ];
 
 const inputCls =
@@ -63,8 +63,8 @@ export function SettingsPage() {
   return (
     <div className="space-y-section-gap">
       <div>
-        <h2 className="font-headline-md text-headline-md text-on-surface">Sozlamalar</h2>
-        <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">Profil, xavfsizlik va tizim sozlamalarini boshqaring.</p>
+        <h2 className="font-headline-md text-headline-md text-on-surface">{t("navigation.menu.settings.label")}</h2>
+        <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">{t("settings.subtitle")}</p>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8">
@@ -84,7 +84,7 @@ export function SettingsPage() {
                   }`}
                 >
                   <Icon name={n.icon} />
-                  {n.label}
+                  {t(n.label)}
                 </button>
               ))}
             </nav>
@@ -96,27 +96,27 @@ export function SettingsPage() {
           {activeTab === "profile" && (
             <div className="bg-surface-bright border border-outline-variant rounded-xl p-6">
               <div className="mb-6 pb-4 border-b border-outline-variant">
-                <h3 className="font-headline-md text-headline-md text-on-surface mb-2">Shaxsiy ma'lumotlar</h3>
-                <p className="font-body-md text-body-md text-on-surface-variant">Hisobingizga oid asosiy ma'lumotlarni tahrirlang.</p>
+                <h3 className="font-headline-md text-headline-md text-on-surface mb-2">{t("settings.personalInfo")}</h3>
+                <p className="font-body-md text-body-md text-on-surface-variant">{t("settings.personalInfoHint")}</p>
               </div>
               <div className="space-y-6 max-w-2xl">
                 <div>
-                  <label className={labelCls}>Ism</label>
+                  <label className={labelCls}>{t("settings.name")}</label>
                   <input type="text" className={inputCls} value={form.name} onChange={(e) => setForm((c) => ({ ...c, name: e.target.value }))} />
                 </div>
                 <div>
-                  <label className={labelCls}>Email manzili</label>
+                  <label className={labelCls}>{t("settings.email")}</label>
                   <input type="email" className={inputCls} value={form.email} onChange={(e) => setForm((c) => ({ ...c, email: e.target.value }))} />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className={labelCls}>Rol</label>
+                    <label className={labelCls}>{t("common.role")}</label>
                     <div className="w-full px-4 py-2.5 border border-outline-variant rounded-lg bg-surface-container-low text-on-surface-variant font-body-md">
-                      {profile?.isPrimary ? "SUPER ADMIN" : "ADMIN"}
+                      {t("labels.roles.admin")}
                     </div>
                   </div>
                   <div>
-                    <label className={labelCls}>Ruxsatlar soni</label>
+                    <label className={labelCls}>{t("settings.permissionCount")}</label>
                     <div className="w-full px-4 py-2.5 border border-outline-variant rounded-lg bg-surface-container-low text-on-surface-variant font-body-md">
                       {profile?.permissions?.length || 0} ta ruxsat
                     </div>
@@ -134,27 +134,27 @@ export function SettingsPage() {
           {activeTab === "security" && (
             <div className="bg-surface-bright border border-outline-variant rounded-xl p-6">
               <div className="mb-6 pb-4 border-b border-outline-variant">
-                <h3 className="font-headline-md text-headline-md text-on-surface mb-2">Parolni o'zgartirish</h3>
-                <p className="font-body-md text-body-md text-on-surface-variant">Hisobingiz xavfsizligi uchun kuchli paroldan foydalaning.</p>
+                <h3 className="font-headline-md text-headline-md text-on-surface mb-2">{t("settings.changePassword")}</h3>
+                <p className="font-body-md text-body-md text-on-surface-variant">{t("settings.passwordHint")}</p>
               </div>
               <div className="space-y-6 max-w-xl">
                 <div>
-                  <label className={labelCls}>Joriy parol</label>
+                  <label className={labelCls}>{t("settings.currentPassword")}</label>
                   <input type="password" className={inputCls} value={pw.current} onChange={(e) => setPw((c) => ({ ...c, current: e.target.value }))} placeholder="••••••••" />
                 </div>
                 <div>
-                  <label className={labelCls}>Yangi parol</label>
+                  <label className={labelCls}>{t("auth.newPassword")}</label>
                   <input type="password" className={inputCls} value={pw.next} onChange={(e) => setPw((c) => ({ ...c, next: e.target.value }))} placeholder="••••••••" />
-                  <p className="font-body-sm text-body-sm text-on-surface-variant mt-2">Parol kamida 8 ta belgidan iborat bo'lishi kerak.</p>
+                  <p className="font-body-sm text-body-sm text-on-surface-variant mt-2">{t("settings.passwordMin")}</p>
                 </div>
                 <div>
-                  <label className={labelCls}>Yangi parolni tasdiqlang</label>
+                  <label className={labelCls}>{t("settings.confirmPassword")}</label>
                   <input type="password" className={inputCls} value={pw.confirm} onChange={(e) => setPw((c) => ({ ...c, confirm: e.target.value }))} placeholder="••••••••" />
                 </div>
                 {pwError && <p className="text-body-sm text-error">{pwError}</p>}
                 {pwMessage && <p className="text-body-sm text-primary">{pwMessage}</p>}
                 <div className="pt-4 flex justify-end">
-                  <button type="button" onClick={handleChangePassword} className={saveBtnCls}>Parolni yangilash</button>
+                  <button type="button" onClick={handleChangePassword} className={saveBtnCls}>{t("auth.resetPasswordTitle")}</button>
                 </div>
               </div>
             </div>
@@ -163,12 +163,12 @@ export function SettingsPage() {
           {activeTab === "preference" && (
             <div className="bg-surface-bright border border-outline-variant rounded-xl p-6">
               <div className="mb-6 pb-4 border-b border-outline-variant">
-                <h3 className="font-headline-md text-headline-md text-on-surface mb-2">Tizim sozlamalari</h3>
-                <p className="font-body-md text-body-md text-on-surface-variant">Interfeys tili va ko'rinish sozlamalari.</p>
+                <h3 className="font-headline-md text-headline-md text-on-surface mb-2">{t("settings.systemSettings")}</h3>
+                <p className="font-body-md text-body-md text-on-surface-variant">{t("settings.appearanceHint")}</p>
               </div>
               <div className="space-y-6 max-w-xl">
                 <div>
-                  <label className={labelCls}>Interfeys tili</label>
+                  <label className={labelCls}>{t("settings.language")}</label>
                   <div className="flex flex-wrap gap-2">
                     {supportedLocales.map((code) => (
                       <button
@@ -188,10 +188,10 @@ export function SettingsPage() {
                 </div>
                 <div className="flex items-center justify-between py-4 border-t border-outline-variant">
                   <div>
-                    <p className="font-title-sm text-title-sm text-on-surface">Ko'rinish</p>
+                    <p className="font-title-sm text-title-sm text-on-surface">{t("settings.appearance")}</p>
                     <p className="font-body-sm text-body-sm text-on-surface-variant">Hozircha faqat yorug' (light) tema qo'llab-quvvatlanadi.</p>
                   </div>
-                  <span className="px-3 py-1.5 rounded-full bg-primary-container/20 text-on-primary-container text-body-sm font-medium">Yorug'</span>
+                  <span className="px-3 py-1.5 rounded-full bg-primary-container/20 text-on-primary-container text-body-sm font-medium">{t("settings.light")}</span>
                 </div>
               </div>
             </div>

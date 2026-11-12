@@ -2,8 +2,10 @@ import { NavLink } from "react-router-dom";
 import { getMenuForProfile, settingsItem } from "../../constants/menu";
 import { useAuth } from "../../store";
 import { Icon } from "../shared/Icon";
+import { useI18n } from "../../i18n";
 
 function NavItem({ item, onClose }) {
+  const { t } = useI18n();
   return (
     <NavLink
       to={item.path}
@@ -20,7 +22,7 @@ function NavItem({ item, onClose }) {
       {({ isActive }) => (
         <>
           <Icon name={item.icon} fill={isActive} />
-          <span>{item.label}</span>
+          <span>{t(item.label)}</span>
         </>
       )}
     </NavLink>
@@ -28,6 +30,7 @@ function NavItem({ item, onClose }) {
 }
 
 export function Sidebar({ open, onClose }) {
+  const { t } = useI18n();
   const { profile } = useAuth();
   const menu = getMenuForProfile(profile);
 
@@ -49,11 +52,11 @@ export function Sidebar({ open, onClose }) {
         {/* Brand */}
         <div className="px-6 mb-8 flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-surface-container-lowest border border-outline-variant flex items-center justify-center overflow-hidden shrink-0">
-            <img src="/logo.png" alt="TradeS" className="w-full h-full object-contain" />
+            <img src="/logo.png" alt={t("app.name")} className="w-full h-full object-contain" />
           </div>
           <div className="min-w-0">
-            <h1 className="font-display-lg text-primary font-bold leading-tight text-xl truncate">TradeS</h1>
-            <p className="font-label-caps text-label-caps text-on-surface-variant">Savdo boshqaruvi</p>
+            <h1 className="font-display-lg text-primary font-bold leading-tight text-xl truncate">{t("app.name")}</h1>
+            <p className="font-label-caps text-label-caps text-on-surface-variant">{t("brand.tagline")}</p>
           </div>
         </div>
 
@@ -66,7 +69,7 @@ export function Sidebar({ open, onClose }) {
             <div className="min-w-0">
               <p className="text-body-sm font-semibold text-on-surface leading-tight truncate">{profile?.name}</p>
               <p className="text-xs text-on-surface-variant leading-tight truncate mt-0.5">
-                {profile?.isPrimary ? "SUPER ADMIN" : "ADMIN"}
+                {t("labels.roles.admin")}
               </p>
             </div>
           </div>

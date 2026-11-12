@@ -1,5 +1,6 @@
 import { useAdminData } from "../../store/adminData";
 import { Icon } from "./Icon";
+import { useI18n } from "../../i18n";
 
 const toneConfig = {
   success: { icon: "check_circle", ring: "bg-primary-container/15 text-primary-container", bar: "bg-primary-container" },
@@ -9,6 +10,7 @@ const toneConfig = {
 };
 
 export function ToastViewport() {
+  const { t } = useI18n();
   const { toasts, dismissToast } = useAdminData();
 
   return (
@@ -28,7 +30,7 @@ export function ToastViewport() {
               type="button"
               onClick={() => dismissToast(toast.id)}
               className="text-on-surface-variant hover:text-on-surface transition-colors shrink-0"
-              aria-label="Yopish"
+              aria-label={t("common.close")}
             >
               <Icon name="close" className="text-[18px]" />
             </button>

@@ -10,11 +10,11 @@ import { Icon } from "../../components/shared/Icon";
 const fallbackMonthly = [];
 
 const ORDER_STATUS_BADGE = {
-  pending:    { label: "Kutilmoqda",   cls: "bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300" },
-  processing: { label: "Tayyorlanmoqda", cls: "bg-blue-100 text-blue-800 dark:bg-blue-500/15 dark:text-blue-300" },
-  shipped:    { label: "Yo'lda",       cls: "bg-purple-100 text-purple-800 dark:bg-purple-500/15 dark:text-purple-300" },
-  delivered:  { label: "Yetkazildi",   cls: "bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-300" },
-  cancelled:  { label: "Bekor qilindi", cls: "bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-300" }
+  pending:    { label: "labels.statuses.pending",   cls: "bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300" },
+  processing: { label: "orders.status.processing", cls: "bg-blue-100 text-blue-800 dark:bg-blue-500/15 dark:text-blue-300" },
+  shipped:    { label: "orders.status.shipped",       cls: "bg-purple-100 text-purple-800 dark:bg-purple-500/15 dark:text-purple-300" },
+  delivered:  { label: "orders.status.delivered",   cls: "bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-300" },
+  cancelled:  { label: "orders.status.cancelled", cls: "bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-300" }
 };
 
 function formatMoney(n) {
@@ -104,7 +104,7 @@ export function DashboardPage() {
       {/* Page header */}
       <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-4">
         <div>
-          <h2 className="font-headline-md text-headline-md font-bold text-on-surface">Boshqaruv paneli</h2>
+          <h2 className="font-headline-md text-headline-md font-bold text-on-surface">{t("navigation.pageMeta.fallback.eyebrow")}</h2>
           <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">
             Salom, {profile?.name} — bugungi holat va umumiy statistika
           </p>
@@ -114,25 +114,25 @@ export function DashboardPage() {
       {/* Stat cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter">
         <StatCard
-          label="Jami savdo"
+          label={t("dashboard.stats.totalSales")}
           value={`${formatMoney(dashboardStats.totalRevenue)} so'm`}
           icon="payments"
           iconWrap="bg-primary-container/15 text-primary-container"
         />
         <StatCard
-          label="Buyurtmalar"
+          label={t("navigation.menu.orders.label")}
           value={formatMoney(dashboardStats.totalOrders)}
           icon="shopping_bag"
           iconWrap="bg-secondary-container/15 text-secondary"
         />
         <StatCard
-          label="Mahsulotlar"
+          label={t("navigation.menu.products.label")}
           value={formatMoney(dashboardStats.totalProducts)}
           icon="inventory_2"
           iconWrap="bg-surface-variant text-on-surface-variant"
         />
         <StatCard
-          label="Foydalanuvchilar"
+          label={t("navigation.menu.users.label")}
           value={formatMoney(dashboardStats.totalUsers)}
           icon="group"
           iconWrap="bg-tertiary-container/25 text-tertiary"
@@ -147,12 +147,12 @@ export function DashboardPage() {
 
         <div className="bg-surface-container-lowest rounded-xl border border-outline-variant p-padding-card flex flex-col">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="font-title-sm text-title-sm text-on-surface">Kam qolgan mahsulotlar</h3>
-            <Link to="/products" className="text-body-sm text-primary-container hover:text-primary font-medium">Barchasi</Link>
+            <h3 className="font-title-sm text-title-sm text-on-surface">{t("dashboard.lowStock")}</h3>
+            <Link to="/products" className="text-body-sm text-primary-container hover:text-primary font-medium">{t("common.all")}</Link>
           </div>
           <ul className="space-y-2 flex-1">
             {lowStock.length === 0 && (
-              <li className="text-body-sm text-on-surface-variant py-6 text-center">Ma'lumot yo'q</li>
+              <li className="text-body-sm text-on-surface-variant py-6 text-center">{t("common.noData")}</li>
             )}
             {lowStock.map((p) => {
               const critical = p.stock <= 5;
@@ -183,9 +183,9 @@ export function DashboardPage() {
       {/* Recent orders */}
       <div className="bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden">
         <div className="p-padding-card border-b border-outline-variant flex justify-between items-center bg-surface-bright">
-          <h3 className="font-title-sm text-title-sm text-on-surface">Oxirgi buyurtmalar</h3>
+          <h3 className="font-title-sm text-title-sm text-on-surface">{t("dashboard.recentOrders")}</h3>
           <Link to="/orders" className="text-body-sm text-primary-container hover:text-primary font-medium flex items-center gap-1">
-            Barchasi <Icon name="arrow_forward" className="text-[18px]" />
+            {t("common.all")} <Icon name="arrow_forward" className="text-[18px]" />
           </Link>
         </div>
         <div className="overflow-x-auto">
@@ -193,16 +193,16 @@ export function DashboardPage() {
             <thead>
               <tr className="bg-surface-container-lowest border-b border-outline-variant font-label-caps text-label-caps text-on-surface-variant uppercase">
                 <th className="p-4 font-semibold">№</th>
-                <th className="p-4 font-semibold">Mijoz</th>
-                <th className="p-4 font-semibold">Sana</th>
-                <th className="p-4 font-semibold text-right">Summa</th>
-                <th className="p-4 font-semibold text-center">Holat</th>
+                <th className="p-4 font-semibold">{t("common.customer")}</th>
+                <th className="p-4 font-semibold">{t("common.date")}</th>
+                <th className="p-4 font-semibold text-right">{t("common.amount")}</th>
+                <th className="p-4 font-semibold text-center">{t("common.status")}</th>
               </tr>
             </thead>
             <tbody className="font-body-sm text-body-sm divide-y divide-outline-variant/50">
               {recentOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="p-8 text-center text-on-surface-variant">Buyurtmalar topilmadi</td>
+                  <td colSpan={5} className="p-8 text-center text-on-surface-variant">{t("orders.notFound")}</td>
                 </tr>
               ) : (
                 recentOrders.map((o) => {
@@ -225,7 +225,7 @@ export function DashboardPage() {
                       <td className="p-4 text-right font-medium text-on-surface whitespace-nowrap">{formatMoney(o.totalPrice)} so'm</td>
                       <td className="p-4 text-center">
                         <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-full font-label-caps text-[11px] font-bold ${badge.cls}`}>
-                          {badge.label}
+                          {t(badge.label)}
                         </span>
                       </td>
                     </tr>
@@ -241,7 +241,7 @@ export function DashboardPage() {
       {recentActivity.length > 0 && (
         <div className="bg-surface-container-lowest rounded-xl border border-outline-variant p-padding-card">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-title-sm text-title-sm text-on-surface">So'nggi faoliyat</h3>
+            <h3 className="font-title-sm text-title-sm text-on-surface">{t("dashboard.recentActivity")}</h3>
             <span className="text-xs text-primary-container bg-primary-container/10 px-2.5 py-1 rounded-full">{t("common.live", {}, "Jonli")}</span>
           </div>
           <div className="space-y-3">

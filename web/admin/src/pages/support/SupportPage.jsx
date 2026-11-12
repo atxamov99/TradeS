@@ -3,11 +3,12 @@ import { usePageTitle } from "../../hooks/usePageTitle";
 import { useAuth } from "../../store";
 import { useAdminData } from "../../store/adminData";
 import { Icon } from "../../components/shared/Icon";
+import { useI18n } from "../../i18n";
 
 const TABS = [
-  { key: "all", label: "Hammasi" },
-  { key: "open", label: "Ochiq" },
-  { key: "answered", label: "Javob berilgan" },
+  { key: "all", label: "common.everything" },
+  { key: "open", label: "support.status.open" },
+  { key: "answered", label: "support.status.answered" },
 ];
 
 const SOURCE_LABEL = {
@@ -16,6 +17,7 @@ const SOURCE_LABEL = {
 };
 
 function ReplyRow({ ticket, onReply }) {
+  const { t } = useI18n();
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
 
@@ -33,7 +35,7 @@ function ReplyRow({ ticket, onReply }) {
   if (ticket.status === "answered") {
     return (
       <div className="text-body-sm text-on-surface-variant">
-        <span className="font-medium text-on-surface">Javob:</span> {ticket.adminReply}
+        <span className="font-medium text-on-surface">{t("support.reply")}</span> {ticket.adminReply}
       </div>
     );
   }
@@ -41,7 +43,7 @@ function ReplyRow({ ticket, onReply }) {
   if (ticket.source !== "bot") {
     return (
       <div className="text-body-sm text-on-surface-variant italic">
-        Bu ilova formasidan kelgan — javob bu yerdan yuborilmaydi, ko'rsatilgan aloqa orqali bog'laning.
+        {t("support.appFormNote")}
       </div>
     );
   }
@@ -52,7 +54,7 @@ function ReplyRow({ ticket, onReply }) {
         type="text"
         value={text}
         onChange={(e) => setText(e.target.value)}
-        placeholder="Javob yozing..."
+        placeholder={t("support.replyPlaceholder")}
         disabled={sending}
         className="flex-1 px-3 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-sm text-on-surface focus:outline-none focus:border-primary"
       />
@@ -62,13 +64,14 @@ function ReplyRow({ ticket, onReply }) {
         disabled={sending || !text.trim()}
         className="px-4 py-2 rounded-lg bg-primary text-on-primary text-body-sm font-medium disabled:opacity-50"
       >
-        Yuborish
+        {t("common.send")}
       </button>
     </div>
   );
 }
 
 export function SupportPage() {
+  const { t } = useI18n();
   usePageTitle("Murojaatlar");
   const { profile } = useAuth();
   const { supportMessages, replySupportTicket, deleteSupportTicket } = useAdminData();
@@ -90,7 +93,7 @@ export function SupportPage() {
   return (
     <div className="space-y-section-gap">
       <div>
-        <h2 className="font-headline-md text-headline-md font-bold text-on-surface">Murojaatlar</h2>
+        <h2 className="font-headline-md text-headline-md font-bold text-on-surface">{t("navigation.menu.support.label")}</h2>
         <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">
           Telegram bot (/support) va ilova orqali kelgan yordam so'rovlari
         </p>
@@ -107,7 +110,7 @@ export function SupportPage() {
                   tab === tb.key ? "text-primary font-bold border-b-2 border-primary" : "text-on-surface-variant hover:text-primary"
                 }`}
               >
-                {tb.label} ({counts[tb.key] || 0})
+                {t(tb.label)} ({counts[tb.key] || 0})
               </button>
             </li>
           ))}
@@ -117,7 +120,7 @@ export function SupportPage() {
       <div className="space-y-3">
         {filtered.length === 0 ? (
           <div className="bg-surface-bright border border-outline-variant rounded-xl p-12 text-center text-on-surface-variant">
-            Murojaatlar topilmadi
+            {t("support.notFound")}
           </div>
         ) : (
           filtered.map((s) => (
@@ -145,7 +148,7 @@ export function SupportPage() {
                   {profile?.isPrimary && (
                     confirmingId === s.id ? (
                       <span className="flex items-center gap-2 text-xs">
-                        <span className="text-on-surface-variant">O'chirilsinmi?</span>
+                        <span className="text-on-surface-variant">{t("support.deleteConfirm")}</span>
                         <button
                           type="button"
                           onClick={() => { deleteSupportTicket(s.id); setConfirmingId(null); }}
@@ -162,7 +165,7 @@ export function SupportPage() {
                         type="button"
                         onClick={() => setConfirmingId(s.id)}
                         className="text-on-surface-variant hover:text-error"
-                        title="O'chirish"
+                        title={t("common.delete")}
                       >
                         <Icon name="delete" className="text-[18px]" />
                       </button>

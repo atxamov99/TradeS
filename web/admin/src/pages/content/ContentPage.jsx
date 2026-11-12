@@ -7,7 +7,7 @@ import { useI18n } from "../../i18n";
 
 const statusStyle = {
   published: { label: "Nashr etilgan", cls: "bg-green-100 text-green-800 border border-green-200", dot: "bg-green-500" },
-  draft:     { label: "Qoralama",      cls: "bg-gray-100 text-gray-800 border border-gray-200",   dot: "bg-gray-500" },
+  draft:     { label: "Qoralama",      cls: "bg-surface-container-high text-on-surface border border-outline-variant",   dot: "bg-gray-500" },
   archived:  { label: "Arxiv",         cls: "bg-yellow-100 text-yellow-800 border border-yellow-200", dot: "bg-yellow-500" }
 };
 

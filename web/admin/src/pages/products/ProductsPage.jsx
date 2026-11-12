@@ -14,7 +14,7 @@ function formatPrice(p) {
 function stockBadge(p) {
   if (p.status === "inactive") return { label: "Nofaol", cls: "bg-surface-variant text-on-surface-variant" };
   if (p.stock === 0) return { label: "Tugagan", cls: "bg-[#fee2e2] text-[#991b1b]" };
-  if (p.stock <= 10) return { label: "Kam qolgan", cls: "bg-[#fef3c7] text-[#92400e]" };
+  if (p.stock <= 10) return { label: "Kam qolgan", cls: "bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300" };
   return { label: "Sotuvda", cls: "bg-[#ecfdf5] text-[#065f46]" };
 }
 

@@ -10,11 +10,11 @@ import { Icon } from "../../components/shared/Icon";
 const fallbackMonthly = [];
 
 const ORDER_STATUS_BADGE = {
-  pending:    { label: "Kutilmoqda",   cls: "bg-[#FEF7E0] text-[#B06000]" },
-  processing: { label: "Tayyorlanmoqda", cls: "bg-[#E8F0FE] text-[#1967D2]" },
-  shipped:    { label: "Yo'lda",       cls: "bg-[#F3E8FD] text-[#7B1FA2]" },
-  delivered:  { label: "Yetkazildi",   cls: "bg-[#E6F4EA] text-[#137333]" },
-  cancelled:  { label: "Bekor qilindi", cls: "bg-[#FCE8E6] text-[#C5221F]" }
+  pending:    { label: "Kutilmoqda",   cls: "bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300" },
+  processing: { label: "Tayyorlanmoqda", cls: "bg-blue-100 text-blue-800 dark:bg-blue-500/15 dark:text-blue-300" },
+  shipped:    { label: "Yo'lda",       cls: "bg-purple-100 text-purple-800 dark:bg-purple-500/15 dark:text-purple-300" },
+  delivered:  { label: "Yetkazildi",   cls: "bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-300" },
+  cancelled:  { label: "Bekor qilindi", cls: "bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-300" }
 };
 
 function formatMoney(n) {

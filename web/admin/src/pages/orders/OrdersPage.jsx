@@ -7,7 +7,7 @@ import { Icon } from "../../components/shared/Icon";
 const STATUS_BADGE = {
   pending:    "bg-[#FEF3C7] text-[#92400E]",
   processing: "bg-[#DBEAFE] text-[#1E40AF]",
-  shipped:    "bg-[#F3E8FD] text-[#7B1FA2]",
+  shipped:    "bg-purple-100 text-purple-800 dark:bg-purple-500/15 dark:text-purple-300",
   delivered:  "bg-[#D1FAE5] text-[#065F46]",
   cancelled:  "bg-[#FEE2E2] text-[#991B1B]"
 };

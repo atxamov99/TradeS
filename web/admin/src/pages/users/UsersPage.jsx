@@ -8,7 +8,7 @@ import { useI18n } from "../../i18n";
 
 const statusStyle = {
   active:  "bg-primary-container/20 text-on-primary-container",
-  pending: "bg-[#fef3c7] text-[#92400e]",
+  pending: "bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300",
   blocked: "bg-error-container text-on-error-container"
 };
 

@@ -11,15 +11,15 @@ import {
 } from "recharts";
 
 const tooltipStyle = {
-  backgroundColor: "#ffffff",
-  border: "1px solid #bbcabf",
+  backgroundColor: "rgb(var(--c-surface-container-lowest))",
+  border: "1px solid rgb(var(--c-outline-variant))",
   borderRadius: "12px",
-  color: "#151c27",
+  color: "rgb(var(--c-on-surface))",
   fontSize: "12px",
   boxShadow: "0 4px 24px rgba(16,32,51,0.08)"
 };
 
-const axisTick = { fill: "#3c4a42", fontSize: 11 };
+const axisTick = { fill: "rgb(var(--c-on-surface-variant))", fontSize: 11 };
 const COLOR_PRIMARY = "#10b981";
 const COLOR_SECONDARY = "#4648d4";
 
@@ -32,10 +32,10 @@ export function UserActivityChart({ data }) {
       </div>
       <ResponsiveContainer width="100%" height={200}>
         <LineChart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(60,74,66,0.08)" />
+          <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--c-outline-variant) / 0.6)" />
           <XAxis dataKey="day" tick={axisTick} axisLine={false} tickLine={false} />
           <YAxis tick={axisTick} axisLine={false} tickLine={false} />
-          <Tooltip contentStyle={tooltipStyle} cursor={{ stroke: "rgba(60,74,66,0.15)" }} />
+          <Tooltip contentStyle={tooltipStyle} cursor={{ stroke: "rgb(var(--c-outline) / 0.5)" }} />
           <Line type="monotone" dataKey="users" stroke={COLOR_SECONDARY} strokeWidth={2} dot={false} name="Jami" />
           <Line type="monotone" dataKey="active" stroke={COLOR_PRIMARY} strokeWidth={2} dot={false} name="Faol" />
         </LineChart>
@@ -72,13 +72,13 @@ export function OrderRevenueChart({ data }) {
       </div>
       <ResponsiveContainer width="100%" height={200}>
         <BarChart data={data} margin={{ top: 4, right: -10, left: -25, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(60,74,66,0.08)" />
+          <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--c-outline-variant) / 0.6)" />
           <XAxis dataKey="month" tick={axisTick} axisLine={false} tickLine={false} />
           <YAxis yAxisId="left" tick={axisTick} axisLine={false} tickLine={false} />
           <YAxis yAxisId="right" orientation="right" tick={axisTick} axisLine={false} tickLine={false} tickFormatter={formatRevenueTick} />
           <Tooltip
             contentStyle={tooltipStyle}
-            cursor={{ fill: "rgba(60,74,66,0.04)" }}
+            cursor={{ fill: "rgb(var(--c-outline) / 0.15)" }}
             formatter={(v, n) => n === "revenue" ? [`${Number(v).toLocaleString("uz-UZ")} so'm`, "Daromad"] : [v, "Buyurtma"]}
           />
           <Bar yAxisId="left" dataKey="orders" fill={COLOR_SECONDARY} radius={[4, 4, 0, 0]} name="Buyurtmalar" />

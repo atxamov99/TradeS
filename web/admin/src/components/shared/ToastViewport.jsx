@@ -4,7 +4,7 @@ import { Icon } from "./Icon";
 const toneConfig = {
   success: { icon: "check_circle", ring: "bg-primary-container/15 text-primary-container", bar: "bg-primary-container" },
   danger:  { icon: "error",        ring: "bg-error-container text-error",                  bar: "bg-error" },
-  warning: { icon: "warning",      ring: "bg-[#fef3c7] text-[#92400e]",                    bar: "bg-[#d28b16]" },
+  warning: { icon: "warning",      ring: "bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300",                    bar: "bg-[#d28b16]" },
   info:    { icon: "info",         ring: "bg-secondary-container/15 text-secondary",       bar: "bg-secondary" }
 };
 

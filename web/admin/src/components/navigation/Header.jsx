@@ -1,4 +1,5 @@
 import { useI18n } from "../../i18n";
+import { useTheme } from "../../theme";
 import { useAuth } from "../../store";
 import { Icon } from "../shared/Icon";
 import { NotificationBell } from "./NotificationBell";
@@ -6,6 +7,7 @@ import { NotificationBell } from "./NotificationBell";
 export function Header({ onMenuToggle }) {
   const { logout, profile } = useAuth();
   const { locale, setLocale, supportedLocales, t } = useI18n();
+  const { resolvedTheme, toggleTheme } = useTheme();
 
   return (
     <header className="h-16 sticky top-0 z-10 bg-surface/80 backdrop-blur-md border-b border-outline-variant flex justify-between items-center px-4 md:px-8">
@@ -50,6 +52,16 @@ export function Header({ onMenuToggle }) {
             </button>
           ))}
         </div>
+
+        <button
+          type="button"
+          onClick={toggleTheme}
+          className="p-2 rounded-full text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors"
+          aria-label={resolvedTheme === "dark" ? "Light mode" : "Dark mode"}
+          title={resolvedTheme === "dark" ? "Light mode" : "Dark mode"}
+        >
+          <Icon name={resolvedTheme === "dark" ? "light_mode" : "dark_mode"} />
+        </button>
 
         <NotificationBell />
 

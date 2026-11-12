@@ -7,14 +7,14 @@ import { Icon } from "../../components/shared/Icon";
 
 const priorityStyle = {
   high: { cls: "bg-error-container text-on-error-container", icon: "priority_high" },
-  medium: { cls: "bg-[#fef3c7] text-[#92400e]", icon: "warning" },
+  medium: { cls: "bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300", icon: "warning" },
   low: { cls: "bg-surface-variant text-on-surface-variant", icon: "info" },
 };
 
 const toneIcon = {
   success: { cls: "bg-primary-container/15 text-primary-container", icon: "check_circle" },
   danger: { cls: "bg-error-container text-error", icon: "error" },
-  warning: { cls: "bg-[#fef3c7] text-[#92400e]", icon: "warning" },
+  warning: { cls: "bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300", icon: "warning" },
   info: { cls: "bg-secondary-container/15 text-secondary", icon: "notifications" },
 };
 

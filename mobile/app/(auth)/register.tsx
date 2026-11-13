@@ -8,7 +8,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { useAuthStore } from "@/store/authStore";
 import { useUserStore } from "@/store/userStore";
 import { api } from "@/services/api";
-import { light } from "@/theme/colors";
+import { dark } from "@/theme/colors";
+import { useAuthText } from "@/utils/authText";
+import { AuthLangSwitch } from "@/components/AuthLangSwitch";
 import { formatPhone, cleanIdentifier } from "@/utils/phone";
 import { isPasswordValid } from "@/utils/passwordRules";
 import { PasswordRules } from "@/components/PasswordRules";
@@ -20,9 +22,10 @@ const BOT_URL = "https://t.me/trades_uz_bot?start=register";
 const TG_BLUE = "#229ED9";
 
 // Auth ekranlari eski ilovadagidek DOIM och (light) ko'rinadi — global dark tema majburlanmaydi.
-const c = light;
+const c = dark; // auth screens are always dark-green, exactly like the website
 
 export default function RegisterScreen() {
+  const a = useAuthText();
   const { setToken } = useAuthStore();
   const { setUser } = useUserStore();
 
@@ -54,7 +57,7 @@ export default function RegisterScreen() {
         setStep("otp");
         // Email provider not configured on the server (dev mode): the server hands the code back — show it,
         // otherwise the flow is a dead end. Same behaviour as the website.
-        if (dev) Alert.alert("Dev rejim", "Email sozlanmagan. Kodingiz: " + dev, undefined, "info");
+        if (dev) Alert.alert(a.devMode, a.devMsg + dev, undefined, "info");
         return;
       }
       await api.post("/auth/request-otp", { phone: cleanIdentifier(phone) });
@@ -62,7 +65,7 @@ export default function RegisterScreen() {
       setStep("otp");
     } catch (error: any) {
       if (error.response?.status === 428) setStep("connect");
-      else Alert.alert("Xatolik", error.response?.data?.message || "Ro'yxatdan o'tishda xatolik");
+      else Alert.alert(a.error, error.response?.data?.message || a.errReg);
     } finally {
       setLoading(false);
     }
@@ -71,11 +74,11 @@ export default function RegisterScreen() {
   const handleStart = () => {
     const contactOk = method === "email" ? /^\S+@\S+\.\S+$/.test(emailNorm) : phoneDigits.length >= 12;
     if (!name.trim() || !contactOk || !password || (accountType === "OWNER" && !shopName.trim())) {
-      Alert.alert("Xatolik", method === "email" && !contactOk && email ? "Email manzilni to'g'ri kiriting" : "Barcha maydonlarni to'ldiring");
+      Alert.alert(a.error, method === "email" && !contactOk && email ? a.errEmail : a.errFillAll);
       return;
     }
     if (!isPasswordValid(password)) {
-      Alert.alert("Parol juda sodda", "Parol barcha shartlarga mos kelishi kerak: kamida 8 ta belgi, katta va kichik harf, raqam.", undefined, "warning");
+      Alert.alert(a.weakTitle, a.weakMsg, undefined, "warning");
       return;
     }
     sendCode();
@@ -98,7 +101,7 @@ export default function RegisterScreen() {
       await setToken(data.accessToken, data.refreshToken);
       // token o'zgarishi root _layout guard'ini ishga tushiradi → (app) ga o'tadi
     } catch (error: any) {
-      Alert.alert("Xatolik", error.response?.data?.message || "Ro'yxatdan o'tishda xatolik");
+      Alert.alert(a.error, error.response?.data?.message || a.errReg);
     } finally {
       setLoading(false);
     }
@@ -127,21 +130,21 @@ export default function RegisterScreen() {
 
         {/* Brand header */}
         <View style={{ alignItems: "center", marginBottom: 24 }}>
-          <Image source={require("@/assets/logo.png")} style={{ width: 80, height: 80, marginBottom: 10 }} resizeMode="contain" />
+          <Image source={require("@/assets/logo-dark.png")} style={{ width: 80, height: 80, marginBottom: 10 }} resizeMode="contain" />
           <Text style={{ fontSize: 26, fontWeight: "900", letterSpacing: -0.5, color: c.text }}>TradeS</Text>
         </View>
 
         {/* ── STEP 1: FORM ── */}
         {step === "form" && (
           <View style={{ backgroundColor: c.bgCard, borderRadius: 24, borderWidth: 1, borderColor: c.border, padding: 24 }}>
-            <Text style={{ fontSize: 22, fontWeight: "800", marginBottom: 6, color: c.text }}>Ro'yxatdan o'tish</Text>
+            <Text style={{ fontSize: 22, fontWeight: "800", marginBottom: 6, color: c.text }}>{a.signUp}</Text>
             <Text style={{ fontSize: 13, marginBottom: 16, lineHeight: 20, color: c.textMuted }}>
-              Telefon yoki email orqali ro'yxatdan o'ting
+              {a.regSub}
             </Text>
 
             <View style={{ flexDirection: "row", backgroundColor: c.bgMuted, borderRadius: 14, padding: 4, marginBottom: 16 }}>
               {([
-                { key: "phone", icon: "phone-portrait-outline", label: "Telefon" },
+                { key: "phone", icon: "phone-portrait-outline", label: a.phone },
                 { key: "email", icon: "mail-outline", label: "Email" },
               ] as const).map((tab) => {
                 const active = method === tab.key;
@@ -159,11 +162,11 @@ export default function RegisterScreen() {
               })}
             </View>
 
-            <Text style={{ fontSize: 12, fontWeight: "800", marginBottom: 8, color: c.textMuted, letterSpacing: 0.6 }}>KIM BO'LIB RO'YXATDAN O'TASIZ?</Text>
+            <Text style={{ fontSize: 12, fontWeight: "800", marginBottom: 8, color: c.textMuted, letterSpacing: 0.6 }}>{a.who}</Text>
             <View style={{ flexDirection: "row", gap: 10, marginBottom: 16 }}>
               {([
-                { key: "USER", icon: "person-outline", title: "O'zim uchun ishlayman", sub: "Shaxsiy hisob: mahsulot va savdolarni o'zim yuritaman" },
-                { key: "OWNER", icon: "storefront-outline", title: "Biznes direktori", sub: "Xodimlar (kassirlar) bilan biznes ochaman" },
+                { key: "USER", icon: "person-outline", title: a.roleUser, sub: a.roleUserSub },
+                { key: "OWNER", icon: "storefront-outline", title: a.roleOwner, sub: a.roleOwnerSub },
               ] as const).map((o) => {
                 const active = accountType === o.key;
                 return (
@@ -181,38 +184,38 @@ export default function RegisterScreen() {
               })}
             </View>
 
-            <Field label="Ism" icon="person-outline" placeholder="Ismingiz" value={name} onChangeText={setName} c={c} />
+            <Field label={a.name} icon="person-outline" placeholder={a.namePh} value={name} onChangeText={setName} c={c} />
             {accountType === "OWNER" && (
-              <Field label="Biznes nomi" icon="storefront-outline" placeholder="Masalan: Baraka market" value={shopName} onChangeText={setShopName} c={c} />
+              <Field label={a.shopName} icon="storefront-outline" placeholder={a.shopPh} value={shopName} onChangeText={setShopName} c={c} />
             )}
             {method === "phone" ? (
               <>
-                <Field label="Telefon" icon="call-outline" placeholder="+998 90 123 45 67" value={phone} onChangeText={(txt) => setPhone(formatPhone(txt))} keyboardType="phone-pad" c={c} />
+                <Field label={a.phone} icon="call-outline" placeholder="+998 90 123 45 67" value={phone} onChangeText={(txt) => setPhone(formatPhone(txt))} keyboardType="phone-pad" c={c} />
 
                 <View style={{ flexDirection: "row", alignItems: "center", marginTop: -6, marginBottom: 16, paddingHorizontal: 2 }}>
                   <Ionicons name="paper-plane-outline" size={13} color={c.textMuted} />
                   <Text style={{ fontSize: 12, marginLeft: 6, flex: 1, color: c.textMuted }}>
-                    Tasdiqlash kodi bepul — Telegram bot orqali keladi
+                    {a.tgFree}
                   </Text>
                 </View>
               </>
             ) : (
-              <Field label="Email manzil" icon="mail-outline" placeholder="email@misol.com" value={email} onChangeText={setEmail} keyboardType="email-address" c={c} />
+              <Field label={a.emailAddr} icon="mail-outline" placeholder="email@misol.com" value={email} onChangeText={setEmail} keyboardType="email-address" c={c} />
             )}
 
             <Field
-              label="Parol" icon="lock-closed-outline" placeholder="Parolingiz" value={password} onChangeText={setPassword}
+              label={a.password} icon="lock-closed-outline" placeholder={a.passwordPh} value={password} onChangeText={setPassword}
               secure showSecure={showPassword} onToggleSecure={() => setShowPassword(!showPassword)} c={c}
             />
             <PasswordRules password={password} c={c} />
 
             <View style={{ height: 8 }} />
-            <BigButton title="Kod olish" onPress={handleStart} loading={loading} color={c.primary} icon="arrow-forward" />
+            <BigButton title={a.getCode} onPress={handleStart} loading={loading} color={c.primary} icon="arrow-forward" />
 
             <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", marginTop: 20 }}>
-              <Text style={{ color: c.textMuted, fontSize: 14 }}>Hisobingiz bormi? </Text>
+              <Text style={{ color: c.textMuted, fontSize: 14 }}>{a.haveAcc}</Text>
               <TouchableOpacity onPress={() => router.replace("/login")}>
-                <Text style={{ color: c.primary, fontSize: 14, fontWeight: "800" }}>Kirish</Text>
+                <Text style={{ color: c.primary, fontSize: 14, fontWeight: "800" }}>{a.signIn}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -224,15 +227,15 @@ export default function RegisterScreen() {
             <View style={{ width: 80, height: 80, borderRadius: 26, alignSelf: "center", alignItems: "center", justifyContent: "center", marginBottom: 18, backgroundColor: TG_BLUE + "1F" }}>
               <Ionicons name="paper-plane" size={38} color={TG_BLUE} />
             </View>
-            <Text style={{ fontSize: 22, fontWeight: "800", marginBottom: 6, color: c.text, textAlign: "center" }}>Telegram'ni ulang</Text>
+            <Text style={{ fontSize: 22, fontWeight: "800", marginBottom: 6, color: c.text, textAlign: "center" }}>{a.connectTitle}</Text>
             <Text style={{ fontSize: 13, marginBottom: 22, lineHeight: 20, color: c.textMuted, textAlign: "center" }}>
-              Kod bepul — Telegram orqali keladi
+              {a.connectSub}
             </Text>
 
             {[
-              { icon: "paper-plane-outline" as const, text: "«Telegram botni ochish» tugmasini bosing" },
-              { icon: "call-outline" as const, text: "Botda «📱 Raqamni ulashish» ni bosing" },
-              { icon: "key-outline" as const, text: "6 xonali kod shu botga keladi" },
+              { icon: "paper-plane-outline" as const, text: a.step1 },
+              { icon: "call-outline" as const, text: a.step2 },
+              { icon: "key-outline" as const, text: a.step3 },
             ].map((s, i) => (
               <View key={i} style={{ flexDirection: "row", alignItems: "center", marginBottom: 14 }}>
                 <View style={{ width: 28, height: 28, borderRadius: 9, alignItems: "center", justifyContent: "center", marginRight: 12, backgroundColor: c.primary + "22" }}>
@@ -243,9 +246,9 @@ export default function RegisterScreen() {
             ))}
 
             <View style={{ height: 8 }} />
-            <BigButton title="Telegram botni ochish" onPress={() => Linking.openURL(BOT_URL)} color={TG_BLUE} icon="paper-plane" />
+            <BigButton title={a.openBot} onPress={() => Linking.openURL(BOT_URL)} color={TG_BLUE} icon="paper-plane" />
             <View style={{ height: 12 }} />
-            <BigButton title="Uladim — kod yuborish" onPress={sendCode} loading={loading} color={c.primary} icon="checkmark" />
+            <BigButton title={a.connected} onPress={sendCode} loading={loading} color={c.primary} icon="checkmark" />
           </View>
         )}
 
@@ -255,29 +258,30 @@ export default function RegisterScreen() {
             <View style={{ width: 80, height: 80, borderRadius: 26, alignSelf: "center", alignItems: "center", justifyContent: "center", marginBottom: 18, backgroundColor: c.primary + "1F" }}>
               <Ionicons name="shield-checkmark" size={38} color={c.primary} />
             </View>
-            <Text style={{ fontSize: 22, fontWeight: "800", marginBottom: 6, color: c.text, textAlign: "center" }}>Tasdiqlash kodi</Text>
+            <Text style={{ fontSize: 22, fontWeight: "800", marginBottom: 6, color: c.text, textAlign: "center" }}>{a.confirmTitle}</Text>
             <Text style={{ fontSize: 13, marginBottom: 6, lineHeight: 20, color: c.textMuted, textAlign: "center" }}>
-              {method === "email" ? "Emailingizga yuborilgan 6 xonali kod" : "Telegram'ga yuborilgan 6 xonali kod"}
+              {method === "email" ? a.sentEmail : a.sentTg}
             </Text>
             <Text style={{ fontSize: 16, fontWeight: "800", textAlign: "center", marginBottom: 12, color: c.primary }}>{contactLabel}</Text>
 
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", alignSelf: "center", paddingVertical: 8, paddingHorizontal: 14, borderRadius: 20, marginBottom: 22, backgroundColor: TG_BLUE + "14" }}>
               <Ionicons name="paper-plane" size={14} color={TG_BLUE} />
-              <Text style={{ fontSize: 12, marginLeft: 6, color: c.textMuted }}>{method === "email" ? "Kod emailga yuborildi" : "Kod @trades_uz_bot botiga yuborildi"}</Text>
+              <Text style={{ fontSize: 12, marginLeft: 6, color: c.textMuted }}>{method === "email" ? a.pillEmail : a.pillTg}</Text>
             </View>
 
             <OtpBoxes value={code} onChange={setCode} c={c} />
 
             <View style={{ height: 24 }} />
-            <BigButton title="Tasdiqlash" onPress={handleVerify} loading={loading} disabled={code.length !== OTP_LEN} color={c.primary} icon="checkmark-circle" />
+            <BigButton title={a.confirm} onPress={handleVerify} loading={loading} disabled={code.length !== OTP_LEN} color={c.primary} icon="checkmark-circle" />
 
             <TouchableOpacity onPress={sendCode} disabled={loading} style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", marginTop: 18 }}>
               <Ionicons name="refresh" size={15} color={c.textMuted} />
-              <Text style={{ color: c.textMuted, fontSize: 14, marginLeft: 6 }}>Kodni qayta yuborish</Text>
+              <Text style={{ color: c.textMuted, fontSize: 14, marginLeft: 6 }}>{a.resend}</Text>
             </TouchableOpacity>
           </View>
         )}
       </ScrollView>
+      <AuthLangSwitch />
     </KeyboardAvoidingView>
   );
 }

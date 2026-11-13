@@ -27,7 +27,7 @@ export default function Sales() {
 
     const { data: productsData } = useQuery({
       queryKey: ['products'],
-      queryFn: () => productsApi.getProducts(),
+      queryFn: () => productsApi.getProducts({ scope: 'shop' }),
       staleTime: 0,
       refetchOnMount: true,
     });

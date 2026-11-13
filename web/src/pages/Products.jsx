@@ -43,7 +43,7 @@ export default function Products() {
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['products'],
-    queryFn: () => productsApi.getProducts(),
+    queryFn: () => productsApi.getProducts({ scope: 'shop' }), // POS view: only this shop's products
   });
 
   const allProducts = data?.data?.data?.products || [];

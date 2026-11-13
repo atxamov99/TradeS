@@ -24,7 +24,7 @@ export default function PosProducts() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['pos-products-list', page, search],
-    queryFn: () => productsApi.getProducts({ page, limit: 15, search }),
+    queryFn: () => productsApi.getProducts({ page, limit: 15, search, scope: 'shop' }),
     keepPreviousData: true,
   });
 

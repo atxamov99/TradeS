@@ -249,7 +249,7 @@ async function syncSales() {
  * bu yetarli va eng sodda yechim).
  */
 async function pullProductCatalog() {
-  const { data: body } = await api.get("/products", { params: { limit: 1000 } });
+  const { data: body } = await api.get("/products", { params: { limit: 1000, scope: "shop" } }) /* only this shop's products, never other shops' */;
   const payload = body?.data ?? body ?? {};
   const remoteProducts: RemoteProduct[] = payload.products ?? [];
   if (remoteProducts.length === 0) return;

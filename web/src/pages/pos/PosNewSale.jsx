@@ -37,7 +37,7 @@ export default function PosNewSale() {
   // Online: fetch from server
   const { data } = useQuery({
     queryKey: ['pos-products', search],
-    queryFn: () => productsApi.getProducts({ search, limit: 20, inStock: 'false' }),
+    queryFn: () => productsApi.getProducts({ search, limit: 20, inStock: 'false', scope: 'shop' }),
     enabled: isOnline && (search.length > 0 || !selected),
   });
 

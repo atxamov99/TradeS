@@ -1,8 +1,8 @@
 import { useState } from "react";
 import {
-  View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator,
-  ScrollView, KeyboardAvoidingView, Platform, Image,
+  View, Text, TextInput, TouchableOpacity, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform, Image,
 } from "react-native";
+import { Alert } from "@/utils/alert";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuthStore } from "@/store/authStore";
@@ -61,7 +61,8 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<"password" | "device-confirm">("password");
+  const [mode, setMode] = useState<"password" | "device-confirm" | "email-request" | "email-otp">("password");
+  const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
 
   const { setToken } = useAuthStore();
@@ -103,6 +104,43 @@ export default function LoginScreen() {
     }
   }
 
+  async function handleEmailRequest() {
+    const e = email.trim().toLowerCase();
+    if (!/^\S+@\S+\.\S+$/.test(e)) {
+      Alert.alert("Xatolik", "Email manzilni to'g'ri kiriting");
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await api.post("/auth/request-email-otp", { email: e });
+      const dev = res.data?.data?.devCode;
+      setCode(dev ? String(dev) : "");
+      setMode("email-otp");
+      // Email provider not configured (dev): server returns the code — show it so the flow is not a dead end.
+      if (dev) Alert.alert("Dev rejim", "Email sozlanmagan. Kodingiz: " + dev, undefined, "info");
+    } catch (err: any) {
+      Alert.alert("Xatolik", err?.response?.data?.message || "Kod yuborib bo'lmadi");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleEmailVerify() {
+    if (code.length !== 6) return;
+    setLoading(true);
+    try {
+      // No password => login-only (existing account), same as the website.
+      const res = await api.post("/auth/verify-email-otp", { email: email.trim().toLowerCase(), code });
+      const data = res.data?.data ?? res.data;
+      await setUser(data.user);
+      await setToken(data.accessToken, data.refreshToken);
+    } catch (err: any) {
+      Alert.alert("Xatolik", err?.response?.data?.message || "Kod noto'g'ri");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function handleDeviceConfirm() {
     if (code.length !== 6) return;
     setLoading(true);
@@ -137,7 +175,66 @@ export default function LoginScreen() {
 
         {/* Card */}
         <View style={{ width: "100%", backgroundColor: c.bgCard, borderRadius: 16, padding: 24, borderWidth: 1, borderColor: c.border, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 15, elevation: 2 }}>
-          {mode === "password" ? (
+          {mode === "email-request" || mode === "email-otp" ? (
+          <>
+          <View style={{ alignItems: "center", marginBottom: 12 }}>
+            <View style={{ width: 64, height: 64, borderRadius: 16, backgroundColor: c.primary + "20", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
+              <Ionicons name="mail-outline" size={30} color={c.primary} />
+            </View>
+            <Text style={{ color: c.text, fontSize: 18, fontWeight: "800", textAlign: "center" }}>Email kod bilan kirish</Text>
+            <Text style={{ color: c.textMuted, fontSize: 14, marginTop: 6, textAlign: "center" }}>
+              {mode === "email-request" ? "Emailingizga 6 xonali kod yuboramiz" : "Emailingizga yuborilgan 6 xonali kodni kiriting"}
+            </Text>
+          </View>
+
+          {mode === "email-request" ? (
+            <>
+              <Field label="Email manzil" icon="mail-outline" placeholder="email@misol.com" value={email} onChangeText={setEmail} keyboardType="email-address" c={c} />
+              <TouchableOpacity
+                onPress={handleEmailRequest}
+                disabled={loading}
+                activeOpacity={0.85}
+                style={{ height: 52, borderRadius: 12, backgroundColor: c.primary, alignItems: "center", justifyContent: "center", opacity: loading ? 0.7 : 1 }}
+              >
+                {loading ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "600", fontSize: 16 }}>Kod olish</Text>}
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <Text style={{ color: c.primary, fontSize: 15, fontWeight: "800", textAlign: "center", marginBottom: 12 }}>{email.trim().toLowerCase()}</Text>
+              <TextInput
+                style={{ backgroundColor: c.bgCard, borderRadius: 12, borderWidth: 1, borderColor: c.border, height: 56, fontSize: 24, fontWeight: "800", letterSpacing: 8, color: c.text, textAlign: "center", marginBottom: 16 }}
+                placeholder="••••••"
+                placeholderTextColor={c.textMuted}
+                value={code}
+                onChangeText={(v) => setCode(v.replace(/\D/g, "").slice(0, 6))}
+                keyboardType="number-pad"
+                maxLength={6}
+                autoFocus
+              />
+              <TouchableOpacity
+                onPress={handleEmailVerify}
+                disabled={loading || code.length !== 6}
+                activeOpacity={0.85}
+                style={{ height: 52, borderRadius: 12, backgroundColor: c.primary, alignItems: "center", justifyContent: "center", opacity: loading || code.length !== 6 ? 0.6 : 1 }}
+              >
+                {loading ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "600", fontSize: 16 }}>Kirish</Text>}
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleEmailRequest} disabled={loading} style={{ alignItems: "center", marginTop: 14 }}>
+                <Text style={{ color: c.textMuted, fontSize: 14 }}>Kodni qayta yuborish</Text>
+              </TouchableOpacity>
+            </>
+          )}
+
+          <TouchableOpacity
+            onPress={() => { setMode("password"); setCode(""); }}
+            activeOpacity={0.7}
+            style={{ height: 50, borderRadius: 12, alignItems: "center", justifyContent: "center", marginTop: 8 }}
+          >
+            <Text style={{ color: c.textMuted, fontWeight: "600", fontSize: 14 }}>Parol bilan kirish</Text>
+          </TouchableOpacity>
+          </>
+          ) : mode === "password" ? (
           <>
           <Text style={{ color: c.text, fontSize: 24, fontWeight: "700", marginBottom: 8 }}>Xush kelibsiz</Text>
           <Text style={{ color: c.textMuted, fontSize: 16, marginBottom: 24 }}>Hisobingizga kiring</Text>
@@ -186,6 +283,15 @@ export default function LoginScreen() {
             style={{ height: 50, borderRadius: 12, alignItems: "center", justifyContent: "center", marginTop: 12 }}
           >
             <Text style={{ color: c.primary, fontWeight: "600", fontSize: 16 }}>Ro'yxatdan o'tish</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => { setMode("email-request"); setCode(""); }}
+            activeOpacity={0.7}
+            style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, height: 46, marginTop: 4 }}
+          >
+            <Ionicons name="mail-outline" size={18} color={c.textMuted} />
+            <Text style={{ color: c.textMuted, fontWeight: "600", fontSize: 14 }}>Email kod bilan kirish</Text>
           </TouchableOpacity>
           </>
           ) : (

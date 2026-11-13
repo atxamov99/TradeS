@@ -10,6 +10,7 @@ import { useSubscriptionStore } from "@/store/subscriptionStore";
 import { useRoleStore } from "@/store/roleStore";
 import { runSync } from "@/services/syncEngine";
 import { loadDeviceId } from "@/utils/deviceId";
+import { AppAlertHost } from "@/components/AppAlertHost";
 import "../global.css";
 
 export default function RootLayout() {
@@ -59,6 +60,7 @@ export default function RootLayout() {
         <Stack.Screen name="(app)" />
         <Stack.Screen name="(auth)" />
       </Stack>
+      <AppAlertHost />
     </>
   );
 }

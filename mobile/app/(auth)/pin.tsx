@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { View, Text, TouchableOpacity, Alert } from "react-native";
+import { View, Text, TouchableOpacity } from "react-native";
+import { Alert } from "@/utils/alert";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useRoleStore } from "@/store/roleStore";

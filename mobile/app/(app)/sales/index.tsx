@@ -1,4 +1,5 @@
-import { View, Text, FlatList, TouchableOpacity, Alert } from "react-native";
+import { View, Text, FlatList, TouchableOpacity } from "react-native";
+import { Alert } from "@/utils/alert";
 import { useState } from "react";
 import { router } from "expo-router";
 import { useSales } from "@/hooks/useSales";

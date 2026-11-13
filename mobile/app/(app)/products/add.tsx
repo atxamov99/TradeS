@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Modal, FlatList } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Modal, FlatList } from "react-native";
+import { Alert } from "@/utils/alert";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { database, productsCollection, categoriesCollection } from "@/db";

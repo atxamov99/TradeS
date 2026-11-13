@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { View, Text, TouchableOpacity, ScrollView, Alert, Switch, Modal, TextInput } from "react-native";
+import { useEffect, useState } from "react";
+import { View, Text, TouchableOpacity, ScrollView, Switch, Modal, TextInput } from "react-native";
+import { Alert } from "@/utils/alert";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuthStore } from "@/store/authStore";
@@ -209,6 +210,38 @@ export default function ProfileScreen() {
     }
   }
 
+  // ── Telegram code on every sign-in (same switch + same warning as the website Settings) ──
+  const [lcEnabled, setLcEnabled] = useState(true);
+  const [lcBusy, setLcBusy] = useState(false);
+  const [lcOffVisible, setLcOffVisible] = useState(false);
+  const [lcPassword, setLcPassword] = useState("");
+
+  useEffect(() => {
+    api.get("/auth/me")
+      .then((r) => setLcEnabled((r.data?.data?.user ?? r.data?.user)?.loginCodeEnabled !== false))
+      .catch(() => {});
+  }, []);
+
+  async function applyLoginCode(next: boolean, pwd?: string) {
+    setLcBusy(true);
+    try {
+      await api.patch("/users/security", { enabled: next, ...(pwd ? { password: pwd } : {}) });
+      setLcEnabled(next);
+      setLcOffVisible(false);
+      setLcPassword("");
+      Alert.toast(next ? "Kirishda kod yoqildi" : "Kirishda kod o'chirildi", next ? "success" : "warning");
+    } catch (e: any) {
+      Alert.alert("Xatolik", e?.response?.data?.message || "O'zgartirib bo'lmadi");
+    } finally {
+      setLcBusy(false);
+    }
+  }
+
+  function onToggleLoginCode(next: boolean) {
+    if (next) applyLoginCode(true);
+    else { setLcPassword(""); setLcOffVisible(true); } // turning OFF lowers security: warning + password first
+  }
+
   return (
     <ScrollView style={{ flex: 1, backgroundColor: c.bg }} showsVerticalScrollIndicator={false}>
 
@@ -322,8 +355,59 @@ export default function ProfileScreen() {
           onPress={openPwModal}
         />
         <Divider />
+        <Row
+          iconName="shield-checkmark"
+          iconBg="#DCFCE7"
+          label="Kirishda Telegram kodi"
+          sub={lcEnabled ? "Yoqilgan — har kirishda kod so'raladi" : "O'chirilgan — faqat yangi qurilmada kod so'raladi"}
+          right={
+            <Switch
+              value={lcEnabled}
+              disabled={lcBusy}
+              onValueChange={onToggleLoginCode}
+              trackColor={{ false: c.border, true: c.primary + "60" }}
+              thumbColor={lcEnabled ? c.primary : "#fff"}
+              style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
+            />
+          }
+        />
+        <Divider />
         <Row iconName="log-out" label={t.settings.logout} danger onPress={handleLogout} />
       </Section>
+
+      <Modal visible={lcOffVisible} transparent animationType="fade" onRequestClose={() => setLcOffVisible(false)}>
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)", alignItems: "center", justifyContent: "center", padding: 24 }}>
+          <View style={{ width: "100%", maxWidth: 380, backgroundColor: c.bgCard, borderRadius: 24, borderWidth: 1, borderColor: c.border, padding: 22 }}>
+            <View style={{ width: 52, height: 52, borderRadius: 18, alignItems: "center", justifyContent: "center", marginBottom: 14, backgroundColor: c.danger + "22" }}>
+              <Ionicons name="warning" size={28} color={c.danger} />
+            </View>
+            <Text style={{ fontSize: 19, fontWeight: "800", color: c.text }}>Rostdan ham o'chirasizmi?</Text>
+            <Text style={{ fontSize: 14, lineHeight: 21, marginTop: 6, color: c.textSub }}>
+              Kirishda kod o'chirilsa, hisobingizni parol kifoya qiladi — parol o'g'irlansa, begona odam kira oladi. Yangi qurilmada kod baribir so'raladi.
+            </Text>
+            <Text style={{ fontSize: 12, fontWeight: "800", marginTop: 16, marginBottom: 6, color: c.textMuted, letterSpacing: 0.6 }}>PAROLINGIZ</Text>
+            <TextInput
+              value={lcPassword}
+              onChangeText={setLcPassword}
+              secureTextEntry
+              autoCapitalize="none"
+              style={{ height: 48, borderRadius: 12, borderWidth: 1, borderColor: c.border, backgroundColor: c.bg, paddingHorizontal: 14, fontSize: 16, color: c.text }}
+            />
+            <View style={{ flexDirection: "row", gap: 10, marginTop: 18 }}>
+              <TouchableOpacity onPress={() => setLcOffVisible(false)} style={{ flex: 1, height: 46, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: c.primary }}>
+                <Text style={{ color: "#fff", fontWeight: "800", fontSize: 15 }}>Bekor qilish</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                disabled={!lcPassword || lcBusy}
+                onPress={() => applyLoginCode(false, lcPassword)}
+                style={{ flex: 1, height: 46, borderRadius: 14, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: c.danger + "66", backgroundColor: c.danger + "1A", opacity: !lcPassword || lcBusy ? 0.5 : 1 }}
+              >
+                <Text style={{ color: c.danger, fontWeight: "800", fontSize: 15 }}>O'chirish</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <Text style={{ color: c.textMuted, textAlign: "center", fontSize: 12, marginTop: 16, opacity: 0.6 }}>
         TradeS App © {new Date().getFullYear()}

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Modal } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Modal } from "react-native";
+import { Alert } from "@/utils/alert";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { database } from "@/db";

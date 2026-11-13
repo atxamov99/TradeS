@@ -1,8 +1,8 @@
 import { useState } from "react";
 import {
-  View, Text, TouchableOpacity, Alert,
-  ScrollView, KeyboardAvoidingView, Platform, Linking,
+  View, Text, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, Linking,
 } from "react-native";
+import { Alert } from "@/utils/alert";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { api } from "@/services/api";

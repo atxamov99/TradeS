@@ -1,8 +1,8 @@
 import { useState } from "react";
 import {
-  View, Text, TouchableOpacity, Alert,
-  ScrollView, KeyboardAvoidingView, Platform, Linking, Image,
+  View, Text, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, Linking, Image,
 } from "react-native";
+import { Alert } from "@/utils/alert";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuthStore } from "@/store/authStore";
@@ -10,6 +10,8 @@ import { useUserStore } from "@/store/userStore";
 import { api } from "@/services/api";
 import { light } from "@/theme/colors";
 import { formatPhone, cleanIdentifier } from "@/utils/phone";
+import { isPasswordValid } from "@/utils/passwordRules";
+import { PasswordRules } from "@/components/PasswordRules";
 import { OtpBoxes, OTP_LEN } from "@/components/OtpBoxes";
 import { AuthBigButton as BigButton } from "@/components/AuthBigButton";
 import { AuthField as Field } from "@/components/AuthField";
@@ -28,7 +30,9 @@ export default function RegisterScreen() {
   const [name, setName] = useState("");
   const [accountType, setAccountType] = useState<"USER" | "OWNER">("USER");
   const [shopName, setShopName] = useState("");
+  const [method, setMethod] = useState<"phone" | "email">("phone");
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
@@ -37,9 +41,22 @@ export default function RegisterScreen() {
   const phoneDigits = phone.replace(/\D/g, "");
   const stepNum = step === "form" ? 1 : 2;
 
+  const emailNorm = email.trim().toLowerCase();
+  const contactLabel = method === "email" ? emailNorm : phone;
+
   const sendCode = async () => {
     setLoading(true);
     try {
+      if (method === "email") {
+        const res = await api.post("/auth/request-email-otp", { email: emailNorm });
+        const dev = res.data?.data?.devCode;
+        setCode(dev ? String(dev) : "");
+        setStep("otp");
+        // Email provider not configured on the server (dev mode): the server hands the code back — show it,
+        // otherwise the flow is a dead end. Same behaviour as the website.
+        if (dev) Alert.alert("Dev rejim", "Email sozlanmagan. Kodingiz: " + dev, undefined, "info");
+        return;
+      }
       await api.post("/auth/request-otp", { phone: cleanIdentifier(phone) });
       setCode("");
       setStep("otp");
@@ -52,8 +69,13 @@ export default function RegisterScreen() {
   };
 
   const handleStart = () => {
-    if (!name.trim() || phoneDigits.length < 12 || !password.trim() || (accountType === "OWNER" && !shopName.trim())) {
-      Alert.alert("Xatolik", "Barcha maydonlarni to'ldiring");
+    const contactOk = method === "email" ? /^\S+@\S+\.\S+$/.test(emailNorm) : phoneDigits.length >= 12;
+    if (!name.trim() || !contactOk || !password || (accountType === "OWNER" && !shopName.trim())) {
+      Alert.alert("Xatolik", method === "email" && !contactOk && email ? "Email manzilni to'g'ri kiriting" : "Barcha maydonlarni to'ldiring");
+      return;
+    }
+    if (!isPasswordValid(password)) {
+      Alert.alert("Parol juda sodda", "Parol barcha shartlarga mos kelishi kerak: kamida 8 ta belgi, katta va kichik harf, raqam.", undefined, "warning");
       return;
     }
     sendCode();
@@ -63,11 +85,11 @@ export default function RegisterScreen() {
     if (code.length !== OTP_LEN) return;
     setLoading(true);
     try {
-      const res = await api.post("/auth/verify-otp", {
-        phone: cleanIdentifier(phone),
+      const res = await api.post(method === "email" ? "/auth/verify-email-otp" : "/auth/verify-otp", {
+        ...(method === "email" ? { email: emailNorm } : { phone: cleanIdentifier(phone) }),
         code,
         name: name.trim(),
-        password: password.trim(),
+        password,
         accountType,
         ...(accountType === "OWNER" ? { shopName: shopName.trim() } : {}),
       });
@@ -113,9 +135,29 @@ export default function RegisterScreen() {
         {step === "form" && (
           <View style={{ backgroundColor: c.bgCard, borderRadius: 24, borderWidth: 1, borderColor: c.border, padding: 24 }}>
             <Text style={{ fontSize: 22, fontWeight: "800", marginBottom: 6, color: c.text }}>Ro'yxatdan o'tish</Text>
-            <Text style={{ fontSize: 13, marginBottom: 20, lineHeight: 20, color: c.textMuted }}>
-              Telefon raqamingiz orqali ro'yxatdan o'ting
+            <Text style={{ fontSize: 13, marginBottom: 16, lineHeight: 20, color: c.textMuted }}>
+              Telefon yoki email orqali ro'yxatdan o'ting
             </Text>
+
+            <View style={{ flexDirection: "row", backgroundColor: c.bgMuted, borderRadius: 14, padding: 4, marginBottom: 16 }}>
+              {([
+                { key: "phone", icon: "phone-portrait-outline", label: "Telefon" },
+                { key: "email", icon: "mail-outline", label: "Email" },
+              ] as const).map((tab) => {
+                const active = method === tab.key;
+                return (
+                  <TouchableOpacity
+                    key={tab.key}
+                    activeOpacity={0.85}
+                    onPress={() => { setMethod(tab.key); setCode(""); }}
+                    style={{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, height: 40, borderRadius: 11, backgroundColor: active ? c.primary : "transparent" }}
+                  >
+                    <Ionicons name={tab.icon} size={16} color={active ? "#fff" : c.textMuted} />
+                    <Text style={{ fontSize: 13, fontWeight: "800", color: active ? "#fff" : c.textMuted }}>{tab.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
 
             <Text style={{ fontSize: 12, fontWeight: "800", marginBottom: 8, color: c.textMuted, letterSpacing: 0.6 }}>KIM BO'LIB RO'YXATDAN O'TASIZ?</Text>
             <View style={{ flexDirection: "row", gap: 10, marginBottom: 16 }}>
@@ -143,19 +185,26 @@ export default function RegisterScreen() {
             {accountType === "OWNER" && (
               <Field label="Biznes nomi" icon="storefront-outline" placeholder="Masalan: Baraka market" value={shopName} onChangeText={setShopName} c={c} />
             )}
-            <Field label="Telefon" icon="call-outline" placeholder="+998 90 123 45 67" value={phone} onChangeText={(txt) => setPhone(formatPhone(txt))} keyboardType="phone-pad" c={c} />
+            {method === "phone" ? (
+              <>
+                <Field label="Telefon" icon="call-outline" placeholder="+998 90 123 45 67" value={phone} onChangeText={(txt) => setPhone(formatPhone(txt))} keyboardType="phone-pad" c={c} />
 
-            <View style={{ flexDirection: "row", alignItems: "center", marginTop: -6, marginBottom: 16, paddingHorizontal: 2 }}>
-              <Ionicons name="paper-plane-outline" size={13} color={c.textMuted} />
-              <Text style={{ fontSize: 12, marginLeft: 6, flex: 1, color: c.textMuted }}>
-                Tasdiqlash kodi bepul — Telegram bot orqali keladi
-              </Text>
-            </View>
+                <View style={{ flexDirection: "row", alignItems: "center", marginTop: -6, marginBottom: 16, paddingHorizontal: 2 }}>
+                  <Ionicons name="paper-plane-outline" size={13} color={c.textMuted} />
+                  <Text style={{ fontSize: 12, marginLeft: 6, flex: 1, color: c.textMuted }}>
+                    Tasdiqlash kodi bepul — Telegram bot orqali keladi
+                  </Text>
+                </View>
+              </>
+            ) : (
+              <Field label="Email manzil" icon="mail-outline" placeholder="email@misol.com" value={email} onChangeText={setEmail} keyboardType="email-address" c={c} />
+            )}
 
             <Field
               label="Parol" icon="lock-closed-outline" placeholder="Parolingiz" value={password} onChangeText={setPassword}
               secure showSecure={showPassword} onToggleSecure={() => setShowPassword(!showPassword)} c={c}
             />
+            <PasswordRules password={password} c={c} />
 
             <View style={{ height: 8 }} />
             <BigButton title="Kod olish" onPress={handleStart} loading={loading} color={c.primary} icon="arrow-forward" />
@@ -208,13 +257,13 @@ export default function RegisterScreen() {
             </View>
             <Text style={{ fontSize: 22, fontWeight: "800", marginBottom: 6, color: c.text, textAlign: "center" }}>Tasdiqlash kodi</Text>
             <Text style={{ fontSize: 13, marginBottom: 6, lineHeight: 20, color: c.textMuted, textAlign: "center" }}>
-              Telegram'ga yuborilgan 6 xonali kod
+              {method === "email" ? "Emailingizga yuborilgan 6 xonali kod" : "Telegram'ga yuborilgan 6 xonali kod"}
             </Text>
-            <Text style={{ fontSize: 16, fontWeight: "800", textAlign: "center", marginBottom: 12, color: c.primary }}>{phone}</Text>
+            <Text style={{ fontSize: 16, fontWeight: "800", textAlign: "center", marginBottom: 12, color: c.primary }}>{contactLabel}</Text>
 
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", alignSelf: "center", paddingVertical: 8, paddingHorizontal: 14, borderRadius: 20, marginBottom: 22, backgroundColor: TG_BLUE + "14" }}>
               <Ionicons name="paper-plane" size={14} color={TG_BLUE} />
-              <Text style={{ fontSize: 12, marginLeft: 6, color: c.textMuted }}>Kod @trades_uz_bot botiga yuborildi</Text>
+              <Text style={{ fontSize: 12, marginLeft: 6, color: c.textMuted }}>{method === "email" ? "Kod emailga yuborildi" : "Kod @trades_uz_bot botiga yuborildi"}</Text>
             </View>
 
             <OtpBoxes value={code} onChange={setCode} c={c} />

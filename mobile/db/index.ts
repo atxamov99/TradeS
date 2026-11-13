@@ -1,4 +1,5 @@
 import { Platform } from "react-native";
+import Constants, { ExecutionEnvironment } from "expo-constants";
 import { Database } from "@nozbe/watermelondb";
 import LokiJSAdapter from "@nozbe/watermelondb/adapters/lokijs";
 import SQLiteAdapter from "@nozbe/watermelondb/adapters/sqlite";
@@ -18,7 +19,11 @@ import { Employee } from "./models/Employee";
 // restart'da ma'lumot yo'qotishi mumkin edi; SQLite haqiqiy fayl bazasi bo'lgani uchun
 // bunday xavf yo'q. Native modul (`WMDatabaseBridge`) allaqachon autolink qilingan —
 // qo'shimcha sozlash shart emas. `jsi` ataylab berilmagan — standart async bridge yetarli.
-const adapter = Platform.OS === "web"
+// Expo Go'da WMDatabaseBridge (native SQLite) yo'q — faqat ko'rib chiqish uchun xotiradagi LokiJS (ilova yopilsa ma'lumot ketadi).
+// Haqiqiy APK/dev-build'da (Constants.executionEnvironment !== StoreClient) o'zgarishsiz SQLite ishlaydi.
+const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+
+const adapter = Platform.OS === "web" || isExpoGo
   ? new LokiJSAdapter({
       schema,
       migrations,

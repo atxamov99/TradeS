@@ -1,4 +1,5 @@
-import { View, Text, FlatList, TouchableOpacity, TextInput, ScrollView, Modal, Alert } from "react-native";
+import { View, Text, FlatList, TouchableOpacity, TextInput, ScrollView, Modal } from "react-native";
+import { Alert } from "@/utils/alert";
 import { useState } from "react";
 import { router } from "expo-router";
 import { useProducts } from "@/hooks/useProducts";

@@ -1,4 +1,5 @@
-import { View, Text, ScrollView, TouchableOpacity, Alert } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity } from "react-native";
+import { Alert } from "@/utils/alert";
 import { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import * as Sharing from "expo-sharing";

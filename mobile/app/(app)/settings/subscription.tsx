@@ -1,4 +1,5 @@
-import { View, Text, ScrollView, TouchableOpacity, Alert, Linking } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, Linking } from "react-native";
+import { Alert } from "@/utils/alert";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useT } from "@/hooks/useT";

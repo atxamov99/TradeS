@@ -5,6 +5,12 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 const resources = {
     uz: {
         translation: {
+            "ctx_new_sale": "Yangi savdo",
+            "ctx_products": "Mahsulotlar",
+            "ctx_calculator": "Kalkulyator",
+            "ctx_fullscreen": "To'liq ekran",
+            "ctx_exit_fullscreen": "To'liq ekrandan chiqish",
+            "ctx_text_size": "Matn o'lchami",
             "lc_title": "Kirish kodi (Telegram)",
             "lc_desc": "Har safar kirganingizda Telegram botdan tasdiqlash kodi keladi. Bu parol o'g'irlangan taqdirda ham hisobingizni himoya qiladi.",
             "lc_status_on": "Yoqilgan",
@@ -307,6 +313,12 @@ const resources = {
     },
     ru: {
         translation: {
+            "ctx_new_sale": "Новая продажа",
+            "ctx_products": "Товары",
+            "ctx_calculator": "Калькулятор",
+            "ctx_fullscreen": "Полный экран",
+            "ctx_exit_fullscreen": "Выйти из полного экрана",
+            "ctx_text_size": "Размер текста",
             "lc_title": "Код при входе (Telegram)",
             "lc_desc": "При каждом входе в Telegram приходит код подтверждения. Это защищает аккаунт, даже если пароль украдут.",
             "lc_status_on": "Включено",
@@ -609,6 +621,12 @@ const resources = {
     },
     en: {
         translation: {
+            "ctx_new_sale": "New sale",
+            "ctx_products": "Products",
+            "ctx_calculator": "Calculator",
+            "ctx_fullscreen": "Fullscreen",
+            "ctx_exit_fullscreen": "Exit fullscreen",
+            "ctx_text_size": "Text size",
             "lc_title": "Sign-in code (Telegram)",
             "lc_desc": "A confirmation code arrives in Telegram on every sign-in. It protects your account even if your password is stolen.",
             "lc_status_on": "On",

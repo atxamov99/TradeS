@@ -26,6 +26,8 @@ export default function RegisterScreen() {
 
   const [step, setStep] = useState<"form" | "connect" | "otp">("form");
   const [name, setName] = useState("");
+  const [accountType, setAccountType] = useState<"USER" | "OWNER">("USER");
+  const [shopName, setShopName] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
@@ -50,7 +52,7 @@ export default function RegisterScreen() {
   };
 
   const handleStart = () => {
-    if (!name.trim() || phoneDigits.length < 12 || !password.trim()) {
+    if (!name.trim() || phoneDigits.length < 12 || !password.trim() || (accountType === "OWNER" && !shopName.trim())) {
       Alert.alert("Xatolik", "Barcha maydonlarni to'ldiring");
       return;
     }
@@ -66,6 +68,8 @@ export default function RegisterScreen() {
         code,
         name: name.trim(),
         password: password.trim(),
+        accountType,
+        ...(accountType === "OWNER" ? { shopName: shopName.trim() } : {}),
       });
       const data = res.data?.data ?? res.data;
       await setUser(data.user);
@@ -113,7 +117,32 @@ export default function RegisterScreen() {
               Telefon raqamingiz orqali ro'yxatdan o'ting
             </Text>
 
+            <Text style={{ fontSize: 12, fontWeight: "800", marginBottom: 8, color: c.textMuted, letterSpacing: 0.6 }}>KIM BO'LIB RO'YXATDAN O'TASIZ?</Text>
+            <View style={{ flexDirection: "row", gap: 10, marginBottom: 16 }}>
+              {([
+                { key: "USER", icon: "person-outline", title: "O'zim uchun ishlayman", sub: "Shaxsiy hisob: mahsulot va savdolarni o'zim yuritaman" },
+                { key: "OWNER", icon: "storefront-outline", title: "Biznes direktori", sub: "Xodimlar (kassirlar) bilan biznes ochaman" },
+              ] as const).map((o) => {
+                const active = accountType === o.key;
+                return (
+                  <TouchableOpacity
+                    key={o.key}
+                    activeOpacity={0.8}
+                    onPress={() => setAccountType(o.key)}
+                    style={{ flex: 1, borderRadius: 16, borderWidth: 1.5, padding: 12, borderColor: active ? c.primary : c.border, backgroundColor: active ? c.bgMuted : c.bgCard }}
+                  >
+                    <Ionicons name={o.icon} size={18} color={active ? c.primary : c.textMuted} />
+                    <Text style={{ fontSize: 13, fontWeight: "800", marginTop: 6, color: c.text }}>{o.title}</Text>
+                    <Text style={{ fontSize: 11, marginTop: 2, lineHeight: 15, color: c.textMuted }}>{o.sub}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
             <Field label="Ism" icon="person-outline" placeholder="Ismingiz" value={name} onChangeText={setName} c={c} />
+            {accountType === "OWNER" && (
+              <Field label="Biznes nomi" icon="storefront-outline" placeholder="Masalan: Baraka market" value={shopName} onChangeText={setShopName} c={c} />
+            )}
             <Field label="Telefon" icon="call-outline" placeholder="+998 90 123 45 67" value={phone} onChangeText={(txt) => setPhone(formatPhone(txt))} keyboardType="phone-pad" c={c} />
 
             <View style={{ flexDirection: "row", alignItems: "center", marginTop: -6, marginBottom: 16, paddingHorizontal: 2 }}>

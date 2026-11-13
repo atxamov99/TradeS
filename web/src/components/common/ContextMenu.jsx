@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { ArrowLeft, ArrowRight, Bell, Copy, ExternalLink, LifeBuoy, Link2, Moon, Printer, RotateCw, Sun } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Bell, Calculator, Copy, ExternalLink, LifeBuoy, Link2, Maximize, Minimize, Moon, Package, Printer, RotateCw, ShoppingCart, Sun, ZoomIn, ZoomOut } from 'lucide-react';
 import useThemeStore from '../../store/themeStore';
 import useNotificationStore from '../../store/notificationStore';
+import useAuthStore from '../../store/authStore';
+import MiniCalculator from './MiniCalculator';
 
 const SUPPORT_URL = 'https://t.me/trades_uz_bot?start=support';
 const LANGS = [
@@ -12,6 +15,9 @@ const LANGS = [
   { code: 'en', label: 'EN' },
 ];
 const MENU_WIDTH = 252;
+const ZOOM_KEY = 'savdo-zoom';
+const ZOOM_MIN = 85;
+const ZOOM_MAX = 130;
 
 async function copyText(text) {
   try {
@@ -60,11 +66,32 @@ export default function ContextMenu() {
   const toggleTheme = useThemeStore((s) => s.toggleTheme);
   const setPanelOpen = useNotificationStore((s) => s.setPanelOpen);
   const unread = useNotificationStore((s) => s.items.filter((n) => !n.read).length);
+  const navigate = useNavigate();
+  const user = useAuthStore((s) => s.user);
+  const [calc, setCalc] = useState(false);
+  const [isFull, setIsFull] = useState(() => !!document.fullscreenElement);
+  const [zoom, setZoom] = useState(() => {
+    const saved = Number(localStorage.getItem(ZOOM_KEY));
+    return saved >= ZOOM_MIN && saved <= ZOOM_MAX ? saved : 100;
+  });
   const [menu, setMenu] = useState(null); // { x, y, link, selection }
   const [pos, setPos] = useState({ left: 0, top: 0, origin: 'top left' });
   const ref = useRef(null);
 
   const close = useCallback(() => setMenu(null), []);
+
+  // Text size (accessibility / small screens): scales every rem-based size, remembered between visits.
+  useEffect(() => {
+    document.documentElement.style.fontSize = zoom === 100 ? '' : `${zoom}%`;
+    try { localStorage.setItem(ZOOM_KEY, String(zoom)); } catch { /* storage blocked */ }
+  }, [zoom]);
+  const changeZoom = (delta) => setZoom((z) => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z + delta)));
+
+  useEffect(() => {
+    const onFs = () => setIsFull(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', onFs);
+    return () => document.removeEventListener('fullscreenchange', onFs);
+  }, []);
 
   // open
   useEffect(() => {
@@ -130,19 +157,21 @@ export default function ContextMenu() {
     });
   }, [menu]);
 
-  if (!menu) return null;
+  if (!menu) return calc ? <MiniCalculator onClose={() => setCalc(false)} /> : null;
 
   const run = (fn) => () => { close(); fn(); };
   const copy = (text) => async () => { if (await copyText(text)) toast.success(t('ctx_copied'), { duration: 1500 }); };
   const isDark = theme === 'dark';
 
   return (
+    <>
+    {calc && <MiniCalculator onClose={() => setCalc(false)} />}
     <div
       ref={ref}
       role="menu"
       onContextMenu={(e) => e.preventDefault()}
       style={{ left: pos.left, top: pos.top, width: MENU_WIDTH, transformOrigin: pos.origin, animation: 'ctxIn .12s ease-out' }}
-      className="fixed z-[200] rounded-2xl border border-slate-200 bg-white/95 p-1.5 shadow-2xl backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/95"
+      className="fixed z-[200] max-h-[calc(100vh-16px)] overflow-y-auto rounded-2xl border border-slate-200 bg-white/95 p-1.5 shadow-2xl backdrop-blur-md dark:border-[#223027] dark:bg-[#0E150F]/95"
     >
       {/* brand strip */}
       <div className="flex items-center gap-2 px-3 pb-1.5 pt-1">
@@ -187,8 +216,31 @@ export default function ContextMenu() {
         </>
       )}
 
+      {user && (
+        <>
+          <Item icon={ShoppingCart} label={t('ctx_new_sale')} onClick={run(() => navigate('/dashboard/sales'))} />
+          <Item icon={Package} label={t('ctx_products')} onClick={run(() => navigate('/dashboard/products'))} />
+          <Sep />
+        </>
+      )}
+
       <Item icon={Link2} label={t('ctx_share_page')} onClick={run(copy(window.location.href))} />
       <Item icon={Printer} label={t('ctx_print')} hint="Ctrl+P" onClick={run(() => window.print())} />
+      <Item icon={Calculator} label={t('ctx_calculator')} onClick={run(() => setCalc(true))} />
+      <Item
+        icon={isFull ? Minimize : Maximize}
+        label={isFull ? t('ctx_exit_fullscreen') : t('ctx_fullscreen')}
+        hint="F11"
+        onClick={run(() => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.()))}
+      />
+      <div className="flex items-center gap-2 px-3 py-1.5">
+        <span className="flex-1 text-[13.5px] font-medium text-slate-700 dark:text-slate-200">{t('ctx_text_size')}</span>
+        <div className="flex items-center gap-1 rounded-xl bg-slate-100 p-1 dark:bg-[#121B14]">
+          <button type="button" data-ctx-item aria-label="-" onClick={() => changeZoom(-5)} disabled={zoom <= ZOOM_MIN} className="rounded-lg p-1 text-slate-500 hover:text-green-600 focus-visible:outline-none disabled:opacity-30 dark:text-slate-400"><ZoomOut size={14} /></button>
+          <span className="w-10 text-center text-[11px] font-bold text-slate-700 dark:text-slate-200">{zoom}%</span>
+          <button type="button" data-ctx-item aria-label="+" onClick={() => changeZoom(5)} disabled={zoom >= ZOOM_MAX} className="rounded-lg p-1 text-slate-500 hover:text-green-600 focus-visible:outline-none disabled:opacity-30 dark:text-slate-400"><ZoomIn size={14} /></button>
+        </div>
+      </div>
       <Sep />
 
       {/* language chips */}
@@ -218,5 +270,6 @@ export default function ContextMenu() {
 
       <p className="px-3 pb-1 pt-2 text-[10.5px] leading-snug text-slate-400">{t('ctx_native_hint')}</p>
     </div>
+    </>
   );
 }

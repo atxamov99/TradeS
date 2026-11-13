@@ -83,9 +83,14 @@ const processSyncBatch = async (userId, operations) => {
             const basePrice = safe.price || 0;
             const finalPrice = basePrice - (basePrice * (safe.discount || 0)) / 100;
 
+            // Attach the product to the owner's shop, otherwise shop members (cashiers) never see it in the
+            // shop-scoped catalogue (scope=shop). Cashiers have no OWNER membership, so they stay unattached.
+            const ownedShop = await prisma.shopMember.findFirst({ where: { userId, role: 'OWNER' }, select: { shopId: true } });
+
             const product = await prisma.product.create({
               data: {
                 ...safe,
+                shopId: ownedShop ? ownedShop.shopId : null,
                 buyPrice: Number(safe.buyPrice) || 0,
                 sellPrice: Number(safe.sellPrice) || 0,
                 stock: Number(safe.stock) || 0,

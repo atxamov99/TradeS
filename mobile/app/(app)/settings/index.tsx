@@ -307,13 +307,9 @@ export default function ProfileScreen() {
           iconName="people"
           iconBg="#D1FAE5"
           label={t.employees.title}
-          sub={t.common.comingSoon}
-          right={
-            <View style={{ backgroundColor: c.bgMuted, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
-              <Text style={{ color: c.textMuted, fontSize: 10, fontWeight: "700" }}>{t.common.comingSoon}</Text>
-            </View>
-          }
-          onPress={() => Alert.alert(t.common.comingSoon, t.common.comingSoonMsg)}
+          sub={t.team.sub}
+          right={<Ionicons name="chevron-forward" size={18} color={c.textMuted} />}
+          onPress={() => router.push("/settings/employees")}
         />
       </Section>
 

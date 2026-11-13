@@ -6,6 +6,7 @@ const { generateAccessToken, generateRefreshToken } = require('../utils/generate
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { createAuditLog } = require('./audit.service');
+const logger = require('../utils/logger');
 const telegramService = require('./telegram.service');
 const emailService = require('./email.service');
 const { testUserExpiresAt } = require('../utils/testUserLimits');
@@ -166,7 +167,7 @@ const isUnrecognizedDevice = async (userId, deviceId) => {
 // Sends a confirmation code to the phone's linked Telegram chat. If the user
 // has no phone or hasn't linked Telegram yet, there's no channel to challenge
 // through — fail-open (allow the login) rather than lock the account out.
-const challengeNewDevice = async (user) => {
+const challengeNewDevice = async (user, reason = 'newDevice') => {
   if (!user.phone) return null;
   const phone = telegramService.normalizePhone(user.phone);
   const record = phone ? await prisma.phoneAuth.findUnique({ where: { phone } }) : null;
@@ -179,12 +180,44 @@ const challengeNewDevice = async (user) => {
     data: { otpCode: code, otpExpiresAt, attempts: 0 },
   });
 
-  await telegramService.sendMessage(
-    record.telegramChatId,
-    `⚠️ <b>TradeS</b> — yangi qurilmadan kirish\n\nTanilmagan qurilmadan hisobingizga kirishga urinish qayd etildi. Agar bu siz bo'lsangiz, tasdiqlash kodi:\n\n<code>${code}</code>\n\nKod ${OTP_EXPIRES_MIN} daqiqa amal qiladi. Bu siz emasligini bilsangiz, parolingizni darhol o'zgartiring.`
-  );
+  const text = reason === 'login'
+    ? `🔐 <b>TradeS</b>
 
-  return { requiresDeviceConfirmation: true, message: 'Yangi qurilma aniqlandi — Telegramga yuborilgan kodni kiriting' };
+Kirish kodi / Код для входа / Sign-in code:
+
+<code>${code}</code>
+
+Kod ${OTP_EXPIRES_MIN} daqiqa amal qiladi. Agar bu siz bo'lmasangiz, hech kimga bermang va parolni almashtiring.
+Код действует ${OTP_EXPIRES_MIN} минут. Если это не вы — никому не сообщайте код и смените пароль.
+Valid for ${OTP_EXPIRES_MIN} minutes. If this wasn't you, don't share it and change your password.`
+    : `⚠️ <b>TradeS</b> — yangi qurilmadan kirish
+
+Tanilmagan qurilmadan hisobingizga kirishga urinish qayd etildi. Agar bu siz bo'lsangiz, tasdiqlash kodi:
+
+<code>${code}</code>
+
+Kod ${OTP_EXPIRES_MIN} daqiqa amal qiladi. Hech kimga bermang.`;
+
+  let sent = true;
+  try {
+    await telegramService.sendMessage(record.telegramChatId, text);
+  } catch (err) {
+    sent = false;
+    logger.warn(`Telegram code could not be sent: ${err.message}`);
+    // Production: never pretend it was sent, never skip the check silently.
+    if (process.env.NODE_ENV === 'production') {
+      throw new ApiError(502, "Telegramga kod yuborib bo'lmadi. Birozdan so'ng qayta urinib ko'ring.", [], '', 'TELEGRAM_SEND_FAILED');
+    }
+  }
+
+  const result = {
+    requiresDeviceConfirmation: true,
+    ...(reason === 'login' ? { requiresLoginCode: true } : {}),
+    message: reason === 'login' ? 'Kod Telegramga yuborildi — uni kiriting' : 'Yangi qurilma aniqlandi — Telegramga yuborilgan kodni kiriting',
+  };
+  // Dev only: the bot could not deliver it, hand the code back so the flow stays testable.
+  if (!sent) result.devCode = code;
+  return result;
 };
 
 // Second step of the new-device flow — re-checks the password (no session
@@ -276,10 +309,12 @@ const login = async ({ email, phone, password }, meta = {}) => {
     throw new ApiError(403, 'Your account has been blocked', [], '', 'ACCOUNT_BLOCKED');
   }
 
-  if (await isUnrecognizedDevice(user.id, meta.deviceId)) {
-    const challenge = await challengeNewDevice(user);
+  // Code on every sign-in (default) — or, when the user switched that off, only for an unrecognised device.
+  const codeOnEveryLogin = user.loginCodeEnabled !== false;
+  if (codeOnEveryLogin || (await isUnrecognizedDevice(user.id, meta.deviceId))) {
+    const challenge = await challengeNewDevice(user, codeOnEveryLogin ? 'login' : 'newDevice');
     if (challenge) {
-      logger.warn(`Login from unrecognized device for ${email || phone} — OTP challenge sent`);
+      logger.warn(`Login code sent for ${email || phone} (${codeOnEveryLogin ? 'every-login' : 'unrecognized device'})`);
       return challenge;
     }
     // No Telegram channel to challenge through — fall through and log in normally.
@@ -844,4 +879,36 @@ const verifyEmailOtp = async ({ email: rawEmail, code, name, password, accountTy
   return { user: userResponse, accessToken, refreshToken, shop };
 };
 
-module.exports = { register, registerTestUser, login, verifyNewDeviceLogin, refreshTokens, logout, logoutAll, listSessions, revokeSession, googleAuth, requestOtp, verifyOtp, issueTokens, forgotPassword, resetPassword, forgotPasswordByPhone, resetPasswordByPhone, requestEmailOtp, verifyEmailOtp };
+// Turn the Telegram sign-in code on/off. Switching it OFF lowers security, so it needs the account password
+// and is reported to the user's Telegram. Switching it ON needs nothing extra.
+const setLoginCodeEnabled = async (userId, { enabled, password }, meta = {}) => {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw new ApiError(404, 'User not found');
+  if (!enabled) {
+    if (!password || !(await bcrypt.compare(password, user.password))) {
+      throw new ApiError(401, "Parol noto'g'ri", [], '', 'INVALID_CREDENTIALS');
+    }
+  }
+  await prisma.user.update({ where: { id: userId }, data: { loginCodeEnabled: !!enabled } });
+  await createAuditLog({
+    action: enabled ? 'LOGIN_CODE_ENABLED' : 'LOGIN_CODE_DISABLED', category: 'auth',
+    actor: userId, actorId: userId, ip: meta.ip || '',
+  }).catch(() => {});
+  // Tell the owner on Telegram that protection was changed (a stolen session would be noticed).
+  try {
+    const phone = user.phone ? telegramService.normalizePhone(user.phone) : null;
+    const rec = phone ? await prisma.phoneAuth.findUnique({ where: { phone } }) : null;
+    if (rec && rec.telegramChatId) {
+      await telegramService.sendMessage(
+        rec.telegramChatId,
+        enabled
+          ? '✅ <b>TradeS</b> — kirish kodi yoqildi / код входа включён / sign-in code enabled.'
+          : "⚠️ <b>TradeS</b> — kirish kodi O'CHIRILDI / код входа ОТКЛЮЧЁН / sign-in code DISABLED.\nAgar bu siz bo'lmasangiz, darhol parolni almashtiring.\nЕсли это не вы — срочно смените пароль."
+      );
+    }
+  } catch (err) { logger.warn('login-code notice failed: ' + err.message); }
+  return { loginCodeEnabled: !!enabled };
+};
+
+module.exports = {
+  setLoginCodeEnabled, register, registerTestUser, login, verifyNewDeviceLogin, refreshTokens, logout, logoutAll, listSessions, revokeSession, googleAuth, requestOtp, verifyOtp, issueTokens, forgotPassword, resetPassword, forgotPasswordByPhone, resetPasswordByPhone, requestEmailOtp, verifyEmailOtp };

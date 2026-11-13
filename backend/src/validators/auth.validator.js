@@ -120,7 +120,13 @@ const changePasswordSchema = Joi.object({
     }),
 });
 
+const loginCodeSchema = Joi.object({
+  enabled: Joi.boolean().required(),
+  password: Joi.string().allow('').optional(),
+});
+
 module.exports = {
+  loginCodeSchema,
   registerSchema,
   loginSchema,
   verifyNewDeviceSchema,

@@ -54,10 +54,10 @@ export default function Products() {
     : [];
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0F172A]">
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0E150F]">
       {/* Page header */}
-      <div className="bg-white dark:bg-[#1E293B] border-b border-[#E2E8F0] dark:border-[#334155] px-5 py-4 flex items-center justify-between sticky top-0 z-10">
-        <h1 className="text-lg font-bold text-[#0F172A] dark:text-slate-100">{t('products')}</h1>
+      <div className="bg-white dark:bg-[#121B14] border-b border-[#E2E8F0] dark:border-[#223027] px-5 py-4 flex items-center justify-between sticky top-0 z-10">
+        <h1 className="text-lg font-bold text-[#0E150F] dark:text-slate-100">{t('products')}</h1>
         <button
           onClick={() => setModal('add')}
           className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white font-bold px-4 py-2.5 rounded-xl transition"
@@ -77,7 +77,7 @@ export default function Products() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t('search_products')}
-            className="w-full h-12 rounded-xl border border-[#E2E8F0] dark:border-[#334155] bg-white dark:bg-[#1E293B] pl-11 pr-4 text-base text-[#0F172A] dark:text-slate-100 placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition"
+            className="w-full h-12 rounded-xl border border-[#E2E8F0] dark:border-[#223027] bg-white dark:bg-[#121B14] pl-11 pr-4 text-base text-[#0E150F] dark:text-slate-100 placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition"
           />
           {search && (
             <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-[#94A3B8] hover:text-[#64748B]">
@@ -96,7 +96,7 @@ export default function Products() {
         ) : isLoading ? (
           <div className="flex flex-col gap-3">
             {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="bg-white dark:bg-[#1E293B] rounded-2xl border border-[#E2E8F0] dark:border-[#334155] p-4 animate-pulse flex justify-between">
+              <div key={i} className="bg-white dark:bg-[#121B14] rounded-2xl border border-[#E2E8F0] dark:border-[#223027] p-4 animate-pulse flex justify-between">
                 <div className="flex flex-col gap-2">
                   <div className="h-4 w-36 bg-slate-200 dark:bg-slate-700 rounded" />
                   <div className="h-3 w-24 bg-slate-100 dark:bg-slate-800 rounded" />
@@ -123,10 +123,10 @@ export default function Products() {
         ) : (
           <div className="flex flex-col gap-3">
             {products.map((product) => (
-              <div key={product.id} className="bg-white dark:bg-[#1E293B] rounded-2xl border border-[#E2E8F0] dark:border-[#334155] p-4 flex items-center justify-between gap-3">
+              <div key={product.id} className="bg-white dark:bg-[#121B14] rounded-2xl border border-[#E2E8F0] dark:border-[#223027] p-4 flex items-center justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <p className="font-bold text-[#0F172A] dark:text-slate-100 truncate">{product.name}</p>
+                    <p className="font-bold text-[#0E150F] dark:text-slate-100 truncate">{product.name}</p>
                     <StockBadge stock={product.stock} />
                   </div>
                   {product.unit === 'box' && product.bagWeightKg ? (
@@ -148,7 +148,7 @@ export default function Products() {
                     </button>
                     <button
                       onClick={() => setModal(product)}
-                      className="p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-[#64748B] dark:text-slate-400 hover:text-[#0F172A] dark:hover:text-slate-100 transition"
+                      className="p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-[#64748B] dark:text-slate-400 hover:text-[#0E150F] dark:hover:text-slate-100 transition"
                       title={t('edit_product')}
                     >
                       <Pencil size={18} />
@@ -274,17 +274,17 @@ function ProductModal({ product, onClose, t, fmt, UNITS }) {
   };
 
   const inputCls = (field) =>
-    `w-full h-12 rounded-xl border px-4 text-base text-[#0F172A] dark:text-slate-100 placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition ${errors[field] ? 'border-red-400 bg-red-50 dark:bg-red-500/10' : 'border-[#E2E8F0] dark:border-[#334155] bg-white dark:bg-[#0F172A]'
+    `w-full h-12 rounded-xl border px-4 text-base text-[#0E150F] dark:text-slate-100 placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition ${errors[field] ? 'border-red-400 bg-red-50 dark:bg-red-500/10' : 'border-[#E2E8F0] dark:border-[#223027] bg-white dark:bg-[#0E150F]'
     }`;
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
       <div
-        className="bg-white dark:bg-[#1E293B] w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-6 max-h-[90vh] overflow-y-auto"
+        className="bg-white dark:bg-[#121B14] w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-6 max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-bold text-[#0F172A] dark:text-slate-100">
+          <h2 className="text-lg font-bold text-[#0E150F] dark:text-slate-100">
             {product ? t('edit_product') : t('add_new_product')}
           </h2>
           <button onClick={onClose} className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 dark:text-slate-300 transition">
@@ -294,19 +294,19 @@ function ProductModal({ product, onClose, t, fmt, UNITS }) {
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <label className="block text-sm font-semibold text-[#0F172A] dark:text-slate-100 mb-2">{t('product_name')}</label>
+            <label className="block text-sm font-semibold text-[#0E150F] dark:text-slate-100 mb-2">{t('product_name')}</label>
             <input type="text" value={form.name} onChange={handleChange('name')} placeholder={t('example_product_name')} className={inputCls('name')} />
             {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-semibold text-[#0F172A] dark:text-slate-100 mb-2">{t('buy_price_label')} ({t('currency')})</label>
+              <label className="block text-sm font-semibold text-[#0E150F] dark:text-slate-100 mb-2">{t('buy_price_label')} ({t('currency')})</label>
               <input type="number" value={form.buyPrice} onChange={handleChange('buyPrice')} placeholder="0" min="0" className={inputCls('buyPrice')} />
               {errors.buyPrice && <p className="text-red-500 text-sm mt-1">{errors.buyPrice}</p>}
             </div>
             <div>
-              <label className="block text-sm font-semibold text-[#0F172A] dark:text-slate-100 mb-2">{t('sell_price_label')} ({t('currency')})</label>
+              <label className="block text-sm font-semibold text-[#0E150F] dark:text-slate-100 mb-2">{t('sell_price_label')} ({t('currency')})</label>
               <input type="number" value={form.sellPrice} onChange={handleChange('sellPrice')} placeholder="0" min="0" className={inputCls('sellPrice')} />
               {errors.sellPrice && <p className="text-red-500 text-sm mt-1">{errors.sellPrice}</p>}
             </div>
@@ -320,12 +320,12 @@ function ProductModal({ product, onClose, t, fmt, UNITS }) {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-semibold text-[#0F172A] dark:text-slate-100 mb-2">{t('quantity')}</label>
+              <label className="block text-sm font-semibold text-[#0E150F] dark:text-slate-100 mb-2">{t('quantity')}</label>
               <input type="number" value={form.stock} onChange={handleChange('stock')} placeholder="0" min="0" className={inputCls('stock')} />
               {errors.stock && <p className="text-red-500 text-sm mt-1">{errors.stock}</p>}
             </div>
             <div>
-              <label className="block text-sm font-semibold text-[#0F172A] dark:text-slate-100 mb-2">{t('unit')}</label>
+              <label className="block text-sm font-semibold text-[#0E150F] dark:text-slate-100 mb-2">{t('unit')}</label>
               <Dropdown
                 options={UNITS}
                 value={form.unit}
@@ -340,7 +340,7 @@ function ProductModal({ product, onClose, t, fmt, UNITS }) {
 
           {form.unit === 'box' && (
             <div>
-              <label className="block text-sm font-semibold text-[#0F172A] dark:text-slate-100 mb-2">{t('bag_weight_label')}</label>
+              <label className="block text-sm font-semibold text-[#0E150F] dark:text-slate-100 mb-2">{t('bag_weight_label')}</label>
               <Dropdown
                 options={[
                   ...BAG_WEIGHT_PRESETS.map((w) => ({ value: String(w), label: `${w} kg` })),
@@ -382,7 +382,7 @@ function ProductModal({ product, onClose, t, fmt, UNITS }) {
           )}
 
           <div className="flex gap-3 mt-2">
-            <button type="button" onClick={onClose} className="flex-1 h-12 rounded-xl border border-[#E2E8F0] dark:border-[#334155] text-[#64748B] dark:text-slate-400 font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition">
+            <button type="button" onClick={onClose} className="flex-1 h-12 rounded-xl border border-[#E2E8F0] dark:border-[#223027] text-[#64748B] dark:text-slate-400 font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition">
               {t('cancel')}
             </button>
             <button
@@ -414,13 +414,13 @@ function DeleteConfirm({ product, onClose, t }) {
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white dark:bg-[#1E293B] rounded-2xl p-6 max-w-sm w-full" onClick={(e) => e.stopPropagation()}>
-        <h2 className="text-lg font-bold text-[#0F172A] dark:text-slate-100 mb-2">{t('delete_product')}</h2>
+      <div className="bg-white dark:bg-[#121B14] rounded-2xl p-6 max-w-sm w-full" onClick={(e) => e.stopPropagation()}>
+        <h2 className="text-lg font-bold text-[#0E150F] dark:text-slate-100 mb-2">{t('delete_product')}</h2>
         <p className="text-[#64748B] dark:text-slate-400 text-sm mb-6">
           <strong>{product.name}</strong> {t('delete_confirm_msg')}
         </p>
         <div className="flex gap-3">
-          <button onClick={onClose} className="flex-1 h-12 rounded-xl border border-[#E2E8F0] dark:border-[#334155] text-[#64748B] dark:text-slate-400 font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition">
+          <button onClick={onClose} className="flex-1 h-12 rounded-xl border border-[#E2E8F0] dark:border-[#223027] text-[#64748B] dark:text-slate-400 font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition">
             {t('cancel')}
           </button>
           <button
@@ -465,11 +465,11 @@ function RestockModal({ product, onClose, t }) {
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
       <div
-        className="bg-white dark:bg-[#1E293B] w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl p-6"
+        className="bg-white dark:bg-[#121B14] w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-bold text-[#0F172A] dark:text-slate-100">{t('restock_modal_title')}</h2>
+          <h2 className="text-lg font-bold text-[#0E150F] dark:text-slate-100">{t('restock_modal_title')}</h2>
           <button onClick={onClose} className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition">
             <X size={20} />
           </button>
@@ -477,8 +477,8 @@ function RestockModal({ product, onClose, t }) {
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <p className="font-bold text-[#0F172A] dark:text-slate-100 mb-3 truncate">{product.name}</p>
-            <label className="block text-sm font-semibold text-[#0F172A] dark:text-slate-100 mb-2">{t('restock_quantity_label')}</label>
+            <p className="font-bold text-[#0E150F] dark:text-slate-100 mb-3 truncate">{product.name}</p>
+            <label className="block text-sm font-semibold text-[#0E150F] dark:text-slate-100 mb-2">{t('restock_quantity_label')}</label>
             <input
               type="number"
               value={quantity}
@@ -486,14 +486,14 @@ function RestockModal({ product, onClose, t }) {
               placeholder="0"
               min="0"
               autoFocus
-              className={`w-full h-12 rounded-xl border px-4 text-base text-[#0F172A] placeholder-[#94A3B8] dark:text-slate-100 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition ${error ? 'border-red-400 bg-red-50 dark:bg-red-500/10' : 'border-[#E2E8F0] bg-white dark:border-[#334155] dark:bg-[#0F172A]'
+              className={`w-full h-12 rounded-xl border px-4 text-base text-[#0E150F] placeholder-[#94A3B8] dark:text-slate-100 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition ${error ? 'border-red-400 bg-red-50 dark:bg-red-500/10' : 'border-[#E2E8F0] bg-white dark:border-[#223027] dark:bg-[#0E150F]'
                 }`}
             />
             {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
           </div>
 
           <div className="flex gap-3 mt-2">
-            <button type="button" onClick={onClose} className="flex-1 h-12 rounded-xl border border-[#E2E8F0] text-[#64748B] font-semibold hover:bg-slate-50 transition dark:border-[#334155] dark:text-slate-400 dark:hover:bg-slate-800">
+            <button type="button" onClick={onClose} className="flex-1 h-12 rounded-xl border border-[#E2E8F0] text-[#64748B] font-semibold hover:bg-slate-50 transition dark:border-[#223027] dark:text-slate-400 dark:hover:bg-slate-800">
               {t('cancel')}
             </button>
             <button

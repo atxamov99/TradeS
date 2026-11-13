@@ -139,6 +139,11 @@ export default function Login() {
       if (result?.requiresDeviceConfirmation) {
         setMode('device-confirm');
         setCode('');
+        // Dev mode (bot could not deliver): the backend hands the code back so the flow is not a dead end.
+        if (result.devCode) {
+          setCode(String(result.devCode));
+          toast(t('lc_dev_code', { code: result.devCode }), { icon: '🔧', duration: 20000 });
+        }
         return;
       }
       goAfterLogin();
@@ -358,8 +363,8 @@ export default function Login() {
                 <div className="w-16 h-16 rounded-2xl bg-[#2ECC71]/15 flex items-center justify-center">
                   <KeyRound className="w-8 h-8 text-[#2ECC71]" />
                 </div>
-                <p className="text-white font-bold text-sm">Yangi qurilma aniqlandi</p>
-                <p className="text-slate-400 text-sm">Telegramga yuborilgan 6 xonali kodni kiriting</p>
+                <p className="text-white font-bold text-sm">{t('lc_confirm_title')}</p>
+                <p className="text-slate-400 text-sm">{t('lc_confirm_desc')}</p>
               </div>
               <input
                 type="text"

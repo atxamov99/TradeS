@@ -47,7 +47,7 @@ export default function PosLayout() {
         if (synced > 0) {
           toast.success(`${synced} savdo serverga yuklandi`, {
             icon: '✅',
-            style: { background: '#1E293B', color: '#fff', border: '1px solid #22C55E' },
+            style: { background: '#121B14', color: '#fff', border: '1px solid #22C55E' },
           });
         }
         if (failed > 0) {

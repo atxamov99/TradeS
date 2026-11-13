@@ -5,6 +5,10 @@ export default {
   theme: {
     extend: {
       colors: {
+        // TradeS dark palette: near-black with a green tint, matching the dark logo + landing.
+        // Only the dark end (700-950) is overridden; light shades keep Tailwind defaults.
+        slate: { 700: '#223027', 800: '#121B14', 900: '#0E150F', 950: '#080D09' },
+        gray: { 700: '#223027', 800: '#121B14', 900: '#0E150F', 950: '#080D09' },
         primary: {
           50:  '#EFFDF5',
           100: '#D7F9E5',
@@ -19,9 +23,9 @@ export default {
         },
         // POS / SAVDO dark theme
         pos: {
-          bg:      '#0F172A',
-          card:    '#1E293B',
-          border:  '#334155',
+          bg:      '#0E150F',
+          card:    '#121B14',
+          border:  '#223027',
           accent:  '#22C55E',
           accentHover: '#16A34A',
           text:    '#FFFFFF',

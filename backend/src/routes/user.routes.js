@@ -8,6 +8,7 @@ const {
   updateProfileSchema,
   addressSchema,
   changePasswordSchema,
+  loginCodeSchema,
 } = require('../validators/auth.validator');
 
 router.use(protect);
@@ -15,6 +16,7 @@ router.use(protect);
 router.get('/profile', userController.getProfile);
 router.patch('/profile', validate(updateProfileSchema), userController.updateProfile);
 router.patch('/change-password', validate(changePasswordSchema), userController.changePassword);
+router.patch('/security', validate(loginCodeSchema), userController.setLoginCode);
 
 // Address management
 router.post('/addresses', validate(addressSchema), userController.addAddress);

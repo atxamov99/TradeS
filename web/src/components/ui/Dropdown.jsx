@@ -59,9 +59,9 @@ export default function Dropdown({
         onClick={() => setOpen((o) => !o)}
         className={clsx(
           'w-full h-12 rounded-xl border px-4 text-base text-left flex items-center justify-between gap-2 transition',
-          'text-[#0F172A] bg-white dark:text-slate-100 dark:bg-[#0F172A]',
+          'text-[#0E150F] bg-white dark:text-slate-100 dark:bg-[#0E150F]',
           disabled && 'opacity-60 cursor-not-allowed',
-          error ? 'border-red-400 bg-red-50 dark:bg-red-500/10' : 'border-[#E2E8F0] dark:border-[#334155]',
+          error ? 'border-red-400 bg-red-50 dark:bg-red-500/10' : 'border-[#E2E8F0] dark:border-[#223027]',
           open && 'ring-2 ring-green-500 border-green-500'
         )}
       >
@@ -76,12 +76,12 @@ export default function Dropdown({
 
       <div
         className={clsx(
-          'absolute z-30 mt-2 w-full origin-top rounded-xl border border-[#E2E8F0] dark:border-[#334155] bg-white dark:bg-[#1E293B] shadow-lg overflow-hidden transition-all duration-150',
+          'absolute z-30 mt-2 w-full origin-top rounded-xl border border-[#E2E8F0] dark:border-[#223027] bg-white dark:bg-[#121B14] shadow-lg overflow-hidden transition-all duration-150',
           open ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none absolute'
         )}
       >
         {searchable && (
-          <div className="p-2 border-b border-[#E2E8F0] dark:border-[#334155]">
+          <div className="p-2 border-b border-[#E2E8F0] dark:border-[#223027]">
             <div className="relative">
               <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8] dark:text-slate-500" />
               <input
@@ -89,7 +89,7 @@ export default function Dropdown({
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder={searchPlaceholder}
-                className="w-full h-9 rounded-lg border border-[#E2E8F0] dark:border-[#334155] bg-white dark:bg-[#0F172A] pl-8 pr-3 text-sm text-[#0F172A] dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-green-500"
+                className="w-full h-9 rounded-lg border border-[#E2E8F0] dark:border-[#223027] bg-white dark:bg-[#0E150F] pl-8 pr-3 text-sm text-[#0E150F] dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-green-500"
               />
             </div>
           </div>
@@ -110,7 +110,7 @@ export default function Dropdown({
                   'w-full flex items-center justify-between gap-2 px-4 py-2.5 text-left text-sm transition',
                   o.value === value
                     ? 'bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-300 font-semibold'
-                    : 'text-[#0F172A] dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800'
+                    : 'text-[#0E150F] dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800'
                 )}
               >
                 {o.label}

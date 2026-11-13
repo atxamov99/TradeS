@@ -5,6 +5,7 @@ import { Check, LogOut, Sun, Moon, Smartphone, Monitor } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import useThemeStore from '../store/themeStore';
 import { getSessions, revokeSession } from '../api/auth.api';
+import LoginCodeCard from '../components/settings/LoginCodeCard';
 
 // Rough device label from the stored User-Agent — good enough to tell two
 // sessions apart in a list, not meant to be a precise UA parser.
@@ -105,17 +106,17 @@ export default function Settings() {
   const role = roleMap[user?.role] || roleMap.USER;
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0F172A]">
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0E150F]">
       {/* Header */}
-      <div className="bg-white dark:bg-[#1E293B] border-b border-[#E2E8F0] dark:border-[#334155] px-5 py-4 sticky top-0 z-10">
-        <h1 className="text-lg font-bold text-[#0F172A] dark:text-slate-100">{t('settings')}</h1>
+      <div className="bg-white dark:bg-[#121B14] border-b border-[#E2E8F0] dark:border-[#223027] px-5 py-4 sticky top-0 z-10">
+        <h1 className="text-lg font-bold text-[#0E150F] dark:text-slate-100">{t('settings')}</h1>
       </div>
 
       <div className="px-4 sm:px-6 py-5 max-w-3xl mx-auto flex flex-col gap-4">
 
         {/* ── Profile ───────────────────────────────── */}
-        <div className="bg-white dark:bg-[#1E293B] rounded-2xl border border-[#E2E8F0] dark:border-[#334155] overflow-hidden">
-          <div className="px-5 py-3 border-b border-[#E2E8F0] dark:border-[#334155]">
+        <div className="bg-white dark:bg-[#121B14] rounded-2xl border border-[#E2E8F0] dark:border-[#223027] overflow-hidden">
+          <div className="px-5 py-3 border-b border-[#E2E8F0] dark:border-[#223027]">
             <p className="text-xs font-semibold text-[#94A3B8] dark:text-slate-400 uppercase tracking-wider">
               {t('profile')}
             </p>
@@ -129,7 +130,7 @@ export default function Settings() {
             </div>
             {/* Info */}
             <div className="flex-1 min-w-0">
-              <p className="text-base font-bold text-[#0F172A] dark:text-slate-100 truncate">{user?.name || '—'}</p>
+              <p className="text-base font-bold text-[#0E150F] dark:text-slate-100 truncate">{user?.name || '—'}</p>
               <p className="text-sm text-[#64748B] dark:text-slate-400 truncate mt-0.5">{user?.email || '—'}</p>
               {user?.role && (
                 <span className={`inline-block mt-2 px-2.5 py-0.5 rounded-lg text-xs font-bold ${role.cls}`}>
@@ -141,8 +142,8 @@ export default function Settings() {
         </div>
 
         {/* ── Appearance ────────────────────────────── */}
-        <div className="bg-white dark:bg-[#1E293B] rounded-2xl border border-[#E2E8F0] dark:border-[#334155] overflow-hidden">
-          <div className="px-5 py-3 border-b border-[#E2E8F0] dark:border-[#334155]">
+        <div className="bg-white dark:bg-[#121B14] rounded-2xl border border-[#E2E8F0] dark:border-[#223027] overflow-hidden">
+          <div className="px-5 py-3 border-b border-[#E2E8F0] dark:border-[#223027]">
             <p className="text-xs font-semibold text-[#94A3B8] dark:text-slate-400 uppercase tracking-wider">
               {t('appearance')}
             </p>
@@ -154,13 +155,13 @@ export default function Settings() {
               className={`flex items-center justify-between w-full px-4 py-3.5 rounded-xl border transition-all ${
                 theme === 'light'
                   ? 'border-green-500 bg-green-50 dark:bg-green-500/10'
-                  : 'border-[#E2E8F0] dark:border-[#334155] bg-white dark:bg-[#1E293B] hover:bg-slate-50 dark:hover:bg-slate-800'
+                  : 'border-[#E2E8F0] dark:border-[#223027] bg-white dark:bg-[#121B14] hover:bg-slate-50 dark:hover:bg-slate-800'
               }`}
             >
               <div className="flex items-center gap-3">
                 <Sun size={22} className={theme === 'light' ? 'text-green-600 dark:text-green-400' : 'text-[#64748B] dark:text-slate-400'} />
                 <div className="text-left">
-                  <p className={`text-sm font-bold leading-tight ${theme === 'light' ? 'text-green-700 dark:text-green-400' : 'text-[#0F172A] dark:text-slate-100'}`}>
+                  <p className={`text-sm font-bold leading-tight ${theme === 'light' ? 'text-green-700 dark:text-green-400' : 'text-[#0E150F] dark:text-slate-100'}`}>
                     {t('theme_light')}
                   </p>
                 </div>
@@ -170,7 +171,7 @@ export default function Settings() {
                   <Check size={13} className="text-white" strokeWidth={3} />
                 </div>
               ) : (
-                <div className="w-6 h-6 rounded-full border-2 border-[#E2E8F0] dark:border-[#334155] flex-shrink-0" />
+                <div className="w-6 h-6 rounded-full border-2 border-[#E2E8F0] dark:border-[#223027] flex-shrink-0" />
               )}
             </button>
             {/* Dark */}
@@ -179,13 +180,13 @@ export default function Settings() {
               className={`flex items-center justify-between w-full px-4 py-3.5 rounded-xl border transition-all ${
                 theme === 'dark'
                   ? 'border-green-500 bg-green-50 dark:bg-green-500/10'
-                  : 'border-[#E2E8F0] dark:border-[#334155] bg-white dark:bg-[#1E293B] hover:bg-slate-50 dark:hover:bg-slate-800'
+                  : 'border-[#E2E8F0] dark:border-[#223027] bg-white dark:bg-[#121B14] hover:bg-slate-50 dark:hover:bg-slate-800'
               }`}
             >
               <div className="flex items-center gap-3">
                 <Moon size={22} className={theme === 'dark' ? 'text-green-600 dark:text-green-400' : 'text-[#64748B] dark:text-slate-400'} />
                 <div className="text-left">
-                  <p className={`text-sm font-bold leading-tight ${theme === 'dark' ? 'text-green-700 dark:text-green-400' : 'text-[#0F172A] dark:text-slate-100'}`}>
+                  <p className={`text-sm font-bold leading-tight ${theme === 'dark' ? 'text-green-700 dark:text-green-400' : 'text-[#0E150F] dark:text-slate-100'}`}>
                     {t('theme_dark')}
                   </p>
                 </div>
@@ -195,15 +196,15 @@ export default function Settings() {
                   <Check size={13} className="text-white" strokeWidth={3} />
                 </div>
               ) : (
-                <div className="w-6 h-6 rounded-full border-2 border-[#E2E8F0] dark:border-[#334155] flex-shrink-0" />
+                <div className="w-6 h-6 rounded-full border-2 border-[#E2E8F0] dark:border-[#223027] flex-shrink-0" />
               )}
             </button>
           </div>
         </div>
 
         {/* ── Language ──────────────────────────────── */}
-        <div className="bg-white dark:bg-[#1E293B] rounded-2xl border border-[#E2E8F0] dark:border-[#334155] overflow-hidden">
-          <div className="px-5 py-3 border-b border-[#E2E8F0] dark:border-[#334155]">
+        <div className="bg-white dark:bg-[#121B14] rounded-2xl border border-[#E2E8F0] dark:border-[#223027] overflow-hidden">
+          <div className="px-5 py-3 border-b border-[#E2E8F0] dark:border-[#223027]">
             <p className="text-xs font-semibold text-[#94A3B8] dark:text-slate-400 uppercase tracking-wider">
               {t('language')}
             </p>
@@ -218,13 +219,13 @@ export default function Settings() {
                   className={`flex items-center justify-between w-full px-4 py-3.5 rounded-xl border transition-all ${
                     isActive
                       ? 'border-green-500 bg-green-50 dark:bg-green-500/10'
-                      : 'border-[#E2E8F0] dark:border-[#334155] bg-white dark:bg-[#1E293B] hover:bg-slate-50 dark:hover:bg-slate-800'
+                      : 'border-[#E2E8F0] dark:border-[#223027] bg-white dark:bg-[#121B14] hover:bg-slate-50 dark:hover:bg-slate-800'
                   }`}
                 >
                   <div className="flex items-center gap-3">
                     <span className="text-2xl leading-none">{lang.flag}</span>
                     <div className="text-left">
-                      <p className={`text-sm font-bold leading-tight ${isActive ? 'text-green-700 dark:text-green-400' : 'text-[#0F172A] dark:text-slate-100'}`}>
+                      <p className={`text-sm font-bold leading-tight ${isActive ? 'text-green-700 dark:text-green-400' : 'text-[#0E150F] dark:text-slate-100'}`}>
                         {lang.native}
                       </p>
                     </div>
@@ -234,7 +235,7 @@ export default function Settings() {
                       <Check size={13} className="text-white" strokeWidth={3} />
                     </div>
                   ) : (
-                    <div className="w-6 h-6 rounded-full border-2 border-[#E2E8F0] dark:border-[#334155] flex-shrink-0" />
+                    <div className="w-6 h-6 rounded-full border-2 border-[#E2E8F0] dark:border-[#223027] flex-shrink-0" />
                   )}
                 </button>
               );
@@ -242,14 +243,16 @@ export default function Settings() {
           </div>
         </div>
 
+        <LoginCodeCard />
+
         {/* ── Faol qurilmalar ───────────────────────── */}
-        <div className="bg-white dark:bg-[#1E293B] rounded-2xl border border-[#E2E8F0] dark:border-[#334155] overflow-hidden">
-          <div className="px-5 py-3 border-b border-[#E2E8F0] dark:border-[#334155]">
+        <div className="bg-white dark:bg-[#121B14] rounded-2xl border border-[#E2E8F0] dark:border-[#223027] overflow-hidden">
+          <div className="px-5 py-3 border-b border-[#E2E8F0] dark:border-[#223027]">
             <p className="text-xs font-semibold text-[#94A3B8] dark:text-slate-400 uppercase tracking-wider">
               Faol qurilmalar
             </p>
           </div>
-          <div className="divide-y divide-[#E2E8F0] dark:divide-[#334155]">
+          <div className="divide-y divide-[#E2E8F0] dark:divide-[#223027]">
             {sessionsLoading ? (
               <div className="px-5 py-6 text-center text-sm text-[#64748B] dark:text-slate-400">Yuklanmoqda...</div>
             ) : sessions.length === 0 ? (
@@ -260,11 +263,11 @@ export default function Settings() {
                 const Icon = isMobile ? Smartphone : Monitor;
                 return (
                   <div key={s.id} className="flex items-center gap-3 px-5 py-4">
-                    <div className="w-10 h-10 rounded-xl bg-[#F1F5F9] dark:bg-[#334155] flex items-center justify-center flex-shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-[#F1F5F9] dark:bg-[#223027] flex items-center justify-center flex-shrink-0">
                       <Icon size={18} className="text-[#64748B] dark:text-slate-400" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-[#0F172A] dark:text-slate-100 truncate">
+                      <p className="text-sm font-bold text-[#0E150F] dark:text-slate-100 truncate">
                         {label}
                         {s.isCurrent && (
                           <span className="ml-2 px-2 py-0.5 rounded-md bg-green-100 dark:bg-green-500/15 text-green-700 dark:text-green-400 text-[10px] font-bold uppercase tracking-wide align-middle">
@@ -291,26 +294,26 @@ export default function Settings() {
             )}
           </div>
           {isPrimaryDevice && sessions.length > 1 && (
-            <div className="px-5 py-3 border-t border-[#E2E8F0] dark:border-[#334155] text-xs text-[#64748B] dark:text-slate-400">
+            <div className="px-5 py-3 border-t border-[#E2E8F0] dark:border-[#223027] text-xs text-[#64748B] dark:text-slate-400">
               Asosiy qurilma sifatida boshqa sessiyalarni tugata olasiz.
             </div>
           )}
         </div>
 
         {/* ── About ─────────────────────────────────── */}
-        <div className="bg-white dark:bg-[#1E293B] rounded-2xl border border-[#E2E8F0] dark:border-[#334155] overflow-hidden">
-          <div className="px-5 py-3 border-b border-[#E2E8F0] dark:border-[#334155]">
+        <div className="bg-white dark:bg-[#121B14] rounded-2xl border border-[#E2E8F0] dark:border-[#223027] overflow-hidden">
+          <div className="px-5 py-3 border-b border-[#E2E8F0] dark:border-[#223027]">
             <p className="text-xs font-semibold text-[#94A3B8] dark:text-slate-400 uppercase tracking-wider">
               {t('about')}
             </p>
           </div>
-          <div className="divide-y divide-[#E2E8F0] dark:divide-[#334155]">
+          <div className="divide-y divide-[#E2E8F0] dark:divide-[#223027]">
             <div className="flex items-center justify-between px-5 py-4">
-              <span className="text-sm font-medium text-[#0F172A] dark:text-slate-100">{t('app_name')}</span>
+              <span className="text-sm font-medium text-[#0E150F] dark:text-slate-100">{t('app_name')}</span>
               <span className="text-sm font-extrabold text-green-600 tracking-tight">TradeS</span>
             </div>
             <div className="flex items-center justify-between px-5 py-4">
-              <span className="text-sm font-medium text-[#0F172A] dark:text-slate-100">{t('version')}</span>
+              <span className="text-sm font-medium text-[#0E150F] dark:text-slate-100">{t('version')}</span>
               <span className="text-sm font-medium text-[#64748B] dark:text-slate-400">1.0.0</span>
             </div>
           </div>
@@ -319,7 +322,7 @@ export default function Settings() {
         {/* ── Logout ────────────────────────────────── */}
         <button
           onClick={handleLogout}
-          className="w-full flex items-center justify-center gap-3 h-14 bg-white dark:bg-[#1E293B] border border-red-200 dark:border-red-500/30 rounded-2xl text-red-500 font-bold text-base hover:bg-red-50 dark:hover:bg-red-500/10 hover:border-red-300 active:scale-[0.98] transition-all"
+          className="w-full flex items-center justify-center gap-3 h-14 bg-white dark:bg-[#121B14] border border-red-200 dark:border-red-500/30 rounded-2xl text-red-500 font-bold text-base hover:bg-red-50 dark:hover:bg-red-500/10 hover:border-red-300 active:scale-[0.98] transition-all"
         >
           <LogOut size={20} />
           {t('logout')}

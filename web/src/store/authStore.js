@@ -107,7 +107,7 @@ const useAuthStore = create(
           const res = await authApi.login(credentials);
           if (res.data.data.requiresDeviceConfirmation) {
             set({ isLoading: false });
-            return { requiresDeviceConfirmation: true };
+            return { requiresDeviceConfirmation: true, devCode: res.data.data.devCode };
           }
           const { user } = res.data.data;
           set({ user, isLoading: false });

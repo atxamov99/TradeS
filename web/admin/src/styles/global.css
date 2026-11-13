@@ -61,21 +61,21 @@
 
 .dark {
   color-scheme: dark;
-  --c-background: 15 23 42;
-  --c-surface: 15 23 42;
-  --c-surface-bright: 15 23 42;
-  --c-surface-dim: 11 17 32;
-  --c-surface-container-lowest: 30 41 59;
-  --c-surface-container-low: 22 31 50;
-  --c-surface-container: 30 41 59;
-  --c-surface-container-high: 39 52 73;
-  --c-surface-container-highest: 51 65 85;
-  --c-surface-variant: 51 65 85;
+  --c-background: 14 21 15;
+  --c-surface: 14 21 15;
+  --c-surface-bright: 14 21 15;
+  --c-surface-dim: 8 13 9;
+  --c-surface-container-lowest: 18 27 20;
+  --c-surface-container-low: 16 24 18;
+  --c-surface-container: 18 27 20;
+  --c-surface-container-high: 28 40 31;
+  --c-surface-container-highest: 34 48 39;
+  --c-surface-variant: 34 48 39;
   --c-on-background: 241 245 249;
   --c-on-surface: 241 245 249;
   --c-on-surface-variant: 148 163 184;
   --c-outline: 100 116 139;
-  --c-outline-variant: 51 65 85;
+  --c-outline-variant: 34 48 39;
   --c-primary: 74 222 128;
   --c-primary-dark: 34 197 94;
   --c-primary-light: 22 101 52;

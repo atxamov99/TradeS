@@ -29,6 +29,9 @@ model User {
   instagram       String?
   addresses       Address[]
   isBlocked       Boolean        @default(false)
+  // Telegram sign-in code on EVERY login (when a Telegram chat is linked). The user may switch it off
+  // (needs the password + an explicit warning in the UI); it is on by default.
+  loginCodeEnabled Boolean       @default(true)
   isEmailVerified Boolean        @default(false)
   deletedAt       DateTime?      // soft delete: set when a user with linked history is "deleted"
   lastLogin       DateTime?

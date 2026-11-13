@@ -37,7 +37,13 @@ const deleteAddress = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, { addresses }, 'Address deleted'));
 });
 
+const setLoginCode = asyncHandler(async (req, res) => {
+  const result = await require('../services/auth.service').setLoginCodeEnabled(req.user.id, req.body, { ip: req.ip });
+  res.status(200).json(new ApiResponse(200, result, result.loginCodeEnabled ? 'Login code enabled' : 'Login code disabled'));
+});
+
 module.exports = {
+  setLoginCode,
   getProfile,
   updateProfile,
   changePassword,

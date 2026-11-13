@@ -87,7 +87,7 @@ export default function PosNewSale() {
         const cost = salePayload.buyPrice * qty;
         toast.success(`Savdo kiritildi — Foyda: $${fmt(revenue - cost)}`, {
           icon: '✅',
-          style: { background: '#1E293B', color: '#fff', border: '1px solid #22C55E' },
+          style: { background: '#121B14', color: '#fff', border: '1px solid #22C55E' },
         });
       } else {
         // Offline: queue for later sync
@@ -101,7 +101,7 @@ export default function PosNewSale() {
 
         toast.success('Savdo saqlandi (offline) — internet tiklananda yuboriladi', {
           icon: '🕐',
-          style: { background: '#1E293B', color: '#fff', border: '1px solid #EAB308' },
+          style: { background: '#121B14', color: '#fff', border: '1px solid #EAB308' },
           duration: 4000,
         });
       }

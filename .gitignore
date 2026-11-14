@@ -54,3 +54,4 @@ web_old_*/
 
 # Stray Windows device-name file
 nul
+.backups/

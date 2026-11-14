@@ -18,9 +18,9 @@ export const light = {
 };
 
 export const dark = {
-  bg:         "#0E150F",
-  bgCard:     "#121B14",
-  bgMuted:    "#172219",
+  bg:         "#080D09",
+  bgCard:     "#0E150F",
+  bgMuted:    "#121B14",
   border:     "#223027",
   primary:    "#22C55E",
   primaryDark:"#16A34A",

@@ -1,19 +1,21 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { UserPlus, Trash2, Phone, Mail, Store } from 'lucide-react';
+import { Send, Trash2, Phone, Mail, Store, Clock, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import * as shopApi from '../api/shop.api';
 import useAuthStore from '../store/authStore';
 
-// Owner-facing "add a cashier to my shop" page. A cashier can't be created out
-// of thin air — they must already have a User account (register first), then
-// the shop owner looks them up here by phone or email and adds them.
+// Owner-facing "invite a cashier to my shop" page. A cashier can't be created out
+// of thin air — they must already have a User account (register first). The owner
+// looks them up here by phone or email and SENDS AN INVITATION; the person only
+// becomes an employee after they accept it (so nobody is added by mistake).
 export default function Employees() {
   const { t } = useTranslation();
   const currentUser = useAuthStore((s) => s.user);
   const [loading, setLoading] = useState(true);
   const [ownedShop, setOwnedShop] = useState(null); // the first shop where I'm OWNER
   const [members, setMembers] = useState([]);
+  const [invites, setInvites] = useState([]);
   const [identifier, setIdentifier] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -25,8 +27,12 @@ export default function Employees() {
       const owned = (Array.isArray(shops) ? shops : []).find((s) => s.myRole === 'OWNER');
       setOwnedShop(owned || null);
       if (owned) {
-        const membersRes = await shopApi.getShopMembers(owned.id);
+        const [membersRes, invitesRes] = await Promise.all([
+          shopApi.getShopMembers(owned.id),
+          shopApi.getShopInvites(owned.id),
+        ]);
         setMembers(membersRes.data?.data?.members || membersRes.data?.data || []);
+        setInvites(invitesRes.data?.data?.invites || []);
       }
     } catch (err) {
       toast.error(err.response?.data?.message || t('emp_load_error'));
@@ -37,7 +43,7 @@ export default function Employees() {
 
   useEffect(() => { loadShops(); }, []);
 
-  async function handleAdd(e) {
+  async function handleInvite(e) {
     e.preventDefault();
     const value = identifier.trim();
     if (!value || !ownedShop) return;
@@ -46,8 +52,9 @@ export default function Employees() {
 
     setSubmitting(true);
     try {
-      await shopApi.addShopMember(ownedShop.id, payload);
-      toast.success(t('emp_added'));
+      const res = await shopApi.inviteShopMember(ownedShop.id, payload);
+      const who = res.data?.data?.invite?.invitedUser;
+      toast.success(t('emp_invite_sent', { name: who?.name || value }));
       setIdentifier('');
       await loadShops();
     } catch (err) {
@@ -61,6 +68,17 @@ export default function Employees() {
       }
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleCancelInvite(inviteId) {
+    if (!ownedShop) return;
+    try {
+      await shopApi.cancelShopInvite(ownedShop.id, inviteId);
+      toast.success(t('emp_invite_cancelled'));
+      await loadShops();
+    } catch (err) {
+      toast.error(err.response?.data?.message || t('emp_error'));
     }
   }
 
@@ -103,7 +121,7 @@ export default function Employees() {
         </p>
       </div>
 
-      <form onSubmit={handleAdd} className="flex gap-2">
+      <form onSubmit={handleInvite} className="flex gap-2">
         <div className="relative flex-1">
           <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
             {/^[+\d]/.test(identifier.trim()) ? <Phone size={16} /> : <Mail size={16} />}
@@ -119,11 +137,37 @@ export default function Employees() {
         <button
           type="submit"
           disabled={submitting || !identifier.trim()}
-          className="h-11 px-4 rounded-lg bg-emerald-500 hover:bg-emerald-500/90 text-slate-950 font-bold text-sm flex items-center gap-2 disabled:opacity-50"
+          className="h-11 px-4 rounded-lg bg-emerald-500 hover:bg-emerald-500/90 text-slate-950 font-bold text-sm flex items-center gap-2 disabled:opacity-50 whitespace-nowrap"
         >
-          <UserPlus size={16} /> {t('pp_add_btn')}
+          <Send size={16} /> {t('emp_invite_btn')}
         </button>
       </form>
+
+      {invites.length > 0 && (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 overflow-hidden">
+          <div className="px-4 py-3 text-xs uppercase text-amber-400 flex items-center gap-2">
+            <Clock size={14} /> {t('emp_pending_title')}
+          </div>
+          <ul className="divide-y divide-slate-800">
+            {invites.map((inv) => (
+              <li key={inv.id} className="px-4 py-3 flex items-center gap-3 text-sm">
+                <div className="flex-1 min-w-0">
+                  <p className="text-white truncate">{inv.invitedUser?.name || '—'}</p>
+                  <p className="text-slate-400 text-xs truncate">{inv.invitedUser?.phone || inv.invitedUser?.email || ''}</p>
+                </div>
+                <span className="text-amber-400 text-xs whitespace-nowrap">{t('emp_waiting')}</span>
+                <button
+                  onClick={() => handleCancelInvite(inv.id)}
+                  className="text-slate-500 hover:text-red-400 transition"
+                  title={t('emp_invite_cancel')}
+                >
+                  <X size={16} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="rounded-xl border border-slate-700 overflow-hidden">
         <table className="w-full text-sm">

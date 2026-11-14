@@ -7,6 +7,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { useUserStore } from "@/store/userStore";
 import { SaleCard } from "@/components/SaleCard";
 import { MiniChart } from "@/components/MiniChart";
+import InviteCards from "@/components/InviteCards";
 
 
 import { router } from "expo-router";
@@ -139,15 +140,17 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
+        <InviteCards />
+
         {/* REVENUE BLOCK */}
         <View style={{
           marginHorizontal: 16,
           marginTop: 14,
-          backgroundColor: "#0A2616",
+          backgroundColor: "#0E150F",
           borderRadius: 20,
           padding: 16,
           borderWidth: 1,
-          borderColor: "rgba(66,199,90,0.15)",
+          borderColor: "#223027",
         }}>
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
             <View>

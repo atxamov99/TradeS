@@ -61,7 +61,7 @@ export default function RootLayout() {
     return () => sub.remove();
   }, [token]);
 
-  if (!ready) return <View style={{ flex: 1, backgroundColor: "#0C1410" }} />;
+  if (!ready) return <View style={{ flex: 1, backgroundColor: "#080D09" }} />;
 
   return (
     <>

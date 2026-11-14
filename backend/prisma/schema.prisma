@@ -56,6 +56,8 @@ model User {
   syncQueues      SyncQueue[]
   ownedShops      Shop[]         @relation("ShopOwner")
   shopMemberships ShopMember[]
+  invitesReceived ShopInvite[] @relation("InvitedUser")
+  invitesSent     ShopInvite[] @relation("InvitedBy")
   expenses        Expense[]      @relation("ExpenseCreatedBy")
 }
 
@@ -76,11 +78,38 @@ model Shop {
   updatedAt DateTime     @updatedAt
 
   members   ShopMember[]
+  invites   ShopInvite[]
   products  Product[]
   sales     Sale[]
   expenses  Expense[]
 
   @@index([ownerId])
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  CANCELLED
+}
+
+// An owner invites an existing user to a business shop; nobody becomes a member
+// until the invited user accepts (no adding a random person by mistake).
+model ShopInvite {
+  id            String         @id @default(cuid())
+  shopId        String
+  shop          Shop           @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  invitedUserId String
+  invitedUser   User           @relation("InvitedUser", fields: [invitedUserId], references: [id], onDelete: Cascade)
+  invitedById   String
+  invitedBy     User           @relation("InvitedBy", fields: [invitedById], references: [id], onDelete: Cascade)
+  role          ShopMemberRole @default(CASHIER)
+  status        InviteStatus   @default(PENDING)
+  createdAt     DateTime       @default(now())
+  respondedAt   DateTime?
+
+  @@index([invitedUserId, status])
+  @@index([shopId, status])
 }
 
 model ShopMember {

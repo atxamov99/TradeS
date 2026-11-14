@@ -54,13 +54,16 @@ async function main() {
     check('plain USER signup gets a PERSONAL shop (not a business)', r.json?.data?.shop?.isBusiness === false, r);
 
     // 3. The owner looks the cashier-to-be up by email and adds them
-    r = await call(ownerToken, 'POST', `/shops/${shopId}/members`, { email: cashierEmail });
-    check('owner adds cashier by email = 201', r.status === 201, r);
-    check('added member defaults to CASHIER role', r.json?.data?.member?.role === 'CASHIER', r);
+    r = await call(ownerToken, 'POST', `/shops/${shopId}/invites`, { email: cashierEmail });
+    check('owner invites cashier by email = 201', r.status === 201, r);
+    check('invitation defaults to CASHIER role', r.json?.data?.invite?.role === 'CASHIER', r);
+    const inviteId = r.json?.data?.invite?.id;
 
     // 4. The cashier's own /auth/me now reflects the membership
     const cashierLogin = await call(null, 'POST', '/auth/login', { email: cashierEmail, password: 'TestPass123' });
     const cashierToken = cashierLogin.json?.data?.accessToken;
+    r = await call(cashierToken, 'POST', `/shops/invites/${inviteId}/accept`);
+    check('cashier accepts the invitation = 200', r.status === 200, r);
     r = await call(cashierToken, 'GET', '/auth/me');
     const memberships = r.json?.data?.shopMemberships || [];
     check(
@@ -70,12 +73,12 @@ async function main() {
     );
 
     // 5. Duplicate add attempt is rejected (already a member)
-    r = await call(ownerToken, 'POST', `/shops/${shopId}/members`, { email: cashierEmail });
-    check('adding the same cashier twice = 409', r.status === 409, r);
+    r = await call(ownerToken, 'POST', `/shops/${shopId}/invites`, { email: cashierEmail });
+    check('inviting the same cashier twice = 409', r.status === 409, r);
 
     // 6. Adding a non-existent person is a clean 404, not a crash
-    r = await call(ownerToken, 'POST', `/shops/${shopId}/members`, { email: `${MARK}-nobody@example.com` });
-    check('adding an unregistered email = 404', r.status === 404, r);
+    r = await call(ownerToken, 'POST', `/shops/${shopId}/invites`, { email: `${MARK}-nobody@example.com` });
+    check('inviting an unregistered email = 404', r.status === 404, r);
 
     console.log(`\n${pass} passed, ${fail} failed`);
   } finally {

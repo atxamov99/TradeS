@@ -23,6 +23,7 @@ export default function EmployeesScreen() {
   const [shop, setShop] = useState<{ id: string; name: string } | null>(null);
   const [personal, setPersonal] = useState(false);
   const [members, setMembers] = useState<Member[]>([]);
+  const [invites, setInvites] = useState<any[]>([]);
   const [identifier, setIdentifier] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -38,6 +39,8 @@ export default function EmployeesScreen() {
         try {
           const m = await api.get(`/shops/${owned.id}/members`);
           setMembers(m.data?.data?.members || m.data?.data || []);
+          const inv = await api.get(`/shops/${owned.id}/invites`);
+          setInvites(inv.data?.data?.invites || []);
         } catch (e: any) {
           if (e?.response?.status === 409) setPersonal(true); // personal (solo) shop: no employees until upgraded
           else throw e;
@@ -58,7 +61,8 @@ export default function EmployeesScreen() {
     const phoneLike = /^[+\d][\d\s]{6,}$/.test(value);
     setBusy(true);
     try {
-      await api.post(`/shops/${shop.id}/members`, phoneLike ? { phone: value } : { email: value.toLowerCase() });
+      // an INVITATION, not a direct add: the person becomes an employee only after accepting
+      await api.post(`/shops/${shop.id}/invites`, phoneLike ? { phone: value } : { email: value.toLowerCase() });
       Alert.toast(t.team.added, "success");
       setIdentifier("");
       await load();
@@ -67,6 +71,17 @@ export default function EmployeesScreen() {
       Alert.alert("Xatolik", st === 404 ? t.team.notRegistered : st === 409 ? t.team.already : e?.response?.data?.message || t.team.addError);
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function withdraw(inviteId: string) {
+    if (!shop) return;
+    try {
+      await api.delete(`/shops/${shop.id}/invites/${inviteId}`);
+      Alert.toast(t.team.withdrawn, "success");
+      await load();
+    } catch (e: any) {
+      Alert.alert("Xatolik", e?.response?.data?.message || t.team.addError);
     }
   }
 
@@ -148,6 +163,26 @@ export default function EmployeesScreen() {
                 {busy ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "800" }}>{t.team.add}</Text>}
               </TouchableOpacity>
             </View>
+            {invites.length > 0 && (
+              <View style={{ marginHorizontal: 20, marginBottom: 14, borderRadius: 18, borderWidth: 1, borderColor: c.warn, backgroundColor: c.bgCard, overflow: "hidden" }}>
+                <Text style={{ color: c.warn, fontSize: 11, fontWeight: "800", letterSpacing: 0.5, padding: 12, paddingBottom: 4 }}>
+                  {t.team.pendingTitle.toUpperCase()}
+                </Text>
+                {invites.map((inv) => (
+                  <View key={inv.id} style={{ flexDirection: "row", alignItems: "center", padding: 12, paddingTop: 8 }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: c.text, fontSize: 15, fontWeight: "700" }}>{inv.invitedUser?.name || "—"}</Text>
+                      <Text style={{ color: c.textMuted, fontSize: 12, marginTop: 2 }}>
+                        {inv.invitedUser?.phone || inv.invitedUser?.email || ""} · {t.team.waiting}
+                      </Text>
+                    </View>
+                    <TouchableOpacity onPress={() => withdraw(inv.id)} hitSlop={10}>
+                      <Ionicons name="close-circle-outline" size={22} color={c.danger} />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            )}
           </View>
         }
         contentContainerStyle={{ paddingBottom: 100 }}

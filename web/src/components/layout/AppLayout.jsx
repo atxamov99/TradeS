@@ -3,6 +3,7 @@ import { Home, Package, ShoppingCart, BarChart2, Settings, User, ShieldCheck, Lo
 import { useTranslation } from 'react-i18next';
 import useAuthStore from '../../store/authStore';
 import TestUserBanner from '../common/TestUserBanner';
+import InviteBanner from '../common/InviteBanner';
 import { NotificationBell, useStockAlerts } from '../notifications/Notifications';
 
 function NavItem({ item, mobile = false }) {
@@ -162,6 +163,7 @@ export default function AppLayout() {
 
       <main className="flex-1 md:ml-[220px] pb-20 md:pb-0">
         <TestUserBanner key={location.pathname} user={user} />
+        <InviteBanner key={'inv-' + location.pathname} />
         <Outlet />
       </main>
 

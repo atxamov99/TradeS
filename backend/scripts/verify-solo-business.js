@@ -41,7 +41,7 @@ const T = (u) => generateAccessToken({ id: u.id, role: u.role });
     ck("another user cannot find the solo user's product by barcode", !(r.status === 200 && r.json?.data?.product?.id === pid), r);
 
     // 2. no employees / business tools for a personal shop
-    r = await call(tS, 'POST', `/shops/${shopId}/members`, { email: `${MARK}-helper@example.com` });
+    r = await call(tS, 'POST', `/shops/${shopId}/invites`, { email: `${MARK}-helper@example.com` });
     ck('adding an employee to a PERSONAL shop = 409 PERSONAL_SHOP', r.status === 409 && r.json?.code === 'PERSONAL_SHOP', r);
     r = await call(tS, 'GET', `/shops/${shopId}/members`);
     ck('employee list of a PERSONAL shop = 409 PERSONAL_SHOP', r.status === 409 && r.json?.code === 'PERSONAL_SHOP', r);
@@ -78,8 +78,11 @@ const T = (u) => generateAccessToken({ id: u.id, role: u.role });
     ck('upgrading an already-business shop = 409 ALREADY_BUSINESS', r.status === 409 && r.json?.code === 'ALREADY_BUSINESS', r);
 
     // 4. now employees are allowed
-    r = await call(tS, 'POST', `/shops/${shopId}/members`, { email: `${MARK}-helper@example.com` });
-    ck('business owner can add an employee = 201', r.status === 201, r);
+    r = await call(tS, 'POST', `/shops/${shopId}/invites`, { email: `${MARK}-helper@example.com` });
+    ck('business owner can INVITE an employee = 201', r.status === 201, r);
+    const invId = r.json?.data?.invite?.id;
+    r = await call(tH, 'POST', `/shops/invites/${invId}/accept`);
+    ck('the invited user accepts = 200', r.status === 200, r);
     r = await call(tS, 'GET', `/shops/${shopId}/members`);
     ck('business owner sees the employee list = 200 with 2 members', r.status === 200 && r.json?.data?.members?.length === 2, r);
     r = await call(tH, 'POST', '/products', { name: MARK + '-h', buyPrice: 1, sellPrice: 2, stock: 1 });

@@ -362,7 +362,7 @@ const refreshTokens = async (incomingRefreshToken) => {
   }
 
   const user = await prisma.user.findUnique({ where: { id: decoded.id } });
-  if (!user || user.isBlocked) {
+  if (!user || user.isBlocked || user.deletedAt) {
     throw new ApiError(401, 'User not found or blocked');
   }
 
@@ -488,6 +488,8 @@ const googleAuth = async (credential, meta = {}) => {
 
   const { email, name, picture } = payload;
   if (!email) throw new ApiError(400, 'Google akkauntida email yo\'q');
+  // An unverified Google e-mail proves nothing: never link/log in by it.
+  if (payload.email_verified === false) throw new ApiError(401, 'Google email tasdiqlanmagan');
 
   let user = await prisma.user.findUnique({ where: { email } });
 
@@ -661,7 +663,7 @@ const forgotPassword = async (email) => {
   // dev no-op that logs). Also log the token and, when email isn't configured in
   // non-production, return it so the flow stays testable end-to-end.
   const logger = require('../utils/logger');
-  logger.info(`Password reset token for ${email}: ${rawToken} (valid ${PASSWORD_RESET_EXPIRES_MIN}m)`);
+  if (process.env.NODE_ENV !== 'production') logger.info(`Password reset token for ${email}: ${rawToken} (valid ${PASSWORD_RESET_EXPIRES_MIN}m)`);
   await emailService.sendResetToken(email, rawToken);
 
   const result = { message: genericMessage };
@@ -910,5 +912,169 @@ const setLoginCodeEnabled = async (userId, { enabled, password }, meta = {}) => 
   return { loginCodeEnabled: !!enabled };
 };
 
+// ── Linking a second login identifier (phone <-> email) ──────────────────────
+// An account opened with an email can add a phone number, and one opened with a phone can add an email.
+// Phone and email are LOGIN identifiers, so linking needs ALL of:
+//   1. the account password (a stolen session alone cannot re-point the account),
+//   2. a one-time code delivered to the NEW identifier (proves the person owns it) —
+//      phone: Telegram (the number must already be linked to the bot, Telegram vouches for the number),
+//      email: the mailbox itself,
+//   3. the identifier is not used by any other active account (phone compared by digits, so "+998 90…" == "+99890…").
+// PATCH /users/profile can no longer change either of them.
+const canonicalPhone = (raw) => {
+  const d = telegramService.normalizePhone(raw);
+  return d && d.length >= 9 && d.length <= 15 ? `+${d}` : null;
+};
+
+// Is this phone (compared by digits only) already used by another active account?
+const phoneTaken = async (canon, exceptUserId) => {
+  const digits = canon.replace(/\D/g, '');
+  const rows = await prisma.$queryRaw`
+    SELECT id FROM "User"
+    WHERE "deletedAt" IS NULL AND phone IS NOT NULL
+      AND regexp_replace(phone, '\\D', '', 'g') = ${digits}
+      AND id <> ${exceptUserId}
+    LIMIT 1`;
+  return rows.length > 0;
+};
+
+const requireOwnPassword = async (userId, password) => {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user || user.deletedAt) throw new ApiError(404, 'User not found');
+  if (!password || !(await bcrypt.compare(password, user.password))) {
+    throw new ApiError(401, "Parol noto'g'ri", [], '', 'INVALID_CREDENTIALS');
+  }
+  return user;
+};
+
+// Tell the account's linked Telegram (if any) that something security-relevant changed.
+const notifyAccountTelegram = async (user, text) => {
+  try {
+    const p = user.phone ? telegramService.normalizePhone(user.phone) : null;
+    const rec = p ? await prisma.phoneAuth.findUnique({ where: { phone: p } }) : null;
+    if (rec && rec.telegramChatId) await telegramService.sendMessage(rec.telegramChatId, text);
+  } catch (err) { logger.warn('account notice failed: ' + err.message); }
+};
+
+const checkOtpRecord = (record, code) => {
+  if (!record || !record.otpCode || !record.otpExpiresAt) throw new ApiError(400, "Avval kod so'rang");
+  if (record.attempts >= OTP_MAX_ATTEMPTS) throw new ApiError(429, "Juda ko'p urinish. Yangi kod so'rang");
+  if (record.otpExpiresAt < new Date()) throw new ApiError(400, "Kod muddati tugagan. Yangi kod so'rang");
+  return record.otpCode === String(code).trim();
+};
+
+const requestLinkEmail = async (userId, { email: rawEmail, password }) => {
+  const user = await requireOwnPassword(userId, password);
+  const email = String(rawEmail || '').trim().toLowerCase();
+  if (!email) throw new ApiError(400, 'Email talab qilinadi');
+  if (user.email === email && user.isEmailVerified) throw new ApiError(409, 'Bu email allaqachon ulangan');
+  const taken = await prisma.user.findFirst({ where: { email, deletedAt: null, NOT: { id: userId } } });
+  if (taken) throw new ApiError(409, 'Bu email boshqa hisobga ulangan', [], '', 'IDENTIFIER_TAKEN');
+
+  const code = String(crypto.randomInt(100000, 1000000));
+  const otpExpiresAt = new Date(Date.now() + OTP_EXPIRES_MIN * 60 * 1000);
+  await prisma.emailAuth.upsert({
+    where: { email },
+    update: { otpCode: code, otpExpiresAt, attempts: 0 },
+    create: { email, otpCode: code, otpExpiresAt, attempts: 0 },
+  });
+  const sent = await emailService.sendCode(email, code);
+  if (emailService.isConfigured() && !sent.delivered) {
+    throw new ApiError(502, "Email yuborilmadi. Birozdan so'ng qayta urinib ko'ring.", [], '', 'EMAIL_SEND_FAILED');
+  }
+  const result = { message: 'Tasdiqlash kodi emailga yuborildi' };
+  if (!emailService.isConfigured() && process.env.NODE_ENV !== 'production') result.devCode = code;
+  return result;
+};
+
+const verifyLinkEmail = async (userId, { email: rawEmail, code }, meta = {}) => {
+  const email = String(rawEmail || '').trim().toLowerCase();
+  if (!email || !code) throw new ApiError(400, 'Email va kod talab qilinadi');
+  const record = await prisma.emailAuth.findUnique({ where: { email } });
+  const ok = checkOtpRecord(record, code);
+  if (!ok) {
+    await prisma.emailAuth.update({ where: { email }, data: { attempts: { increment: 1 } } });
+    throw new ApiError(400, "Kod noto'g'ri");
+  }
+  await prisma.emailAuth.update({ where: { email }, data: { otpCode: null, otpExpiresAt: null, attempts: 0 } });
+
+  const before = await prisma.user.findUnique({ where: { id: userId } });
+  const taken = await prisma.user.findFirst({ where: { email, deletedAt: null, NOT: { id: userId } } });
+  if (taken) throw new ApiError(409, 'Bu email boshqa hisobga ulangan', [], '', 'IDENTIFIER_TAKEN');
+  let user;
+  try {
+    user = await prisma.user.update({ where: { id: userId }, data: { email, isEmailVerified: true } });
+  } catch (err) {
+    if (err.code === 'P2002') throw new ApiError(409, 'Bu email boshqa hisobga ulangan', [], '', 'IDENTIFIER_TAKEN');
+    throw err;
+  }
+  await createAuditLog({ action: 'EMAIL_LINKED', category: 'auth', actor: userId, actorId: userId, ip: meta.ip || '' }).catch(() => {});
+  await notifyAccountTelegram(before, "\u{1F4E7} <b>TradeS</b> — hisobingizga yangi email ulandi / к аккаунту привязан новый email / a new email was linked.\nAgar bu siz bo'lmasangiz, darhol parolni almashtiring.");
+  const out = { ...user }; delete out.password;
+  return { user: out };
+};
+
+const requestLinkPhone = async (userId, { phone: rawPhone, password }) => {
+  const user = await requireOwnPassword(userId, password);
+  const canon = canonicalPhone(rawPhone);
+  if (!canon) throw new ApiError(400, "Telefon raqam noto'g'ri");
+  if (user.phone && canonicalPhone(user.phone) === canon) throw new ApiError(409, 'Bu raqam allaqachon ulangan');
+  if (await phoneTaken(canon, userId)) throw new ApiError(409, 'Bu raqam boshqa hisobga ulangan', [], '', 'IDENTIFIER_TAKEN');
+
+  // The number must be linked to the Telegram bot first: Telegram itself vouches that the number belongs
+  // to that chat, so only the real owner can receive the code.
+  const digits = canon.slice(1);
+  const record = await prisma.phoneAuth.findUnique({ where: { phone: digits } });
+  if (!record || !record.telegramChatId) throw new ApiError(428, 'Avval Telegram bot orqali raqamingizni ulang');
+
+  const code = String(crypto.randomInt(100000, 1000000));
+  const otpExpiresAt = new Date(Date.now() + OTP_EXPIRES_MIN * 60 * 1000);
+  await prisma.phoneAuth.update({ where: { phone: digits }, data: { otpCode: code, otpExpiresAt, attempts: 0 } });
+  let sent = true;
+  try {
+    await telegramService.sendMessage(
+      record.telegramChatId,
+      `\u{1F517} <b>TradeS</b> — raqamni hisobga ulash kodi / код привязки номера / link code:\n\n<code>${code}</code>\n\nKod ${OTP_EXPIRES_MIN} daqiqa amal qiladi. Hech kimga bermang.`
+    );
+  } catch (err) {
+    sent = false;
+    logger.warn(`Link code could not be sent: ${err.message}`);
+    if (process.env.NODE_ENV === 'production') throw new ApiError(502, "Telegramga kod yuborib bo'lmadi. Birozdan so'ng qayta urinib ko'ring.", [], '', 'TELEGRAM_SEND_FAILED');
+  }
+  const result = { message: 'Kod Telegram orqali yuborildi' };
+  if (!sent) result.devCode = code; // dev only: the bot could not deliver it
+  return result;
+};
+
+const verifyLinkPhone = async (userId, { phone: rawPhone, code }, meta = {}) => {
+  const canon = canonicalPhone(rawPhone);
+  if (!canon || !code) throw new ApiError(400, 'Telefon va kod talab qilinadi');
+  const digits = canon.slice(1);
+  const record = await prisma.phoneAuth.findUnique({ where: { phone: digits } });
+  const ok = checkOtpRecord(record, code);
+  if (!ok) {
+    await prisma.phoneAuth.update({ where: { phone: digits }, data: { attempts: { increment: 1 } } });
+    throw new ApiError(400, "Kod noto'g'ri");
+  }
+  await prisma.phoneAuth.update({ where: { phone: digits }, data: { otpCode: null, otpExpiresAt: null, attempts: 0 } });
+
+  const before = await prisma.user.findUnique({ where: { id: userId } });
+  const user = await prisma.$transaction(async (tx) => {
+    // serialise concurrent claims of the same number
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${'phone:' + digits}))`;
+    const rows = await tx.$queryRaw`
+      SELECT id FROM "User"
+      WHERE "deletedAt" IS NULL AND phone IS NOT NULL
+        AND regexp_replace(phone, '\\D', '', 'g') = ${digits} AND id <> ${userId} LIMIT 1`;
+    if (rows.length) throw new ApiError(409, 'Bu raqam boshqa hisobga ulangan', [], '', 'IDENTIFIER_TAKEN');
+    return tx.user.update({ where: { id: userId }, data: { phone: canon } });
+  });
+  await createAuditLog({ action: 'PHONE_LINKED', category: 'auth', actor: userId, actorId: userId, ip: meta.ip || '' }).catch(() => {});
+  await notifyAccountTelegram(before, "\u{1F4F1} <b>TradeS</b> — hisobingizga yangi telefon raqami ulandi / к аккаунту привязан новый номер / a new phone number was linked.\nAgar bu siz bo'lmasangiz, darhol parolni almashtiring.");
+  const out = { ...user }; delete out.password;
+  return { user: out };
+};
+
 module.exports = {
+  requestLinkEmail, verifyLinkEmail, requestLinkPhone, verifyLinkPhone, canonicalPhone, phoneTaken,
   setLoginCodeEnabled, register, registerTestUser, login, verifyNewDeviceLogin, refreshTokens, logout, logoutAll, listSessions, revokeSession, googleAuth, requestOtp, verifyOtp, issueTokens, forgotPassword, resetPassword, forgotPasswordByPhone, resetPasswordByPhone, requestEmailOtp, verifyEmailOtp };

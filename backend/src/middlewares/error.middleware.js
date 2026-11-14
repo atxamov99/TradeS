@@ -25,8 +25,15 @@ const errorMiddleware = (err, req, res, next) => {
     // Prisma Foreign key constraint violation
     else if (error.code === 'P2003') {
       statusCode = 400;
-      message = `Foreign key constraint failed on the field: ${error.meta?.field_name}`;
+      message = 'Related record not found';
       error = new ApiError(statusCode, message);
+    }
+    // Request-body problems raised by the body parser (malformed JSON, too large, bad encoding):
+    // the CLIENT's fault, never a 500.
+    else if (error.type === 'entity.too.large' || error.status === 413) {
+      error = new ApiError(413, 'Request body is too large');
+    } else if (error.type === 'entity.parse.failed' || error.type === 'encoding.unsupported' || error.type === 'charset.unsupported' || (error instanceof SyntaxError && error.status === 400)) {
+      error = new ApiError(400, 'Malformed request body');
     }
     // JWT errors
     else if (error.name === 'JsonWebTokenError') {
@@ -38,9 +45,12 @@ const errorMiddleware = (err, req, res, next) => {
     }
   }
 
-  // Log server errors
+  // Log server errors (full detail stays in the log only)
   if (error.statusCode >= 500) {
     logger.error(`[${req.method}] ${req.originalUrl} — ${error.message}`, { stack: error.stack });
+    // Unexpected errors must not leak internals (Prisma query text, file paths) to the client.
+    // Deliberate ApiErrors with a 5xx (e.g. "Email yuborilmadi") keep their own message.
+    if (!(err instanceof ApiError)) error.message = 'Internal Server Error';
   }
 
   res.status(error.statusCode || 500).json({
@@ -49,7 +59,7 @@ const errorMiddleware = (err, req, res, next) => {
     message: error.message,
     code: error.code,
     errors: error.errors,
-    ...(process.env.NODE_ENV === 'development' && { stack: error.stack }),
+    ...(process.env.NODE_ENV === 'development' && process.env.EXPOSE_STACK === '1' && { stack: error.stack }),
   });
 };
 

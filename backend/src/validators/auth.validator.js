@@ -88,11 +88,11 @@ const resetPasswordSchema = Joi.object({
   password: Joi.string().min(6).max(128).required(),
 }).or('token', 'phone');
 
+// Phone and email are LOGIN identifiers: they are deliberately NOT editable here. Changing them needs
+// proof of ownership (a code) and the account password — see /auth/link/* (linkIdentifier*).
 const updateProfileSchema = Joi.object({
   name: Joi.string().trim().min(2).max(100),
-  email: Joi.string().email().lowercase().allow('', null),
-  phone: Joi.string().trim().max(20).allow(''),
-  avatar: Joi.string().uri().allow(''),
+  avatar: Joi.string().uri({ scheme: ['http', 'https'] }).max(500).allow(''),
   telegram: Joi.string().trim().max(50).allow(''),
   instagram: Joi.string().trim().max(50).allow(''),
 });
@@ -120,12 +120,18 @@ const changePasswordSchema = Joi.object({
     }),
 });
 
+const linkEmailRequestSchema = Joi.object({ email: Joi.string().email().lowercase().required(), password: Joi.string().required() });
+const linkPhoneRequestSchema = Joi.object({ phone: Joi.string().trim().max(25).required(), password: Joi.string().required() });
+const linkEmailVerifySchema = Joi.object({ email: Joi.string().email().lowercase().required(), code: Joi.string().trim().pattern(/^[0-9]{6}$/).required() });
+const linkPhoneVerifySchema = Joi.object({ phone: Joi.string().trim().max(25).required(), code: Joi.string().trim().pattern(/^[0-9]{6}$/).required() });
+
 const loginCodeSchema = Joi.object({
   enabled: Joi.boolean().required(),
   password: Joi.string().allow('').optional(),
 });
 
 module.exports = {
+  linkEmailRequestSchema, linkPhoneRequestSchema, linkEmailVerifySchema, linkPhoneVerifySchema,
   loginCodeSchema,
   registerSchema,
   loginSchema,

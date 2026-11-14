@@ -15,8 +15,26 @@ const auditInventory = (action, userId, product, metadata = {}) =>
     metadata: { name: product.name, shopId: product.shopId || null, ...metadata },
   }).catch(() => {});
 
+// Cost price and who owns the product are business secrets: only the product's shop members (and platform
+// admins) may see them. Everyone else gets the public storefront view.
+const PRIVATE_FIELDS = ['buyPrice', 'ownerId', 'createdById', 'syncId'];
+const redactForViewer = (product, memberShopIds, userId, isAdmin) => {
+  if (!product) return product;
+  if (isAdmin || product.ownerId === userId || (product.shopId && memberShopIds.includes(product.shopId))) return product;
+  const copy = { ...product };
+  for (const k of PRIVATE_FIELDS) delete copy[k];
+  return copy;
+};
+
 const getProducts = async (userId, queryParams = {}, options = {}) => {
-  const { search, page = 1, limit = 50, sortBy = 'createdAt', order = 'desc', scope } = queryParams;
+  // query-string values can be arrays/objects (?search[a]=1): accept plain strings only
+  const str = (v) => (typeof v === 'string' ? v : undefined);
+  const search = str(queryParams.search);
+  const scope = str(queryParams.scope);
+  const sortBy = str(queryParams.sortBy) || 'createdAt';
+  const order = str(queryParams.order) === 'asc' ? 'asc' : 'desc';
+  const page = Math.max(1, Math.min(100000, parseInt(str(queryParams.page) || '1', 10) || 1));
+  const limit = str(queryParams.limit);
   const { isAdmin = false } = options;
 
   // Default: shared global catalog (every authenticated user sees every
@@ -26,7 +44,7 @@ const getProducts = async (userId, queryParams = {}, options = {}) => {
   // products owned directly by the caller or by a shop they belong to.
   const where = { isActive: true };
   if (search) {
-    where.name = { contains: search, mode: 'insensitive' };
+    where.name = { contains: search.slice(0, 100), mode: 'insensitive' };
   }
   if (scope === 'shop' && !isAdmin) {
     Object.assign(where, await scopeToOwnerOrShop(userId));
@@ -36,7 +54,7 @@ const getProducts = async (userId, queryParams = {}, options = {}) => {
   const skip = (Number(page) - 1) * take;
   const sortField = sortBy === 'name' ? 'name' : 'createdAt';
 
-  const [products, total] = await Promise.all([
+  const [rows, total] = await Promise.all([
     prisma.product.findMany({
       where,
       orderBy: { [sortField]: order },
@@ -45,6 +63,8 @@ const getProducts = async (userId, queryParams = {}, options = {}) => {
     }),
     prisma.product.count({ where }),
   ]);
+  const memberShopIds = isAdmin ? [] : await getUserShopIds(userId);
+  const products = rows.map((p) => redactForViewer(p, memberShopIds, userId, isAdmin));
 
   return {
     products,
@@ -72,7 +92,7 @@ const getProductById = async (id, userId, options = {}) => {
   if (scope === 'shop' && !isAdmin && !(await isProductInScope(product, userId))) {
     throw new ApiError(404, 'Product not found');
   }
-  return product;
+  return redactForViewer(product, isAdmin ? [] : await getUserShopIds(userId), userId, isAdmin);
 };
 
 const getProductBySlug = async (slug, userId, options = {}) => {
@@ -85,7 +105,7 @@ const getProductBySlug = async (slug, userId, options = {}) => {
   if (scope === 'shop' && !isAdmin && !(await isProductInScope(product, userId))) {
     throw new ApiError(404, 'Product not found');
   }
-  return product;
+  return redactForViewer(product, isAdmin ? [] : await getUserShopIds(userId), userId, isAdmin);
 };
 
 // Whether `product` belongs to `userId` directly (legacy ownerId) or via a

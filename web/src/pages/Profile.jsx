@@ -28,7 +28,7 @@ export default function Profile() {
     e.preventDefault();
     setSavingProfile(true);
     try {
-      const res = await api.patch('/users/profile', profileForm);
+      const res = await api.patch('/users/profile', { name: profileForm.name });
       updateUser(res.data.data.user);
       toast.success(t('profile_updated'));
       setEditing(false);
@@ -83,13 +83,14 @@ export default function Profile() {
               </div>
               <div>
                 <label className={labelCls}>{t('phone')}</label>
-                <input className={inputCls} value={profileForm.phone} onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })} placeholder={t('enter_phone')} />
+                <input className={inputCls + ' opacity-60 cursor-not-allowed'} value={profileForm.phone} readOnly disabled placeholder={t('enter_phone')} />
               </div>
               <div>
                 <label className={labelCls}>
                   {t('email')} <span className="font-normal text-[#94A3B8]">({t('optional')})</span>
                 </label>
-                <input type="email" className={inputCls} value={profileForm.email} onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })} placeholder={t('enter_email')} />
+                <input type="email" className={inputCls + ' opacity-60 cursor-not-allowed'} value={profileForm.email} readOnly disabled placeholder={t('enter_email')} />
+                <p className="text-xs text-[#94A3B8] mt-1">{t('lk_profile_hint')}</p>
               </div>
               <div className="flex gap-3">
                 <button type="button" onClick={() => setEditing(false)} className="flex-1 h-12 rounded-xl border border-[#E2E8F0] dark:border-[#223027] text-[#64748B] dark:text-slate-400 font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition">

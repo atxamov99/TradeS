@@ -94,7 +94,7 @@ const inviteMember = async (shopId, requesterId, { userId, phone, email, role })
     if (tg && tg.telegramChatId) {
       await telegramService.sendMessage(
         tg.telegramChatId,
-        `\u{1F4E8} <b>TradeS</b>\n\n"${invite.shop.name}" do'koniga xodim bo'lish taklifi keldi. Qabul qilish yoki rad etish uchun ilovaga yoki saytga kiring.`
+        `\u{1F4E8} <b>TradeS</b>\n\n"${String(invite.shop.name).replace(/[&<>]/g, (c) => (c === '&' ? '&amp;' : c === '<' ? '&lt;' : '&gt;'))}" do'koniga xodim bo'lish taklifi keldi. Qabul qilish yoki rad etish uchun ilovaga yoki saytga kiring.`
       );
     }
   } catch (_) { /* notification is optional */ }

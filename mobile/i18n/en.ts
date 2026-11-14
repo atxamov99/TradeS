@@ -312,6 +312,12 @@ const en: Translations = {
     pinSet: "PIN saved",
     defaultPinHint: "No PIN set — default: 0000",
   },
+  link: {
+    emailTitle: "Email", phoneTitle: "Phone", notLinked: "Not linked", newEmail: "email@example.com", newPhone: "+998 90 123 45 67", password: "Your current password",
+    hintEmail: "A confirmation code will be sent to this email.", hintPhone: "The number must be connected to the Telegram bot first: the code arrives in Telegram.",
+    send: "Send code", code: "6-digit code", confirm: "Confirm", cancel: "Cancel", sentEmail: "Code sent to your email", sentPhone: "Code sent to Telegram", done: "Linked",
+    taken: "This email or number is already linked to another account", wrongPw: "Wrong password", needBot: "First connect your number in the Telegram bot (/start)", tooMany: "Too many attempts, try again later", error: "Error", dev: "Dev mode, code:",
+  },
   common: {
     back: "Back",
     loading: "Loading...",

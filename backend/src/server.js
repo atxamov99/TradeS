@@ -60,6 +60,9 @@ app.use(cookieParser());
 
 // ── Logging ────────────────────────────────────────────────────────────────
 
+// The Telegram webhook path contains the bot token: never write it to the access log.
+morgan.token('url', (req) => String(req.originalUrl || req.url).split('/webhook/').map((p, k) => (k === 0 ? p : '***' + p.slice(p.search(/[?]/) < 0 ? p.length : p.search(/[?]/)))).join('/webhook/'));
+
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 } else {

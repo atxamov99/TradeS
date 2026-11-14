@@ -12,7 +12,10 @@ exports.askAI = asyncHandler(async (req, res) => {
         const { prompt, question, language } = req.body;
         const finalPrompt = prompt || question;
 
-        if (!finalPrompt) {
+        if (typeof finalPrompt === "string" && finalPrompt.length > 2000) {
+            throw new ApiError(400, "Savol juda uzun (2000 belgigacha)");
+        }
+        if (!finalPrompt || typeof finalPrompt !== "string") {
             throw new ApiError(400, "Savol (prompt yoki question) talab qilinadi");
         }
 

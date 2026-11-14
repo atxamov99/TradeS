@@ -310,6 +310,12 @@ const uz = {
     pinSet: "PIN o'rnatildi",
     defaultPinHint: "PIN o'rnatilmagan — standart: 0000",
   },
+  link: {
+    emailTitle: "Email manzil", phoneTitle: "Telefon raqam", notLinked: "Ulanmagan", newEmail: "email@misol.com", newPhone: "+998 90 123 45 67", password: "Hozirgi parolingiz",
+    hintEmail: "Tasdiqlash kodi shu emailga yuboriladi.", hintPhone: "Raqam avval Telegram botga ulangan bo'lishi kerak: kod Telegramga keladi.",
+    send: "Kod yuborish", code: "6 xonali kod", confirm: "Tasdiqlash", cancel: "Bekor qilish", sentEmail: "Kod emailga yuborildi", sentPhone: "Kod Telegramga yuborildi", done: "Ulandi",
+    taken: "Bu manzil/raqam boshqa hisobga ulangan", wrongPw: "Parol noto'g'ri", needBot: "Avval Telegram botda raqamingizni ulang (/start)", tooMany: "Juda ko'p urinish, keyinroq urinib ko'ring", error: "Xatolik", dev: "Sinov rejimi, kod:",
+  },
   common: {
     back: "Orqaga",
     loading: "Yuklanmoqda...",

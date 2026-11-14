@@ -11,7 +11,11 @@ const createSale = async (userId, saleData) => {
   // Check for duplicate syncId (idempotent offline sync)
   if (syncId) {
     const existing = await prisma.sale.findUnique({ where: { syncId } });
-    if (existing) return existing;
+    // A syncId that belongs to somebody else's sale must never hand that sale back (information leak).
+    if (existing) {
+      if (existing.userId !== userId) throw new ApiError(409, 'Duplicate sync id');
+      return existing;
+    }
   }
 
   const user = await prisma.user.findUnique({
@@ -22,7 +26,11 @@ const createSale = async (userId, saleData) => {
 
   const qty = Number(quantity);
   const sp = Number(sellPrice) || 0;
-  const bp = Number(buyPrice) || 0;
+  let bp = Number(buyPrice) || 0;
+  // A sale may not be dated in the future (it would hide it from today's reports / skew them).
+  if (createdAt && new Date(createdAt).getTime() > Date.now() + 10 * 60 * 1000) {
+    throw new ApiError(400, 'Sale date cannot be in the future');
+  }
 
   // If a productId is given, it must belong to this user (or a shop they're a
   // member of) — prevents decrementing another owner's stock via a forged
@@ -32,10 +40,20 @@ const createSale = async (userId, saleData) => {
     const ownerScope = await scopeToOwnerOrShop(userId);
     const owned = await prisma.product.findFirst({
       where: { id: productId, ...ownerScope },
-      select: { id: true, stock: true, shopId: true },
+      select: { id: true, stock: true, shopId: true, buyPrice: true, sellPrice: true },
     });
     if (!owned) throw new ApiError(404, `Product ${productId} not found`);
     shopId = owned.shopId;
+    // The COST of a sale comes from the product record, never from the client: otherwise a cashier could
+    // send buyPrice=0 and inflate (or deflate) the profit the owner sees.
+    if (owned.buyPrice != null) bp = Number(owned.buyPrice) || 0;
+    // Selling below the shelf price is allowed (discounts) but leaves a trace for the owner.
+    if (owned.sellPrice != null && sp < Number(owned.sellPrice)) {
+      createAuditLog({
+        action: 'SALE_BELOW_PRICE', category: 'sales', actor: userId, actorId: userId, target: `product:${owned.id}`, targetId: owned.id,
+        metadata: { shelfPrice: Number(owned.sellPrice), soldAt: sp, qty },
+      }).catch(() => {});
+    }
 
     // Block overselling for real-time sales — but offline-synced sales already
     // happened physically before the device reconnected, so they must still be
@@ -128,11 +146,18 @@ const bulkSync = async (userId, sales) => {
 };
 
 const getSales = async (userId, { page = 1, limit = 100, from, to, date } = {}) => {
+  page = Math.max(1, parseInt(page, 10) || 1);
+  [from, to, date] = [from, to, date].map((v) => (typeof v === 'string' ? v : undefined));
   // Legacy solo accounts only see their own sales. Shop owners see every sale
   // recorded under any shop they own (including their cashiers'). Cashiers
   // see only their own sales — not the shop's full sales list.
   const where = await scopeSalesForViewer(userId);
 
+  // junk dates must not reach the database (Invalid Date -> 500)
+  const validDate = (v) => v && !Number.isNaN(new Date(v).getTime());
+  if (date && !validDate(date)) date = undefined;
+  if (from && !validDate(from)) from = undefined;
+  if (to && !validDate(to)) to = undefined;
   if (date) {
     // Single day filter
     const start = new Date(date);

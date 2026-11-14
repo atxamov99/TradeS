@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import LinkIdentifierModal from "@/components/LinkIdentifierModal";
 import { View, Text, TouchableOpacity, ScrollView, Switch, Modal, TextInput } from "react-native";
 import { Alert } from "@/utils/alert";
 import { router } from "expo-router";
@@ -76,9 +77,7 @@ export default function ProfileScreen() {
   const t = useT();
   const { isAdmin, isDirector } = useRoleStore();
 
-  const [emailModalVisible, setEmailModalVisible] = useState(false);
-  const [emailInput, setEmailInput] = useState("");
-  const [emailSaving, setEmailSaving] = useState(false);
+  const [linkKind, setLinkKind] = useState<"email" | "phone" | null>(null);
 
   const [nameModalVisible, setNameModalVisible] = useState(false);
   const [nameInput, setNameInput] = useState("");
@@ -129,31 +128,6 @@ export default function ProfileScreen() {
     await clearLocalData().catch(() => {});
     clearUser();
     clearToken();
-  }
-
-  function openEmailModal() {
-    setEmailInput(user?.email || "");
-    setEmailModalVisible(true);
-  }
-
-  async function handleSaveEmail() {
-    const trimmed = emailInput.trim().toLowerCase();
-    if (trimmed && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
-      Alert.alert(t.common.error, "To'g'ri email manzil kiriting");
-      return;
-    }
-    setEmailSaving(true);
-    try {
-      const res = await api.patch("/users/profile", { email: trimmed });
-      const data = res.data?.data ?? res.data;
-      const updated = data?.user ?? data;
-      await setUser({ ...user, email: updated?.email ?? trimmed });
-      setEmailModalVisible(false);
-    } catch (e: any) {
-      Alert.alert(t.common.error, e.response?.data?.message || "Email saqlashda xatolik");
-    } finally {
-      setEmailSaving(false);
-    }
   }
 
   function openNameModal() {
@@ -339,10 +313,19 @@ export default function ProfileScreen() {
         <Row
           iconName="mail"
           iconBg="#DBEAFE"
-          label="Email"
-          sub={user?.email || "Qo'shilmagan"}
+          label={t.link.emailTitle}
+          sub={user?.email || t.link.notLinked}
           right={<Ionicons name="chevron-forward" size={18} color={c.textMuted} />}
-          onPress={openEmailModal}
+          onPress={() => setLinkKind("email")}
+        />
+        <Divider />
+        <Row
+          iconName="call"
+          iconBg="#DCFCE7"
+          label={t.link.phoneTitle}
+          sub={user?.phone || t.link.notLinked}
+          right={<Ionicons name="chevron-forward" size={18} color={c.textMuted} />}
+          onPress={() => setLinkKind("phone")}
         />
         <Divider />
         <Row
@@ -414,35 +397,7 @@ export default function ProfileScreen() {
         Powered by KarvonEx
       </Text>
 
-      <Modal visible={emailModalVisible} transparent animationType="slide">
-        <View style={{ flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.5)" }}>
-          <View style={{ backgroundColor: c.bgCard, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 }}>
-            <Text style={{ color: c.text, fontSize: 18, fontWeight: "800", marginBottom: 6 }}>Email manzil</Text>
-            <Text style={{ color: c.textMuted, fontSize: 12, marginBottom: 16 }}>
-              Ixtiyoriy — parolni tiklash va bildirishnomalar uchun ishlatiladi.
-            </Text>
-            <TextInput
-              style={{ backgroundColor: c.bgMuted, borderRadius: 14, paddingHorizontal: 14, height: 50, fontSize: 15, color: c.text, marginBottom: 16, borderWidth: 1, borderColor: c.border }}
-              placeholder="email@gmail.com"
-              placeholderTextColor={c.textMuted}
-              value={emailInput}
-              onChangeText={setEmailInput}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              autoFocus
-            />
-            <View style={{ flexDirection: "row", gap: 10 }}>
-              <TouchableOpacity onPress={() => setEmailModalVisible(false)} style={{ flex: 1, height: 50, borderRadius: 14, backgroundColor: c.bgMuted, alignItems: "center", justifyContent: "center" }}>
-                <Text style={{ color: c.textSub, fontWeight: "700" }}>{t.customers.cancel}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={handleSaveEmail} disabled={emailSaving} style={{ flex: 2, height: 50, borderRadius: 14, backgroundColor: c.primary, alignItems: "center", justifyContent: "center" }}>
-                <Text style={{ color: "#fff", fontWeight: "800" }}>{emailSaving ? "..." : t.customers.save}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      <LinkIdentifierModal kind={linkKind} onClose={() => setLinkKind(null)} />
 
       <Modal visible={nameModalVisible} transparent animationType="slide">
         <View style={{ flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.5)" }}>

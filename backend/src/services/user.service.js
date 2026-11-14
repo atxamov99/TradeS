@@ -15,29 +15,12 @@ const getProfile = async (userId) => {
 };
 
 const updateProfile = async (userId, updateData) => {
-  const allowed = ['name', 'email', 'phone', 'avatar', 'telegram', 'instagram'];
+  // Phone / email are login identifiers and are NOT changeable here (account-takeover primitive):
+  // they go through the verified link flow in auth.service (linkIdentifier*).
+  const allowed = ['name', 'avatar', 'telegram', 'instagram'];
   const filteredData = Object.keys(updateData)
     .filter((key) => allowed.includes(key))
     .reduce((obj, key) => ({ ...obj, [key]: updateData[key] }), {});
-
-  // Email is optional and can be added/changed here. When it actually changes,
-  // make sure no other active account already uses it and re-flag as unverified.
-  // (Soft-deleted accounts hold tombstoned `deleted_...` emails, so they never clash.)
-  if (filteredData.email !== undefined) {
-    const current = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
-    if (!current) throw new ApiError(404, 'User not found');
-
-    const nextEmail = filteredData.email || null;
-    filteredData.email = nextEmail;
-
-    if (nextEmail && nextEmail !== current.email) {
-      const taken = await prisma.user.findFirst({
-        where: { email: nextEmail, deletedAt: null, NOT: { id: userId } },
-      });
-      if (taken) throw new ApiError(409, 'Bu email allaqachon band');
-      filteredData.isEmailVerified = false;
-    }
-  }
 
   try {
     const user = await prisma.user.update({
@@ -48,8 +31,6 @@ const updateProfile = async (userId, updateData) => {
     delete userResponse.password;
     return userResponse;
   } catch (err) {
-    // Race on the unique email, or the row vanished.
-    if (err.code === 'P2002') throw new ApiError(409, 'Bu email allaqachon band');
     if (err.code === 'P2025') throw new ApiError(404, 'User not found');
     throw err;
   }
@@ -65,10 +46,11 @@ const changePassword = async (userId, currentPassword, newPassword) => {
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(newPassword, salt);
 
-  await prisma.user.update({
-    where: { id: userId },
-    data: { password: hashedPassword },
-  });
+  await prisma.$transaction([
+    prisma.user.update({ where: { id: userId }, data: { password: hashedPassword } }),
+    // a changed password must also end every session that may belong to someone who knew the old one
+    prisma.refreshToken.updateMany({ where: { userId, isRevoked: false }, data: { isRevoked: true } }),
+  ]);
 
   return { message: 'Password changed successfully' };
 };

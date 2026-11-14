@@ -312,6 +312,12 @@ const ru: Translations = {
     pinSet: "PIN установлен",
     defaultPinHint: "PIN не установлен — по умолчанию: 0000",
   },
+  link: {
+    emailTitle: "Почта", phoneTitle: "Телефон", notLinked: "Не привязан", newEmail: "email@example.com", newPhone: "+998 90 123 45 67", password: "Ваш текущий пароль",
+    hintEmail: "Код подтверждения придёт на эту почту.", hintPhone: "Номер должен быть сначала подключён к Telegram-боту: код придёт в Telegram.",
+    send: "Отправить код", code: "Код из 6 цифр", confirm: "Подтвердить", cancel: "Отмена", sentEmail: "Код отправлен на почту", sentPhone: "Код отправлен в Telegram", done: "Привязано",
+    taken: "Эта почта или номер уже привязаны к другому аккаунту", wrongPw: "Неверный пароль", needBot: "Сначала подключите номер в Telegram-боте (/start)", tooMany: "Слишком много попыток, попробуйте позже", error: "Ошибка", dev: "Режим разработки, код:",
+  },
   common: {
     back: "Назад",
     loading: "Загрузка...",

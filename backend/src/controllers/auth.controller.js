@@ -249,4 +249,22 @@ const resetPassword = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, null, result.message));
 });
 
-module.exports = { register, registerTestUser, login, verifyNewDeviceLogin, refreshToken, logout, logoutAll, listSessions, revokeSession, getMe, forgotPassword, resetPassword, googleAuth, requestOtp, verifyOtp, requestEmailOtp, verifyEmailOtp, ssoAdopt };
+const metaOf = (req) => ({ ip: req.ip });
+const requestLinkEmail = asyncHandler(async (req, res) => {
+  const r = await authService.requestLinkEmail(req.user.id, req.body);
+  res.status(200).json(new ApiResponse(200, r, r.message));
+});
+const verifyLinkEmail = asyncHandler(async (req, res) => {
+  const r = await authService.verifyLinkEmail(req.user.id, req.body, metaOf(req));
+  res.status(200).json(new ApiResponse(200, r, 'Email ulandi'));
+});
+const requestLinkPhone = asyncHandler(async (req, res) => {
+  const r = await authService.requestLinkPhone(req.user.id, req.body);
+  res.status(200).json(new ApiResponse(200, r, r.message));
+});
+const verifyLinkPhone = asyncHandler(async (req, res) => {
+  const r = await authService.verifyLinkPhone(req.user.id, req.body, metaOf(req));
+  res.status(200).json(new ApiResponse(200, r, 'Telefon ulandi'));
+});
+
+module.exports = { requestLinkEmail, verifyLinkEmail, requestLinkPhone, verifyLinkPhone, register, registerTestUser, login, verifyNewDeviceLogin, refreshToken, logout, logoutAll, listSessions, revokeSession, getMe, forgotPassword, resetPassword, googleAuth, requestOtp, verifyOtp, requestEmailOtp, verifyEmailOtp, ssoAdopt };

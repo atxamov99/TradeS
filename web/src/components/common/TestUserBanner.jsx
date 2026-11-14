@@ -41,7 +41,7 @@ export default function TestUserBanner({ user }) {
         type="button"
         onClick={() => setDismissed(true)}
         className="flex-shrink-0 p-1 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-800/40 transition-colors"
-        aria-label="Dismiss"
+        aria-label={t('dismiss')}
       >
         <X size={14} />
       </button>

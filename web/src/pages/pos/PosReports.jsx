@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { TrendingUp, DollarSign, ShoppingCart, BarChart2, ChevronLeft, ChevronRight } from 'lucide-react';
 import * as reportsApi from '../../api/reports.api';
@@ -19,6 +20,7 @@ function MiniBar({ value, max, label }) {
 }
 
 export default function PosReports() {
+  const { t } = useTranslation();
   const [mode, setMode] = useState('daily');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
@@ -57,7 +59,7 @@ export default function PosReports() {
   return (
     <div className="min-h-screen bg-pos-bg text-pos-text p-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Reports</h1>
+        <h1 className="text-2xl font-bold">{t('pos_nav_reports')}</h1>
         <div className="flex bg-pos-card border border-pos-border rounded-xl p-1">
           {['daily', 'monthly'].map((m) => (
             <button key={m} onClick={() => setMode(m)} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors capitalize ${mode === m ? 'bg-pos-accent text-white' : 'text-pos-muted hover:text-white'}`}>{m}</button>
@@ -87,10 +89,10 @@ export default function PosReports() {
           {/* Stats */}
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 mb-6">
             {[
-              { icon: ShoppingCart, label: 'Sales', value: stats.salesCount ?? 0, color: 'text-blue-400' },
-              { icon: DollarSign, label: 'Revenue', value: `$${fmt(stats.totalRevenue)}`, color: 'text-yellow-400' },
-              { icon: TrendingUp, label: 'Cost', value: `$${fmt(stats.totalCost)}`, color: 'text-red-400' },
-              { icon: TrendingUp, label: 'Profit', value: `$${fmt(stats.totalProfit)}`, color: 'text-pos-accent' },
+              { icon: ShoppingCart, label: t('pos_sales'), value: stats.salesCount ?? 0, color: 'text-blue-400' },
+              { icon: DollarSign, label: t('pos_revenue'), value: `$${fmt(stats.totalRevenue)}`, color: 'text-yellow-400' },
+              { icon: TrendingUp, label: t('pos_cost'), value: `$${fmt(stats.totalCost)}`, color: 'text-red-400' },
+              { icon: TrendingUp, label: t('pos_profit'), value: `$${fmt(stats.totalProfit)}`, color: 'text-pos-accent' },
             ].map(({ icon: Icon, label, value, color }) => (
               <div key={label} className="bg-pos-card border border-pos-border rounded-xl p-5">
                 <div className="flex items-center justify-between mb-2">
@@ -107,7 +109,7 @@ export default function PosReports() {
             <div className="bg-pos-card border border-pos-border rounded-xl p-5 mb-6">
               <h2 className="text-sm font-semibold text-pos-muted mb-4 flex items-center gap-2">
                 <BarChart2 className="h-4 w-4" />
-                {mode === 'daily' ? 'Revenue by Hour' : 'Revenue by Day'}
+                {mode === 'daily' ? t('pos_rev_hour') : t('pos_rev_day')}
               </h2>
               <div className="space-y-2">
                 {chartData.slice(-10).map((d, i) => (
@@ -125,7 +127,7 @@ export default function PosReports() {
           {/* Top products */}
           {topProducts.length > 0 && (
             <div className="bg-pos-card border border-pos-border rounded-xl p-5">
-              <h2 className="text-sm font-semibold text-pos-muted mb-4">Top Products by Profit</h2>
+              <h2 className="text-sm font-semibold text-pos-muted mb-4">{t('pos_top_by_profit')}</h2>
               <div className="space-y-3">
                 {topProducts.map((p, i) => (
                   <div key={i} className="flex items-center justify-between py-2 border-b border-pos-border last:border-0">

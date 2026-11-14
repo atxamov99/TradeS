@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronDown, Search, Check } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -9,13 +10,16 @@ export default function Dropdown({
   options,
   value,
   onChange,
-  placeholder = 'Tanlang...',
-  searchPlaceholder = 'Qidirish...',
+  placeholder,
+  searchPlaceholder,
   error,
   disabled,
   className,
   searchThreshold = 6,
 }) {
+  const { t } = useTranslation();
+  placeholder = placeholder ?? t('dd_select');
+  searchPlaceholder = searchPlaceholder ?? t('dd_search');
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const rootRef = useRef(null);
@@ -96,7 +100,7 @@ export default function Dropdown({
         )}
         <div className="max-h-56 overflow-y-auto py-1">
           {filtered.length === 0 ? (
-            <p className="px-4 py-3 text-sm text-[#94A3B8] dark:text-slate-500">Topilmadi</p>
+            <p className="px-4 py-3 text-sm text-[#94A3B8] dark:text-slate-500">{t('dd_none')}</p>
           ) : (
             filtered.map((o) => (
               <button

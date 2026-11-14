@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Search, Pencil, Trash2, Package } from 'lucide-react';
 import * as productsApi from '../../api/products.api';
@@ -11,6 +12,7 @@ const UNITS = ['pcs', 'kg', 'g', 'L', 'mL', 'box', 'm'];
 function fmtPrice(n) { return Number(n || 0).toFixed(2); }
 
 export default function PosProducts() {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const user = useAuthStore((s) => s.user);
   // Mirrors backend rule (product.service.js): owner OR ADMIN may edit/delete.
@@ -33,7 +35,7 @@ export default function PosProducts() {
 
   const deleteMutation = useMutation({
     mutationFn: (id) => productsApi.deleteProduct(id),
-    onSuccess: () => { qc.invalidateQueries(['pos-products-list']); toast.success('Product deleted'); },
+    onSuccess: () => { qc.invalidateQueries(['pos-products-list']); toast.success(t('pp_deleted')); },
   });
 
   const openAdd = () => { setEditing(null); setForm(EMPTY); setShowForm(true); };
@@ -50,11 +52,11 @@ export default function PosProducts() {
       const payload = { ...form, price, buyPrice: price, sellPrice: price, discount: Number(form.discount || 0), stock: Number(form.stock) };
       if (editing) await productsApi.updateProduct(editing.id, payload);
       else await productsApi.createProduct(payload);
-      toast.success(editing ? 'Updated' : 'Created');
+      toast.success(editing ? t('pp_updated') : t('pp_created'));
       qc.invalidateQueries(['pos-products-list']);
       setShowForm(false);
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Failed to save product');
+      toast.error(err?.response?.data?.message || t('pp_save_failed'));
     }
   };
 
@@ -63,9 +65,9 @@ export default function PosProducts() {
   return (
     <div className="min-h-screen bg-pos-bg text-pos-text p-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Products</h1>
+        <h1 className="text-2xl font-bold">{t('pos_nav_products')}</h1>
         <button onClick={openAdd} className="flex items-center gap-2 bg-pos-accent hover:bg-pos-accentHover text-white font-semibold px-4 py-2.5 rounded-xl transition-colors text-sm">
-          <Plus className="h-4 w-4" /> Add Product
+          <Plus className="h-4 w-4" /> {t('pp_add')}
         </button>
       </div>
 
@@ -73,7 +75,7 @@ export default function PosProducts() {
         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-pos-muted" />
         <input
           className="w-full bg-pos-card border border-pos-border rounded-xl pl-10 pr-4 py-3 text-white placeholder-pos-muted focus:outline-none focus:border-pos-accent text-sm"
-          placeholder="Search products..."
+          placeholder={t('pp_search')}
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(1); }}
         />
@@ -84,7 +86,7 @@ export default function PosProducts() {
       ) : products.length === 0 ? (
         <div className="text-center py-20 text-pos-muted">
           <Package className="h-16 w-16 mx-auto mb-3 opacity-30" />
-          <p>No products yet</p>
+          <p>{t('pp_none')}</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -104,7 +106,7 @@ export default function PosProducts() {
                 </div>
                 <div className="text-right min-w-[60px]">
                   <p className={`font-bold text-lg ${stockColor(p.stock)}`}>{p.stock}</p>
-                  <p className="text-pos-muted text-xs">in stock</p>
+                  <p className="text-pos-muted text-xs">{t('pp_in_stock')}</p>
                 </div>
                 {canManage(p) && (
                   <div className="flex gap-1">
@@ -135,20 +137,20 @@ export default function PosProducts() {
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70">
           <div className="w-full max-w-md bg-pos-card border border-pos-border rounded-2xl p-6 shadow-2xl">
-            <h2 className="text-lg font-bold mb-4">{editing ? 'Edit Product' : 'Add Product'}</h2>
+            <h2 className="text-lg font-bold mb-4">{editing ? t('pp_edit') : t('pp_add')}</h2>
             <form onSubmit={handleSave} className="space-y-3">
-              <input className="w-full bg-pos-bg border border-pos-border rounded-xl px-4 py-3 text-white placeholder-pos-muted focus:outline-none focus:border-pos-accent text-sm" placeholder="Product name *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+              <input className="w-full bg-pos-bg border border-pos-border rounded-xl px-4 py-3 text-white placeholder-pos-muted focus:outline-none focus:border-pos-accent text-sm" placeholder={t('pp_ph_name')} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
               <div className="grid grid-cols-2 gap-3">
-                <input type="number" min="0" step="0.01" className="w-full bg-pos-bg border border-pos-border rounded-xl px-4 py-3 text-white placeholder-pos-muted focus:outline-none focus:border-pos-accent text-sm" placeholder="Buy price *" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} required />
-                <input type="number" min="0" step="0.01" className="w-full bg-pos-bg border border-pos-border rounded-xl px-4 py-3 text-white placeholder-pos-muted focus:outline-none focus:border-pos-accent text-sm" placeholder="Stock *" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} required />
+                <input type="number" min="0" step="0.01" className="w-full bg-pos-bg border border-pos-border rounded-xl px-4 py-3 text-white placeholder-pos-muted focus:outline-none focus:border-pos-accent text-sm" placeholder={t('pp_ph_buy')} value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} required />
+                <input type="number" min="0" step="0.01" className="w-full bg-pos-bg border border-pos-border rounded-xl px-4 py-3 text-white placeholder-pos-muted focus:outline-none focus:border-pos-accent text-sm" placeholder={t('pp_ph_stock')} value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} required />
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <input className="w-full bg-pos-bg border border-pos-border rounded-xl px-4 py-3 text-white placeholder-pos-muted focus:outline-none focus:border-pos-accent text-sm" placeholder="Category" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
-                <input type="number" min="0" max="100" className="w-full bg-pos-bg border border-pos-border rounded-xl px-4 py-3 text-white placeholder-pos-muted focus:outline-none focus:border-pos-accent text-sm" placeholder="Discount %" value={form.discount} onChange={(e) => setForm({ ...form, discount: e.target.value })} />
+                <input className="w-full bg-pos-bg border border-pos-border rounded-xl px-4 py-3 text-white placeholder-pos-muted focus:outline-none focus:border-pos-accent text-sm" placeholder={t('pp_ph_category')} value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
+                <input type="number" min="0" max="100" className="w-full bg-pos-bg border border-pos-border rounded-xl px-4 py-3 text-white placeholder-pos-muted focus:outline-none focus:border-pos-accent text-sm" placeholder={t('pp_ph_discount')} value={form.discount} onChange={(e) => setForm({ ...form, discount: e.target.value })} />
               </div>
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setShowForm(false)} className="flex-1 py-3 rounded-xl border border-pos-border text-pos-muted hover:border-pos-accent transition-colors text-sm font-medium">Cancel</button>
-                <button type="submit" className="flex-1 py-3 rounded-xl bg-pos-accent hover:bg-pos-accentHover text-white font-semibold text-sm transition-colors">{editing ? 'Update' : 'Add'}</button>
+                <button type="button" onClick={() => setShowForm(false)} className="flex-1 py-3 rounded-xl border border-pos-border text-pos-muted hover:border-pos-accent transition-colors text-sm font-medium">{t('pp_cancel')}</button>
+                <button type="submit" className="flex-1 py-3 rounded-xl bg-pos-accent hover:bg-pos-accentHover text-white font-semibold text-sm transition-colors">{editing ? t('pp_update') : t('pp_add_btn')}</button>
               </div>
             </form>
           </div>

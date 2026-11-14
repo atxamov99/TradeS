@@ -84,7 +84,7 @@ export default function AIAssistant() {
                                 <h3 className="font-bold text-lg leading-tight">TradeS AI</h3>
                                 <div className="flex items-center gap-1.5 opacity-80 decoration-0">
                                     <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                                    <span className="text-[10px] uppercase font-bold tracking-wider">Online</span>
+                                    <span className="text-[10px] uppercase font-bold tracking-wider">{t('pos_online')}</span>
                                 </div>
                             </div>
                             <button

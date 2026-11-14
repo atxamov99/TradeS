@@ -1,4 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ShoppingCart, Heart, Sun, Moon, User, LogOut, LayoutDashboard, Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import useAuthStore from '../../store/authStore';
@@ -6,6 +7,7 @@ import useCartStore from '../../store/cartStore';
 import useThemeStore from '../../store/themeStore';
 
 export default function Header() {
+  const { t } = useTranslation();
   const { user, logout, isAdmin } = useAuthStore();
   const itemCount = useCartStore((s) => s.itemCount());
   const { theme, toggleTheme } = useThemeStore();
@@ -30,13 +32,9 @@ export default function Header() {
 
         {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
-          <Link to="/products" className="text-gray-600 hover:text-primary-600 dark:text-gray-300">
-            Products
-          </Link>
+          <Link to="/products" className="text-gray-600 hover:text-primary-600 dark:text-gray-300">{t('products')}</Link>
           {isAdmin() && (
-            <Link to="/admin" className="text-gray-600 hover:text-primary-600 dark:text-gray-300">
-              Admin
-            </Link>
+            <Link to="/admin" className="text-gray-600 hover:text-primary-600 dark:text-gray-300">{t('hd_admin')}</Link>
           )}
         </nav>
 
@@ -84,7 +82,7 @@ export default function Header() {
                       onClick={() => setUserMenuOpen(false)}
                       className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
                     >
-                      <User className="h-4 w-4" /> Profile
+                      <User className="h-4 w-4" /> {t('profile')}
                     </Link>
                     {isAdmin() && (
                       <Link
@@ -92,7 +90,7 @@ export default function Header() {
                         onClick={() => setUserMenuOpen(false)}
                         className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
                       >
-                        <LayoutDashboard className="h-4 w-4" /> Admin
+                        <LayoutDashboard className="h-4 w-4" /> {t('hd_admin')}
                       </Link>
                     )}
                     <hr className="my-1" />
@@ -100,7 +98,7 @@ export default function Header() {
                       onClick={() => { setUserMenuOpen(false); handleLogout(); }}
                       className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
                     >
-                      <LogOut className="h-4 w-4" /> Logout
+                      <LogOut className="h-4 w-4" /> {t('logout')}
                     </button>
                   </div>
                 </>
@@ -108,8 +106,8 @@ export default function Header() {
             </div>
           ) : (
             <div className="hidden md:flex items-center gap-2">
-              <Link to="/login" className="btn-outline btn text-sm px-3 py-1.5">Login</Link>
-              <Link to="/register" className="btn-primary btn text-sm px-3 py-1.5">Register</Link>
+              <Link to="/login" className="btn-outline btn text-sm px-3 py-1.5">{t('login')}</Link>
+              <Link to="/register" className="btn-primary btn text-sm px-3 py-1.5">{t('register')}</Link>
             </div>
           )}
 
@@ -123,11 +121,11 @@ export default function Header() {
       {/* Mobile menu */}
       {mobileOpen && (
         <div className="md:hidden border-t bg-white dark:bg-gray-900 px-4 py-4 space-y-2">
-          <Link to="/products" onClick={() => setMobileOpen(false)} className="block py-2 text-sm font-medium">Products</Link>
+          <Link to="/products" onClick={() => setMobileOpen(false)} className="block py-2 text-sm font-medium">{t('products')}</Link>
           {!user && (
             <>
-              <Link to="/login" onClick={() => setMobileOpen(false)} className="block py-2 text-sm">Login</Link>
-              <Link to="/register" onClick={() => setMobileOpen(false)} className="block py-2 text-sm font-medium text-primary-600">Register</Link>
+              <Link to="/login" onClick={() => setMobileOpen(false)} className="block py-2 text-sm">{t('login')}</Link>
+              <Link to="/register" onClick={() => setMobileOpen(false)} className="block py-2 text-sm font-medium text-primary-600">{t('register')}</Link>
             </>
           )}
         </div>

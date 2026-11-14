@@ -182,10 +182,10 @@ export default function Login() {
       const devCode = res?.data?.devCode;
       if (devCode) {
         setCode(String(devCode));
-        toast('Email не настроен (режим разработки). Ваш код: ' + devCode, { icon: '🔧', duration: 20000 });
+        toast(t('dev_code_toast', { code: devCode }), { icon: '🔧', duration: 20000 });
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Xatolik yuz berdi');
+      toast.error(err.response?.data?.message || t('err_generic_msg'));
     }
   };
 

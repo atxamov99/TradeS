@@ -1,4 +1,5 @@
 import { useParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { ShoppingCart, Heart, Star, ArrowLeft, Minus, Plus } from 'lucide-react';
 import { useState } from 'react';
@@ -12,6 +13,7 @@ import formatPrice from '../utils/formatPrice';
 import toast from 'react-hot-toast';
 
 export default function ProductDetail() {
+  const { t } = useTranslation();
   const { slug } = useParams();
   const [qty, setQty] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
@@ -26,16 +28,16 @@ export default function ProductDetail() {
   const product = data?.data?.data?.product;
 
   const handleAddToCart = () => {
-    if (!user) { toast.error('Please login to add to cart'); return; }
+    if (!user) { toast.error(t('pd_login_cart')); return; }
     // Fire-and-forget: the store rethrows and the axios interceptor toasts the error.
     addItem(product.id, qty).catch(() => {});
   };
 
   const handleWishlist = async () => {
-    if (!user) { toast.error('Please login'); return; }
+    if (!user) { toast.error(t('pd_login')); return; }
     const res = await wishlistApi.toggleWishlist(product.id);
     const action = res.data.data.action;
-    toast.success(action === 'added' ? 'Added to wishlist' : 'Removed from wishlist');
+    toast.success(action === 'added' ? t('pd_wl_added') : t('pd_wl_removed'));
   };
 
   if (isLoading) {
@@ -55,8 +57,8 @@ export default function ProductDetail() {
 
   if (!product) return (
     <div className="container py-20 text-center">
-      <p className="text-gray-500">Product not found.</p>
-      <Link to="/products" className="btn-primary btn mt-4">Back to Products</Link>
+      <p className="text-gray-500">{t('pd_not_found')}</p>
+      <Link to="/products" className="btn-primary btn mt-4">{t('pd_back')}</Link>
     </div>
   );
 
@@ -69,7 +71,7 @@ export default function ProductDetail() {
   return (
     <div className="container py-8">
       <Link to="/products" className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 mb-6">
-        <ArrowLeft className="h-4 w-4" /> Back to products
+        <ArrowLeft className="h-4 w-4" /> {t('pd_back')}
       </Link>
 
       <div className="grid gap-8 md:grid-cols-2">
@@ -135,7 +137,7 @@ export default function ProductDetail() {
 
           <div className="flex items-center gap-2">
             <span className={`text-sm font-medium ${product.stock > 0 ? 'text-green-600' : 'text-red-500'}`}>
-              {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
+              {product.stock > 0 ? t('pd_in_stock', { count: product.stock }) : t('pd_out')}
             </span>
           </div>
 
@@ -151,7 +153,7 @@ export default function ProductDetail() {
               </button>
             </div>
             <Button onClick={handleAddToCart} disabled={product.stock === 0} className="flex-1">
-              <ShoppingCart className="h-4 w-4" /> Add to Cart
+              <ShoppingCart className="h-4 w-4" /> {t('pd_add_cart')}
             </Button>
             <button onClick={handleWishlist} className="p-3 rounded-lg border hover:bg-red-50 hover:border-red-200 hover:text-red-500 transition-colors">
               <Heart className="h-5 w-5" />
@@ -163,7 +165,7 @@ export default function ProductDetail() {
       {/* Reviews */}
       {product.reviews?.length > 0 && (
         <div className="mt-12">
-          <h2 className="text-xl font-bold mb-6">Customer Reviews</h2>
+          <h2 className="text-xl font-bold mb-6">{t('pd_reviews')}</h2>
           <div className="space-y-4">
             {product.reviews.map((review, i) => (
               <div key={i} className="card p-4">

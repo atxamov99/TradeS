@@ -100,7 +100,7 @@ export default function AppLayout() {
           <img src="/logo-dark.png" alt="TradeS" className="hidden h-10 w-10 rounded-lg object-contain flex-shrink-0 dark:block" />
           <div className="min-w-0">
             <span className="text-2xl font-extrabold text-green-500 tracking-tight">TradeS</span>
-            <p className="text-[11px] text-slate-400 font-medium mt-0.5">Business Manager</p>
+            <p className="text-[11px] text-slate-400 font-medium mt-0.5">{t('app_tagline')}</p>
           </div>
         </div>
 

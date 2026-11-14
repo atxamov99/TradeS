@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { Search, CheckCircle, X, Minus, Plus, WifiOff, Clock } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -13,6 +14,7 @@ function fmt(n) {
 }
 
 export default function PosNewSale() {
+  const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState(null);
   const [qty, setQty] = useState(1);
@@ -60,10 +62,10 @@ export default function PosNewSale() {
 
   const handleConfirm = async () => {
     if (!selected) return;
-    if (qty <= 0) { toast.error('Miqdor musbat bo\'lishi kerak'); return; }
+    if (qty <= 0) { toast.error(t('ns_qty_positive')); return; }
 
     const stock = selected.stock ?? selected.quantity ?? Infinity;
-    if (qty > stock) { toast.error(`Omborda faqat ${stock} ta bor`); return; }
+    if (qty > stock) { toast.error(t('ns_only_stock', { stock })); return; }
 
     setIsSubmitting(true);
 
@@ -85,7 +87,7 @@ export default function PosNewSale() {
 
         const revenue = salePayload.sellPrice * qty;
         const cost = salePayload.buyPrice * qty;
-        toast.success(`Savdo kiritildi — Foyda: $${fmt(revenue - cost)}`, {
+        toast.success(t('ns_sold_profit', { profit: fmt(revenue - cost) }), {
           icon: '✅',
           style: { background: '#121B14', color: '#fff', border: '1px solid #22C55E' },
         });
@@ -99,7 +101,7 @@ export default function PosNewSale() {
         // Notify layout to refresh pending count
         outletCtx?.refreshPending?.();
 
-        toast.success('Savdo saqlandi (offline) — internet tiklananda yuboriladi', {
+        toast.success(t('ns_saved_offline'), {
           icon: '🕐',
           style: { background: '#121B14', color: '#fff', border: '1px solid #EAB308' },
           duration: 4000,
@@ -127,12 +129,12 @@ export default function PosNewSale() {
           <button onClick={() => navigate('/pos')} className="p-2 rounded-lg hover:bg-pos-card text-pos-muted">
             <X className="h-5 w-5" />
           </button>
-          <h1 className="text-xl font-bold">Yangi Savdo</h1>
+          <h1 className="text-xl font-bold">{t('ns_title')}</h1>
           {/* Offline mode badge */}
           {!isOnline && (
             <span className="ml-auto flex items-center gap-1.5 text-xs font-semibold bg-yellow-500/20 text-yellow-400 px-2.5 py-1 rounded-full">
               <WifiOff className="h-3.5 w-3.5" />
-              Offline
+              {t('pos_offline')}
             </span>
           )}
         </div>
@@ -142,10 +144,10 @@ export default function PosNewSale() {
           <div className="flex items-start gap-2 bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-3 mb-4 text-sm text-yellow-300">
             <Clock className="h-4 w-4 mt-0.5 flex-shrink-0" />
             <span>
-              Offline rejimda savdolar qurilmangizda saqlanadi va internet tiklanganida avtomatik yuboriladi.
+              {t('pos_offline_note')}
               {offlineProducts.length > 0
-                ? ` (${offlineProducts.length} ta mahsulot keshda mavjud)`
-                : ' (mahsulotlar keshi topilmadi — avval internet bilan ulanib mahsulotlarni yuklang)'}
+                ? t('pos_cached_n', { count: offlineProducts.length })
+                : t('pos_no_cache_hint')}
             </span>
           </div>
         )}
@@ -158,7 +160,7 @@ export default function PosNewSale() {
               <input
                 ref={searchRef}
                 className="w-full bg-pos-card border border-pos-border rounded-xl pl-11 pr-4 py-3.5 text-white placeholder-pos-muted focus:outline-none focus:border-pos-accent text-base"
-                placeholder="Mahsulot nomini kiriting..."
+                placeholder={t('ns_search_ph')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -183,21 +185,21 @@ export default function PosNewSale() {
                         ${fmt(p.finalPrice || p.sellPrice || p.price)}
                       </p>
                       {(p.stock ?? p.quantity ?? 1) === 0 && (
-                        <span className="text-red-400 text-xs">Tugagan</span>
+                        <span className="text-red-400 text-xs">{t('ns_out')}</span>
                       )}
                     </div>
                   </button>
                 ))}
               </div>
             ) : search.length > 0 ? (
-              <p className="text-center text-pos-muted py-10">Mahsulot topilmadi</p>
+              <p className="text-center text-pos-muted py-10">{t('ns_not_found')}</p>
             ) : (
               <p className="text-center text-pos-muted py-10">
                 {isOnline
-                  ? 'Qidirish uchun yozing'
+                  ? t('ns_type_search')
                   : offlineProducts.length === 0
-                  ? 'Keshda mahsulot yo\'q — internet bilan ulanib qayta kiring'
-                  : 'Qidirish uchun yozing'}
+                  ? t('ns_no_cache')
+                  : t('ns_type_search')}
               </p>
             )}
           </div>
@@ -219,7 +221,7 @@ export default function PosNewSale() {
 
             {/* Quantity control */}
             <div className="bg-pos-card border border-pos-border rounded-xl p-4">
-              <label className="text-pos-muted text-sm mb-3 block">Miqdor</label>
+              <label className="text-pos-muted text-sm mb-3 block">{t('ns_qty')}</label>
               <div className="flex items-center gap-4">
                 <button
                   onClick={() => setQty(Math.max(0.5, qty - (qty <= 1 ? 0.5 : 1)))}
@@ -246,19 +248,19 @@ export default function PosNewSale() {
             {/* Profit breakdown */}
             <div className="bg-pos-card border border-pos-border rounded-xl p-4 space-y-3">
               <div className="flex justify-between text-sm">
-                <span className="text-pos-muted">Birlik narxi</span>
+                <span className="text-pos-muted">{t('ns_unit_price')}</span>
                 <span>${fmt(price)}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-pos-muted">Tushum</span>
+                <span className="text-pos-muted">{t('pos_revenue')}</span>
                 <span className="text-yellow-400 font-medium">${fmt(revenue)}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-pos-muted">Tannarx</span>
+                <span className="text-pos-muted">{t('ns_cost_price')}</span>
                 <span className="text-red-400">${fmt(cost)}</span>
               </div>
               <div className="flex justify-between text-base font-bold border-t border-pos-border pt-3">
-                <span>Foyda</span>
+                <span>{t('pos_profit')}</span>
                 <span className={profit >= 0 ? 'text-pos-accent' : 'text-red-400'}>
                   ${fmt(profit)}
                 </span>
@@ -268,7 +270,7 @@ export default function PosNewSale() {
             {/* Note */}
             <input
               className="w-full bg-pos-card border border-pos-border rounded-xl px-4 py-3 text-sm text-white placeholder-pos-muted focus:outline-none focus:border-pos-accent"
-              placeholder="Izoh (ixtiyoriy)"
+              placeholder={t('ns_note_ph')}
               value={note}
               onChange={(e) => setNote(e.target.value)}
             />
@@ -289,10 +291,10 @@ export default function PosNewSale() {
                 <Clock className="h-5 w-5" />
               )}
               {isSubmitting
-                ? 'Saqlanmoqda...'
+                ? t('ns_saving')
                 : isOnline
-                ? 'Savdoni Tasdiqlash'
-                : 'Offline Saqlash'}
+                ? t('ns_confirm')
+                : t('ns_save_offline')}
             </button>
           </div>
         )}

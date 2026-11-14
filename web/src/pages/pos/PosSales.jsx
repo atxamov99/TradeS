@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { ShoppingCart, TrendingUp, Clock, WifiOff } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -9,6 +10,7 @@ import { getPendingSales } from '../../services/offlineDB';
 function fmt(n) { return Number(n || 0).toFixed(2); }
 
 export default function PosSales() {
+  const { t } = useTranslation();
   const [tab, setTab] = useState('today');
   const [pendingSales, setPendingSales] = useState([]);
   const { isOnline } = useOnlineStatus();
@@ -37,12 +39,12 @@ export default function PosSales() {
   return (
     <div className="min-h-screen bg-pos-bg text-pos-text p-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Savdolar</h1>
+        <h1 className="text-2xl font-bold">{t('pos_nav_sales')}</h1>
         <Link
           to="/pos/sales/new"
           className="flex items-center gap-2 bg-pos-accent hover:bg-pos-accentHover text-white font-semibold px-4 py-2.5 rounded-xl text-sm transition-colors"
         >
-          <ShoppingCart className="h-4 w-4" /> Yangi Savdo
+          <ShoppingCart className="h-4 w-4" /> {t('ns_title')}
         </Link>
       </div>
 
@@ -54,7 +56,7 @@ export default function PosSales() {
             {pendingSales.length} ta savdo kutmoqda (offline)
             {!isOnline && (
               <span className="ml-auto flex items-center gap-1 text-xs font-normal">
-                <WifiOff className="h-3 w-3" /> Internet yo'q
+                <WifiOff className="h-3 w-3" /> {t('pos_no_internet')}
               </span>
             )}
           </div>
@@ -69,7 +71,7 @@ export default function PosSales() {
                 </div>
                 <div className="text-right">
                   <p className="text-yellow-400 font-medium text-sm">${fmt(s.sellPrice * s.quantity)}</p>
-                  <p className="text-pos-muted text-xs">kutmoqda</p>
+                  <p className="text-pos-muted text-xs">{t('pos_pending')}</p>
                 </div>
               </div>
             ))}
@@ -79,15 +81,15 @@ export default function PosSales() {
 
       {/* Tabs */}
       <div className="flex bg-pos-card border border-pos-border rounded-xl p-1 w-fit mb-6">
-        {['today', 'month'].map((t) => (
+        {['today', 'month'].map((tabKey) => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
+            key={tabKey}
+            onClick={() => setTab(tabKey)}
             className={`px-6 py-2 rounded-lg text-sm font-medium transition-colors capitalize ${
-              tab === t ? 'bg-pos-accent text-white' : 'text-pos-muted hover:text-white'
+              tab === tabKey ? 'bg-pos-accent text-white' : 'text-pos-muted hover:text-white'
             }`}
           >
-            {t === 'today' ? 'Bugun' : 'Bu oy'}
+            {tabKey === 'today' ? t('pos_today') : t('pos_this_month')}
           </button>
         ))}
       </div>
@@ -96,11 +98,11 @@ export default function PosSales() {
       {isOnline && (
         <div className="grid grid-cols-2 gap-4 mb-6">
           <div className="bg-pos-card border border-pos-border rounded-xl p-4">
-            <p className="text-pos-muted text-xs mb-1">Tushum</p>
+            <p className="text-pos-muted text-xs mb-1">{t('pos_revenue')}</p>
             <p className="text-yellow-400 text-2xl font-bold">${fmt(totalRevenue)}</p>
           </div>
           <div className="bg-pos-card border border-pos-border rounded-xl p-4">
-            <p className="text-pos-muted text-xs mb-1">Foyda</p>
+            <p className="text-pos-muted text-xs mb-1">{t('pos_profit')}</p>
             <p className="text-pos-accent text-2xl font-bold">${fmt(totalProfit)}</p>
           </div>
         </div>
@@ -110,7 +112,7 @@ export default function PosSales() {
       {!isOnline ? (
         <div className="text-center py-16 text-pos-muted">
           <WifiOff className="h-12 w-12 mx-auto mb-3 opacity-30" />
-          <p>Server savdolarini ko'rish uchun internet kerak</p>
+          <p>{t('pos_need_internet')}</p>
         </div>
       ) : isLoading ? (
         <div className="space-y-2">

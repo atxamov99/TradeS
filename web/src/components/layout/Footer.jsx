@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 
 export default function Footer() {
+  const { t } = useTranslation();
   return (
     <footer className="border-t bg-white dark:bg-gray-900 mt-auto">
       <div className="container py-10">
@@ -11,30 +12,30 @@ export default function Footer() {
               TradeS
             </Link>
             <p className="mt-2 text-sm text-gray-500">
-              Your modern e-commerce platform for quality products.
+              {t('ft_tagline')}
             </p>
           </div>
           <div>
-            <h4 className="text-sm font-semibold mb-3">Shop</h4>
+            <h4 className="text-sm font-semibold mb-3">{t('ft_shop')}</h4>
             <ul className="space-y-2 text-sm text-gray-500">
-              <li><Link to="/products" className="hover:text-primary-600">All Products</Link></li>
-              <li><Link to="/products?category=electronics" className="hover:text-primary-600">Electronics</Link></li>
-              <li><Link to="/products?category=clothing" className="hover:text-primary-600">Clothing</Link></li>
+              <li><Link to="/products" className="hover:text-primary-600">{t('hm_all_products')}</Link></li>
+              <li><Link to="/products?category=electronics" className="hover:text-primary-600">{t('ft_electronics')}</Link></li>
+              <li><Link to="/products?category=clothing" className="hover:text-primary-600">{t('ft_clothing')}</Link></li>
             </ul>
           </div>
           <div>
-            <h4 className="text-sm font-semibold mb-3">Account</h4>
+            <h4 className="text-sm font-semibold mb-3">{t('ft_account')}</h4>
             <ul className="space-y-2 text-sm text-gray-500">
-              <li><Link to="/profile" className="hover:text-primary-600">Profile</Link></li>
-              <li><Link to="/orders" className="hover:text-primary-600">Orders</Link></li>
-              <li><Link to="/wishlist" className="hover:text-primary-600">Wishlist</Link></li>
+              <li><Link to="/profile" className="hover:text-primary-600">{t('profile')}</Link></li>
+              <li><Link to="/orders" className="hover:text-primary-600">{t('ft_orders')}</Link></li>
+              <li><Link to="/wishlist" className="hover:text-primary-600">{t('ft_wishlist')}</Link></li>
             </ul>
           </div>
           <div>
-            <h4 className="text-sm font-semibold mb-3">Support</h4>
+            <h4 className="text-sm font-semibold mb-3">{t('ft_support')}</h4>
             <ul className="space-y-2 text-sm text-gray-500">
-              <li><span className="hover:text-primary-600 cursor-pointer">Help Center</span></li>
-              <li><span className="hover:text-primary-600 cursor-pointer">Contact Us</span></li>
+              <li><span className="hover:text-primary-600 cursor-pointer">{t('ft_help')}</span></li>
+              <li><span className="hover:text-primary-600 cursor-pointer">{t('ft_contact')}</span></li>
             </ul>
           </div>
         </div>
@@ -45,3 +46,4 @@ export default function Footer() {
     </footer>
   );
 }
+import { useTranslation } from 'react-i18next';

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { CheckCircle, ShoppingBag } from 'lucide-react';
 import useCartStore from '../store/cartStore';
@@ -10,6 +11,7 @@ import formatPrice from '../utils/formatPrice';
 import toast from 'react-hot-toast';
 
 export default function Checkout() {
+  const { t } = useTranslation();
   const { cart, fetchCart, resetCart } = useCartStore();
   const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
@@ -27,7 +29,7 @@ export default function Checkout() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!cart?.items?.length) { toast.error('Cart is empty'); return; }
+    if (!cart?.items?.length) { toast.error(t('cart_empty')); return; }
 
     setIsLoading(true);
     try {
@@ -44,14 +46,14 @@ export default function Checkout() {
       });
 
       resetCart();
-      toast.success('Order placed successfully!');
+      toast.success(t('co_placed'));
       navigate('/products');
     } catch (err) {
       // The global axios interceptor toasts most errors but skips 401/422
       // (auth / validation) — surface those here so the user always gets feedback.
       const status = err.response?.status;
       if (status === 401 || status === 422) {
-        toast.error(err.response?.data?.message || 'Could not place the order. Please check your details.');
+        toast.error(err.response?.data?.message || t('co_failed'));
       }
     } finally {
       setIsLoading(false);
@@ -62,9 +64,9 @@ export default function Checkout() {
     return (
       <div className="container py-20 text-center">
         <ShoppingBag className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-        <h2 className="text-xl font-semibold mb-2">Your cart is empty</h2>
-        <p className="text-gray-500 mb-6">Please login to checkout.</p>
-        <Link to="/login" className="btn-primary btn">Login</Link>
+        <h2 className="text-xl font-semibold mb-2">{t('cart_empty')}</h2>
+        <p className="text-gray-500 mb-6">{t('co_login_msg')}</p>
+        <Link to="/login" className="btn-primary btn">{t('login')}</Link>
       </div>
     );
   }
@@ -73,9 +75,9 @@ export default function Checkout() {
     return (
       <div className="container py-20 text-center">
         <ShoppingBag className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-        <h2 className="text-xl font-semibold mb-2">Your cart is empty</h2>
-        <p className="text-gray-500 mb-6">Add some products before checking out.</p>
-        <Link to="/products" className="btn-primary btn">Browse Products</Link>
+        <h2 className="text-xl font-semibold mb-2">{t('cart_empty')}</h2>
+        <p className="text-gray-500 mb-6">{t('co_add_msg')}</p>
+        <Link to="/products" className="btn-primary btn">{t('cart_browse')}</Link>
       </div>
     );
   }
@@ -87,33 +89,33 @@ export default function Checkout() {
 
   return (
     <div className="container py-8">
-      <h1 className="text-2xl font-bold mb-8">Checkout</h1>
+      <h1 className="text-2xl font-bold mb-8">{t('co_title')}</h1>
 
       <form onSubmit={handleSubmit}>
         <div className="grid gap-8 lg:grid-cols-3">
           <div className="lg:col-span-2 space-y-6">
             {/* Shipping */}
             <div className="card p-6">
-              <h2 className="font-bold text-lg mb-4">Shipping Address</h2>
+              <h2 className="font-bold text-lg mb-4">{t('co_shipping_address')}</h2>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="sm:col-span-2">
-                  <Input label="Street Address" name="street" value={form.street} onChange={handleChange} required placeholder="123 Main St" />
+                  <Input label={t('co_street')} name="street" value={form.street} onChange={handleChange} required placeholder={t('co_ph_street')} />
                 </div>
-                <Input label="City" name="city" value={form.city} onChange={handleChange} required placeholder="New York" />
-                <Input label="State" name="state" value={form.state} onChange={handleChange} required placeholder="NY" />
-                <Input label="Country" name="country" value={form.country} onChange={handleChange} required placeholder="United States" />
-                <Input label="ZIP Code" name="zipCode" value={form.zipCode} onChange={handleChange} required placeholder="10001" />
+                <Input label={t('co_city')} name="city" value={form.city} onChange={handleChange} required placeholder={t('co_ph_city')} />
+                <Input label={t('co_state')} name="state" value={form.state} onChange={handleChange} required placeholder={t('co_ph_state')} />
+                <Input label={t('co_country')} name="country" value={form.country} onChange={handleChange} required placeholder={t('co_ph_country')} />
+                <Input label={t('co_zip')} name="zipCode" value={form.zipCode} onChange={handleChange} required placeholder={t('co_ph_zip')} />
               </div>
             </div>
 
             {/* Payment */}
             <div className="card p-6">
-              <h2 className="font-bold text-lg mb-4">Payment Method</h2>
+              <h2 className="font-bold text-lg mb-4">{t('co_payment')}</h2>
               <div className="space-y-3">
                 {[
-                  { value: 'cash_on_delivery', label: 'Cash on Delivery' },
-                  { value: 'card', label: 'Credit / Debit Card (mock)' },
-                  { value: 'paypal', label: 'PayPal (mock)' },
+                  { value: 'cash_on_delivery', label: t('co_pay_cod') },
+                  { value: 'card', label: t('co_pay_card') },
+                  { value: 'paypal', label: t('co_pay_paypal') },
                 ].map((m) => (
                   <label key={m.value} className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50 dark:has-[:checked]:bg-primary-900/20">
                     <input type="radio" name="paymentMethod" value={m.value} checked={form.paymentMethod === m.value} onChange={handleChange} className="text-primary-600" />
@@ -126,7 +128,7 @@ export default function Checkout() {
 
           {/* Summary */}
           <div className="card p-6 h-fit space-y-4">
-            <h2 className="font-bold text-lg border-b pb-3">Order Items ({cart?.totalItems})</h2>
+            <h2 className="font-bold text-lg border-b pb-3">{t('co_items', { count: cart?.totalItems })}</h2>
             <div className="space-y-2 max-h-48 overflow-y-auto">
               {cart?.items?.map((item, i) => (
                 <div key={i} className="flex justify-between text-sm">
@@ -136,15 +138,15 @@ export default function Checkout() {
               ))}
             </div>
             <div className="space-y-2 border-t pt-3 text-sm">
-              <div className="flex justify-between text-gray-500"><span>Subtotal</span><span>{formatPrice(subtotal)}</span></div>
-              <div className="flex justify-between text-gray-500"><span>Shipping</span><span>{shipping === 0 ? 'Free' : formatPrice(shipping)}</span></div>
-              <div className="flex justify-between text-gray-500"><span>Tax</span><span>{formatPrice(tax)}</span></div>
+              <div className="flex justify-between text-gray-500"><span>{t('cart_subtotal')}</span><span>{formatPrice(subtotal)}</span></div>
+              <div className="flex justify-between text-gray-500"><span>{t('cart_shipping')}</span><span>{shipping === 0 ? t('cart_free') : formatPrice(shipping)}</span></div>
+              <div className="flex justify-between text-gray-500"><span>{t('cart_tax')}</span><span>{formatPrice(tax)}</span></div>
               <div className="flex justify-between font-bold text-lg border-t pt-2">
-                <span>Total</span><span>{formatPrice(total)}</span>
+                <span>{t('cart_total')}</span><span>{formatPrice(total)}</span>
               </div>
             </div>
             <Button type="submit" isLoading={isLoading} className="w-full" size="lg">
-              <CheckCircle className="h-4 w-4" /> Place Order
+              <CheckCircle className="h-4 w-4" /> {t('co_place')}
             </Button>
           </div>
         </div>

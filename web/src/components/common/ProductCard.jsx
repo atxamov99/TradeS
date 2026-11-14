@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Heart, ShoppingCart } from 'lucide-react';
 import useCartStore from '../../store/cartStore';
 import useAuthStore from '../../store/authStore';
@@ -7,25 +8,26 @@ import formatPrice from '../../utils/formatPrice';
 import toast from 'react-hot-toast';
 
 export default function ProductCard({ product }) {
+  const { t } = useTranslation();
   const addItem = useCartStore((s) => s.addItem);
   const user = useAuthStore((s) => s.user);
 
   const handleAddToCart = (e) => {
     e.preventDefault();
-    if (!user) { toast.error('Please login to add to cart'); return; }
+    if (!user) { toast.error(t('pd_login_cart')); return; }
     // Fire-and-forget: the store rethrows and the axios interceptor toasts the error.
     addItem(product.id, 1).catch(() => {});
   };
 
   const handleWishlist = async (e) => {
     e.preventDefault();
-    if (!user) { toast.error('Please login to use wishlist'); return; }
+    if (!user) { toast.error(t('pd_login_wl')); return; }
     try {
       const res = await wishlistApi.toggleWishlist(product.id);
       const action = res.data.data.action;
-      toast.success(action === 'added' ? 'Added to wishlist' : 'Removed from wishlist');
+      toast.success(action === 'added' ? t('pd_wl_added') : t('pd_wl_removed'));
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Failed to update wishlist');
+      toast.error(err?.response?.data?.message || t('pd_wl_failed'));
     }
   };
 
@@ -47,7 +49,7 @@ export default function ProductCard({ product }) {
           )}
           {product.stock === 0 && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-              <span className="text-white font-medium text-sm">Out of Stock</span>
+              <span className="text-white font-medium text-sm">{t('pd_out')}</span>
             </div>
           )}
           <div className="absolute top-2 right-2 flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">

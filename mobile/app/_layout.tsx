@@ -9,6 +9,7 @@ import { useThemeStore } from "@/store/themeStore";
 import { useSubscriptionStore } from "@/store/subscriptionStore";
 import { useRoleStore } from "@/store/roleStore";
 import { runSync } from "@/services/syncEngine";
+import { api } from "@/services/api";
 import { loadDeviceId } from "@/utils/deviceId";
 import { AppAlertHost } from "@/components/AppAlertHost";
 import "../global.css";
@@ -41,6 +42,15 @@ export default function RootLayout() {
       router.replace("/(auth)/login");
     }
   }, [token, ready]);
+
+  useEffect(() => {
+    // Server-side role: no token -> forget the cached role; real token -> ask the server who we are.
+    if (!token) {
+      useRoleStore.getState().reset().catch(() => {});
+    } else if (token !== "demo-token") {
+      useRoleStore.getState().refresh(async () => (await api.get("/auth/me")).data.data).catch(() => {});
+    }
+  }, [token]);
 
   useEffect(() => {
     if (!token || token === "demo-token") return;

@@ -74,7 +74,7 @@ export default function ProfileScreen() {
   const { isDark, toggleTheme } = useThemeStore();
   const { c } = useTheme();
   const t = useT();
-  const { isAdmin } = useRoleStore();
+  const { isAdmin, isDirector } = useRoleStore();
 
   const [emailModalVisible, setEmailModalVisible] = useState(false);
   const [emailInput, setEmailInput] = useState("");
@@ -301,17 +301,19 @@ export default function ProfileScreen() {
         />
       </Section>
 
-      {/* Team */}
-      <Section title={t.employees.title}>
-        <Row
-          iconName="people"
-          iconBg="#D1FAE5"
-          label={t.employees.title}
-          sub={t.team.sub}
-          right={<Ionicons name="chevron-forward" size={18} color={c.textMuted} />}
-          onPress={() => router.push("/settings/employees")}
-        />
-      </Section>
+      {/* Team — only a business director (the server refuses employees for solo accounts and cashiers) */}
+      {isDirector() && (
+        <Section title={t.employees.title}>
+          <Row
+            iconName="people"
+            iconBg="#D1FAE5"
+            label={t.employees.title}
+            sub={t.team.sub}
+            right={<Ionicons name="chevron-forward" size={18} color={c.textMuted} />}
+            onPress={() => router.push("/settings/employees")}
+          />
+        </Section>
+      )}
 
       {/* Appearance */}
       <Section title={t.settings.appearance}>

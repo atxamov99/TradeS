@@ -30,14 +30,17 @@ async function cleanup() {
     select: { id: true },
   });
   const ids = users.map((u) => u.id);
-  const shops = await prisma.shop.findMany({ where: { name: SHOP }, select: { id: true } });
+  // also shops the demo users own (personal shops are auto-created by /auth/me, or after an upgrade)
+  const shops = await prisma.shop.findMany({ where: { OR: [{ name: SHOP }, { ownerId: { in: ids } }] }, select: { id: true } });
   const shopIds = shops.map((s) => s.id);
   await prisma.auditLog.deleteMany({ where: { actorId: { in: ids } } });
   await prisma.sale.deleteMany({ where: { OR: [{ shopId: { in: shopIds } }, { userId: { in: ids } }] } });
   await prisma.product.deleteMany({ where: { OR: [{ shopId: { in: shopIds } }, { ownerId: { in: ids } }] } });
   await prisma.expense.deleteMany({ where: { shopId: { in: shopIds } } });
-  await prisma.shopMember.deleteMany({ where: { shopId: { in: shopIds } } });
+  await prisma.shopMember.deleteMany({ where: { OR: [{ shopId: { in: shopIds } }, { userId: { in: ids } }] } });
   await prisma.shop.deleteMany({ where: { id: { in: shopIds } } });
+  await prisma.refreshToken.deleteMany({ where: { userId: { in: ids } } });
+  await prisma.knownDevice.deleteMany({ where: { userId: { in: ids } } });
   await prisma.user.deleteMany({ where: { id: { in: ids } } });
 }
 

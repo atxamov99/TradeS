@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import i18n from '../i18n';
 import { getDeviceId } from '../utils/deviceId';
 import { notify } from '../store/notificationStore';
+import useBanStore from '../store/banStore';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api/v1';
 
@@ -90,6 +91,11 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
+        // A blocked account can no longer refresh: show the ban window instead of dropping to /login.
+        if (refreshError.response?.data?.code === 'ACCOUNT_BLOCKED') {
+          useBanStore.getState().setBanned(true);
+          return Promise.reject(refreshError);
+        }
         localStorage.removeItem('savdo-auth');
         // Guard against a redirect loop when we're already on the login page.
         if (window.location.pathname !== '/login') {
@@ -102,6 +108,11 @@ api.interceptors.response.use(
     }
 
     const status = error.response?.status;
+    // Account blocked by an admin while the site is open: a window that cannot be closed (see AccountGuard).
+    if (status === 403 && error.response?.data?.code === 'ACCOUNT_BLOCKED' && !isAuthEndpoint(originalRequest?.url)) {
+      useBanStore.getState().setBanned(true);
+      return Promise.reject(error);
+    }
     // 401/422 are handled by their own call sites; 428 (Telegram-not-connected,
     // thrown only by requestOtp) is too — Register.jsx and ForgotPasswordPage.jsx
     // both transition to a dedicated "connect Telegram" screen that already

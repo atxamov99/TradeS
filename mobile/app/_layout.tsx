@@ -12,6 +12,7 @@ import { runSync } from "@/services/syncEngine";
 import { api } from "@/services/api";
 import { loadDeviceId } from "@/utils/deviceId";
 import { AppAlertHost } from "@/components/AppAlertHost";
+import { BanOverlay } from "@/components/BanOverlay";
 import "../global.css";
 
 export default function RootLayout() {
@@ -71,6 +72,7 @@ export default function RootLayout() {
         <Stack.Screen name="(auth)" />
       </Stack>
       <AppAlertHost />
+      <BanOverlay />
     </>
   );
 }

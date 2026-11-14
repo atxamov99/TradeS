@@ -362,6 +362,10 @@ const refreshTokens = async (incomingRefreshToken) => {
   }
 
   const user = await prisma.user.findUnique({ where: { id: decoded.id } });
+  // A blocked user gets a distinct answer so the app can show the ban screen (instead of a silent logout).
+  if (user && user.isBlocked && !user.deletedAt) {
+    throw new ApiError(403, 'Your account has been blocked. Contact support.', [], '', 'ACCOUNT_BLOCKED');
+  }
   if (!user || user.isBlocked || user.deletedAt) {
     throw new ApiError(401, 'User not found or blocked');
   }

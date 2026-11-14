@@ -318,6 +318,10 @@ const en: Translations = {
     send: "Send code", code: "6-digit code", confirm: "Confirm", cancel: "Cancel", sentEmail: "Code sent to your email", sentPhone: "Code sent to Telegram", done: "Linked",
     taken: "This email or number is already linked to another account", wrongPw: "Wrong password", needBot: "First connect your number in the Telegram bot (/start)", tooMany: "Too many attempts, try again later", error: "Error", dev: "Dev mode, code:",
   },
+  ban: {
+    title: "Your account is blocked", text: "Your account was blocked by an administrator. You cannot use TradeS until it is unblocked. If you think this is a mistake, contact support.",
+    support: "Contact support", logout: "Log out", auto: "This window disappears by itself once the block is lifted.",
+  },
   common: {
     back: "Back",
     loading: "Loading...",

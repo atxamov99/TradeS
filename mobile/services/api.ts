@@ -1,6 +1,7 @@
 import axios from "axios";
 import { useAuthStore } from "@/store/authStore";
 import { getDeviceId } from "@/utils/deviceId";
+import { useBanStore } from "@/store/banStore";
 
 export const API_URL =
   process.env.EXPO_PUBLIC_API_URL ?? "https://trades-backend-m2a6.onrender.com/api/v1";
@@ -28,6 +29,12 @@ api.interceptors.response.use(
   async (error) => {
     const original = error.config;
 
+    // Account blocked by an admin: show the ban window (BanOverlay) instead of failing silently.
+    if (error.response?.status === 403 && error.response?.data?.code === "ACCOUNT_BLOCKED" && useAuthStore.getState().token) {
+      useBanStore.getState().setBanned(true);
+      return Promise.reject(error);
+    }
+
     // Timeout bo'lsa (masalan Render sovuq boshlanishi) — bitta marta avtomatik qayta urinib ko'ramiz.
     if (error.code === "ECONNABORTED" && original && !original._timeoutRetry) {
       original._timeoutRetry = true;
@@ -46,8 +53,13 @@ api.interceptors.response.use(
         useAuthStore.getState().setToken(payload.accessToken, payload.refreshToken);
         original.headers.Authorization = `Bearer ${payload.accessToken}`;
         return api(original);
-      } catch {
-        useAuthStore.getState().clearToken();
+      } catch (refreshErr: any) {
+        // a blocked account cannot refresh either: keep the session so the ban window can offer Log out
+        if (refreshErr?.response?.data?.code === "ACCOUNT_BLOCKED") {
+          useBanStore.getState().setBanned(true);
+        } else {
+          useAuthStore.getState().clearToken();
+        }
       }
     }
     return Promise.reject(error);

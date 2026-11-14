@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { ToastStack } from './components/notifications/Notifications';
 import ContextMenu from './components/common/ContextMenu';
+import AccountGuard from './components/common/AccountGuard';
 
 import AppLayout from './components/layout/AppLayout';
 import PosLayout from './components/layout/PosLayout';
@@ -93,6 +94,7 @@ export default function App() {
       <ToastStack />
       <ContextMenu />
 
+      <AccountGuard />
       <Routes>
         {/* Public Landing Page */}
         <Route path="/" element={<Landing />} />

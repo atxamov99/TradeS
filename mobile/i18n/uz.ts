@@ -316,6 +316,10 @@ const uz = {
     send: "Kod yuborish", code: "6 xonali kod", confirm: "Tasdiqlash", cancel: "Bekor qilish", sentEmail: "Kod emailga yuborildi", sentPhone: "Kod Telegramga yuborildi", done: "Ulandi",
     taken: "Bu manzil/raqam boshqa hisobga ulangan", wrongPw: "Parol noto'g'ri", needBot: "Avval Telegram botda raqamingizni ulang (/start)", tooMany: "Juda ko'p urinish, keyinroq urinib ko'ring", error: "Xatolik", dev: "Sinov rejimi, kod:",
   },
+  ban: {
+    title: "Hisobingiz bloklangan", text: "Hisobingiz administrator tomonidan bloklangan. Blokdan chiqarilmaguncha TradeS dan foydalana olmaysiz. Agar bu xato deb hisoblasangiz, qo'llab-quvvatlashga yozing.",
+    support: "Qo'llab-quvvatlashga yozish", logout: "Hisobdan chiqish", auto: "Blok olib tashlanganda bu oyna o'zi yo'qoladi.",
+  },
   common: {
     back: "Orqaga",
     loading: "Yuklanmoqda...",

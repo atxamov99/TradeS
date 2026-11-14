@@ -37,9 +37,12 @@ router.post('/refresh-token', validate(refreshTokenSchema), authController.refre
 router.post('/forgot-password', authLimiter, codeRequestLimiter, validate(forgotPasswordSchema), authController.forgotPassword);
 router.post('/reset-password', authLimiter, accountLimiter, validate(resetPasswordSchema), authController.resetPassword);
 
+// Logout must work for a BLOCKED account too (the ban screen has a "Log out" button): it only revokes the
+// refresh token that is sent along and clears cookies, so it needs no authenticated user.
+router.post('/logout', authLimiter, authController.logout);
+
 // Protected routes
 router.use(protect);
-router.post('/logout', authController.logout);
 router.post('/logout-all', authController.logoutAll);
 router.get('/sessions', authController.listSessions);
 router.post('/sessions/:id/revoke', authController.revokeSession);

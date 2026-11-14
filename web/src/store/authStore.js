@@ -184,7 +184,8 @@ const useAuthStore = create(
           // Only drop the session on a real auth failure (401/403). A network
           // error or 5xx must NOT log the user out — keep the persisted user.
           const status = err.response?.status;
-          if (status === 401 || status === 403) {
+          // (a BLOCKED account is NOT dropped: the ban window explains it and offers Log out)
+          if (status === 401 || (status === 403 && err.response?.data?.code !== 'ACCOUNT_BLOCKED')) {
             set({ user: null });
           }
         }

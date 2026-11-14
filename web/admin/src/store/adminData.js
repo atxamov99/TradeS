@@ -35,7 +35,9 @@ function normalizeUser(u) {
     createdAt: u.createdAt ? u.createdAt.slice(0, 10) : "",
     lastLogin: u.lastLoginAt ? u.lastLoginAt.slice(0, 16).replace("T", " ") : null,
     isAdmin: (u.role || "").toLowerCase() === "admin",
-    isPrimary: u.role === "ADMIN"
+    isPrimary: u.role === "ADMIN",
+    // MAIN admin = the oldest admin account (decided by the server). Only the main admin manages other admins.
+    isMain: Boolean(u.isMainAdmin)
   };
 }
 
@@ -76,6 +78,7 @@ export function AdminDataProvider({ children }) {
 
   // ── Local-only state (no backend endpoints yet) ──────────
   const [admins, setAdmins] = useState([]);
+  const [mainAdminId, setMainAdminId] = useState(null);
   const [contentRows, setContentRows] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
@@ -115,6 +118,7 @@ export function AdminDataProvider({ children }) {
         if (adminsRes.status === "fulfilled") {
           const raw = adminsRes.value?.data?.users || adminsRes.value?.data || [];
           setAdmins((Array.isArray(raw) ? raw : []).map(normalizeUser));
+          setMainAdminId(adminsRes.value?.data?.mainAdminId || null);
         }
         if (auditRes.status === "fulfilled") {
           const rawLogs = auditRes.value?.data?.logs || auditRes.value?.data || [];
@@ -305,9 +309,40 @@ export function AdminDataProvider({ children }) {
     }
   }
 
+  // Add a brand-new ADMIN account (main admin only — the server enforces it).
+  async function createAdmin(payload) {
+    try {
+      const res = await usersApi.create({ ...payload, role: "ADMIN" });
+      const created = normalizeUser(res.data?.user || res.data || {});
+      setAdmins((curr) => [{ ...created, isAdmin: true }, ...curr]);
+      logAudit("Admin yaratildi", created.name || created.id, "admin", "success");
+      pushToast(`${created.name} admin sifatida qo'shildi`);
+      return true;
+    } catch (err) {
+      pushToast(err?.message || "Admin qo'shishda xatolik", "danger");
+      return false;
+    }
+  }
+
+  // Give an existing user the ADMIN role (main admin only — the server enforces it).
+  async function promoteToAdmin(userId) {
+    const target = users.find((u) => u.id === userId);
+    if (!target) return;
+    try {
+      const res = await usersApi.update(userId, { role: "ADMIN" });
+      const updated = normalizeUser(res?.data?.user || res?.data || { ...target, role: "ADMIN" });
+      setUsers((curr) => curr.filter((u) => u.id !== userId));
+      setAdmins((curr) => [{ ...updated, isAdmin: true }, ...curr.filter((a) => a.id !== userId)]);
+      logAudit("Admin huquqi berildi", target.name, "admin", "success");
+      pushToast(`${target.name} endi admin`);
+    } catch (err) {
+      pushToast(err?.message || "Xatolik yuz berdi", "danger");
+    }
+  }
+
   async function updateAdmin(id, payload) {
     const admin = admins.find((a) => a.id === id);
-    if (admin?.isPrimary) { pushToast("Asosiy adminni tahrirlab bo'lmaydi", "danger"); return; }
+    if (admin?.isMain) { pushToast("Asosiy adminni tahrirlab bo'lmaydi", "danger"); return; }
     try {
       // Admins are users with role ADMIN — reuse the users update endpoint.
       const res = await usersApi.update(id, payload);
@@ -322,7 +357,7 @@ export function AdminDataProvider({ children }) {
 
   async function toggleAdminStatus(id) {
     const admin = admins.find(a => a.id === id);
-    if (!admin || admin.isPrimary) return;
+    if (!admin || admin.isMain) return;
 
     try {
       await adminsApi.toggleStatus(id);
@@ -537,7 +572,7 @@ export function AdminDataProvider({ children }) {
       supportMessages, replySupportTicket, deleteSupportTicket,
       pushToast, dismissToast,
       createUser, updateUser, toggleUserStatus, deleteUser,
-      revokeAdminFromUser,
+      revokeAdminFromUser, createAdmin, promoteToAdmin, mainAdminId,
       toggleAdminStatus, updateAdmin,
       createContent, updateContentStatus, deleteContent,
       createRole, deleteRole,
@@ -545,7 +580,7 @@ export function AdminDataProvider({ children }) {
       createProduct, updateProduct, deleteProduct, toggleProductStatus,
       updateOrderStatus
     }),
-    [users, admins, contentRows, auditLogs, recentActivity, toasts, roles, permissionMatrix, products, orders, supportMessages, loading]
+    [users, admins, mainAdminId, contentRows, auditLogs, recentActivity, toasts, roles, permissionMatrix, products, orders, supportMessages, loading]
   );
 
   return createElement(AdminDataContext.Provider, { value }, children);

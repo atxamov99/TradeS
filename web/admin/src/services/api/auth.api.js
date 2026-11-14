@@ -10,9 +10,16 @@ export const authApi = {
   login: (credentials) =>
     http.post("/auth/login", credentials),
 
-  /** POST /api/auth/logout */
-  logout: () =>
-    http.post("/auth/logout"),
+  /** POST /api/auth/logout (sends the panel's own refresh token so the right session is revoked) */
+  logout: () => {
+    let refreshToken;
+    try { refreshToken = JSON.parse(window.localStorage.getItem("savdo-admin-tokens") || "null")?.refreshToken; } catch { /* ignore */ }
+    return http.post("/auth/logout", refreshToken ? { refreshToken } : {});
+  },
+
+  /** POST /api/auth/sso-adopt — ADMIN only; returns tokens for the panel's own Bearer session */
+  ssoAdopt: () =>
+    http.post("/auth/sso-adopt"),
 
   /** POST /api/auth/refresh-token */
   refresh: (refreshToken) =>

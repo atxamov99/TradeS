@@ -21,7 +21,7 @@ const empty = { name: "", email: "", phone: "", role: "USER", status: "active", 
 
 export function UsersPage() {
   const { profile } = useAuth();
-  const { users, admins, createUser, updateUser, toggleUserStatus, deleteUser, revokeAdminFromUser, toggleAdminStatus, updateAdmin } = useAdminData();
+  const { users, admins, mainAdminId, createUser, createAdmin, promoteToAdmin, updateUser, toggleUserStatus, deleteUser, revokeAdminFromUser, toggleAdminStatus, updateAdmin } = useAdminData();
   const { t } = useI18n();
   const isPrimary = profile?.isPrimary;
   const location = useLocation();
@@ -40,6 +40,7 @@ export function UsersPage() {
   const [form, setForm] = useState(empty);
   const [editId, setEditId] = useState(null);
   const [editingAdmin, setEditingAdmin] = useState(false);
+  const [creatingAdmin, setCreatingAdmin] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [grantTarget, setGrantTarget] = useState(null);
@@ -48,7 +49,10 @@ export function UsersPage() {
     () => users.filter((u) => u.role === "user" || u.role !== "admin"),
     [users]
   );
-  const allAdmins = useMemo(() => admins.filter((a) => !a.isPrimary), [admins]);
+  // Every admin is listed. Only the MAIN admin (the oldest admin account) can add / change / block / revoke the
+  // others; nobody can touch the main admin. The server enforces the same rule.
+  const allAdmins = admins;
+  const iAmMain = Boolean(profile?.id) && profile.id === mainAdminId;
 
   const filteredUsers = useMemo(
     () =>
@@ -67,7 +71,8 @@ export function UsersPage() {
     [allAdmins, search]
   );
 
-  function openCreate() { setEditId(null); setEditingAdmin(false); setForm(empty); setModalOpen(true); }
+  function openCreate() { setEditId(null); setEditingAdmin(false); setCreatingAdmin(false); setForm(empty); setModalOpen(true); }
+  function openCreateAdmin() { setEditId(null); setEditingAdmin(false); setCreatingAdmin(true); setForm(empty); setModalOpen(true); }
   function openEdit(u) {
     setEditId(u.id);
     setEditingAdmin(false);
@@ -80,7 +85,7 @@ export function UsersPage() {
     setForm({ name: a.name, email: a.email, phone: a.phone, role: a.role, status: a.status, password: "" });
     setModalOpen(true);
   }
-  function closeModal() { setModalOpen(false); setEditId(null); setEditingAdmin(false); setForm(empty); }
+  function closeModal() { setModalOpen(false); setEditId(null); setEditingAdmin(false); setCreatingAdmin(false); setForm(empty); }
 
   function handleSubmit(e) {
     e.preventDefault();
@@ -88,7 +93,10 @@ export function UsersPage() {
     if (!payload.email) delete payload.email;
     if (!payload.phone) delete payload.phone;
     if (!payload.password) delete payload.password;
-    if (editingAdmin) {
+    if (creatingAdmin) {
+      delete payload.role;
+      createAdmin(payload);
+    } else if (editingAdmin) {
       // Keep the ADMIN role — don't demote when editing an admin's profile.
       delete payload.role;
       updateAdmin(editId, payload);
@@ -116,6 +124,16 @@ export function UsersPage() {
             {isAdminsTab ? "Tizim adminlari ro'yxati va boshqaruvi" : "Tizimdagi barcha foydalanuvchilar ro'yxati va ularning huquqlari."}
           </p>
         </div>
+        {isAdminsTab && iAmMain && (
+          <button
+            type="button"
+            onClick={openCreateAdmin}
+            className="flex items-center gap-2 bg-primary-container hover:bg-primary text-on-primary-container hover:text-on-primary transition-colors rounded-lg py-2.5 px-5 font-semibold shadow-sm shrink-0"
+          >
+            <Icon name="person_add" className="text-[20px]" />
+            Yangi admin
+          </button>
+        )}
         {!isAdminsTab && (
           <button
             type="button"
@@ -191,6 +209,8 @@ export function UsersPage() {
                           {admin.name.slice(0, 2).toUpperCase()}
                         </div>
                         <span className="text-body-sm font-semibold text-on-surface">{admin.name}</span>
+                        {admin.isMain && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary-container/30 text-on-primary-container">Asosiy</span>}
+                        {admin.id === profile?.id && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-surface-variant text-on-surface-variant">Siz</span>}
                       </div>
                     </td>
                     <td className="px-6 py-4 text-body-sm text-on-surface">{admin.phone || "—"}</td>
@@ -201,6 +221,9 @@ export function UsersPage() {
                     </td>
                     <td className="px-6 py-4 text-body-sm text-on-surface-variant whitespace-nowrap">{admin.createdAt || "—"}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
+                      {(!iAmMain || admin.isMain) ? (
+                        <span className="text-xs text-on-surface-variant">{admin.isMain ? "Himoyalangan" : "—"}</span>
+                      ) : (
                       <div className="flex items-center justify-end gap-3">
                         <button
                           type="button"
@@ -227,6 +250,7 @@ export function UsersPage() {
                           <Icon name="person_remove" className="text-xl" />
                         </button>
                       </div>
+                      )}
                     </td>
                   </tr>
                 ))
@@ -264,6 +288,11 @@ export function UsersPage() {
                         <button type="button" onClick={() => openEdit(u)} className="p-1 text-on-surface-variant hover:text-secondary transition-colors" title={t("common.edit")}>
                           <Icon name="edit" className="text-xl" />
                         </button>
+                        {iAmMain && (
+                          <button type="button" onClick={() => setGrantTarget({ user: u, action: "grant" })} className="p-1 text-on-surface-variant hover:text-primary transition-colors" title="Admin qilish">
+                            <Icon name="admin_panel_settings" className="text-xl" />
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={() => toggleUserStatus(u.id)}
@@ -291,7 +320,7 @@ export function UsersPage() {
       {/* Create / Edit modal */}
       <Modal
         open={modalOpen}
-        title={editingAdmin ? "Adminni tahrirlash" : editId ? "Foydalanuvchini tahrirlash" : "Yangi foydalanuvchi"}
+        title={creatingAdmin ? "Yangi admin" : editingAdmin ? "Adminni tahrirlash" : editId ? "Foydalanuvchini tahrirlash" : "Yangi foydalanuvchi"}
         onClose={closeModal}
         footer={
           <>
@@ -365,7 +394,7 @@ export function UsersPage() {
           ever offers to revoke, never to grant. */}
       <Modal
         open={Boolean(grantTarget)}
-        title={t("users.revokeAdminTitle")}
+        title={grantTarget?.action === "grant" ? "Admin huquqini berish" : t("users.revokeAdminTitle")}
         description={grantTarget ? `"${grantTarget.user.name}"` : ""}
         onClose={() => setGrantTarget(null)}
         footer={
@@ -374,18 +403,21 @@ export function UsersPage() {
             <button
               type="button"
               onClick={async () => {
-                await revokeAdminFromUser(grantTarget.user.id);
+                if (grantTarget.action === "grant") await promoteToAdmin(grantTarget.user.id);
+                else await revokeAdminFromUser(grantTarget.user.id);
                 setGrantTarget(null);
               }}
-              className="px-5 py-2.5 text-body-sm font-medium rounded-lg transition-colors bg-error text-on-error hover:bg-error/90"
+              className={`px-5 py-2.5 text-body-sm font-medium rounded-lg transition-colors ${grantTarget?.action === "grant" ? "bg-primary-container text-on-primary-container hover:bg-primary hover:text-on-primary" : "bg-error text-on-error hover:bg-error/90"}`}
             >
-              {t("users.revokeAdmin")}
+              {grantTarget?.action === "grant" ? "Admin qilish" : t("users.revokeAdmin")}
             </button>
           </>
         }
       >
         <p className="text-body-sm text-on-surface-variant">
-          {t("users.revokeAdminHint")}
+          {grantTarget?.action === "grant"
+            ? "Bu foydalanuvchi to'liq admin huquqiga ega bo'ladi: barcha foydalanuvchilar, buyurtmalar va sozlamalarni boshqara oladi. Faqat ishonchli odamga bering."
+            : t("users.revokeAdminHint")}
         </p>
       </Modal>
     </div>

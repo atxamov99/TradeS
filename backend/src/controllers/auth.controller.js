@@ -77,8 +77,10 @@ const verifyNewDeviceLogin = asyncHandler(async (req, res) => {
 
 const refreshToken = asyncHandler(async (req, res) => {
   // Cookie (web/admin) OR body (native mobile) — support both clients.
+  // An explicitly sent token (body) wins over the cookie. Cookies are shared by every localhost port, so the
+  // admin panel and the website would otherwise refresh each other's session (identity mix-up).
   const incomingRefreshToken =
-    req.cookies?.refreshToken || req.body?.refreshToken;
+    req.body?.refreshToken || req.cookies?.refreshToken;
 
   if (!incomingRefreshToken) {
     throw new ApiError(401, 'No refresh token provided');
@@ -158,7 +160,9 @@ const ssoAdopt = asyncHandler(async (req, res) => {
   res.cookie('accessToken', accessToken, COOKIE_OPTIONS);
   res.cookie('refreshToken', refreshToken, COOKIE_OPTIONS);
 
-  res.status(200).json(new ApiResponse(200, { user: req.user }, 'SSO muvaffaqiyatli'));
+  // Tokens are returned too so the admin panel can keep its OWN session (Bearer) instead of relying on
+  // cookies that another login on the same host can silently overwrite.
+  res.status(200).json(new ApiResponse(200, { user: req.user, accessToken, refreshToken }, 'SSO muvaffaqiyatli'));
 });
 
 const googleAuth = asyncHandler(async (req, res) => {

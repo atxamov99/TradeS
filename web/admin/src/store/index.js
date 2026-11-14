@@ -7,6 +7,7 @@ import {
   useState
 } from "react";
 import { authApi } from "../services/api/auth.api";
+import { adminTokens } from "../services/http";
 
 const STORAGE_KEY = "savdo-admin-auth";
 
@@ -72,10 +73,20 @@ export function AuthProvider({ children }) {
   }, [auth]);
 
   useEffect(() => {
-    const handle = () => setAuth(null);
+    const handle = () => { adminTokens.clear(); setAuth(null); };
     window.addEventListener("auth:logout", handle);
     return () => window.removeEventListener("auth:logout", handle);
   }, []);
+
+  // A session that has a profile but no tokens of its own (older login / website SSO) relied on a cookie that
+  // any other login on this host can overwrite. Take the panel's own tokens once; if the cookie belongs to
+  // somebody who is not an admin the server refuses and the panel asks for a fresh admin login.
+  useEffect(() => {
+    if (!auth || adminTokens.get()?.accessToken) return;
+    authApi.ssoAdopt()
+      .then((res) => { if (res?.data?.accessToken) adminTokens.set(res.data); })
+      .catch(() => window.dispatchEvent(new Event("auth:logout")));
+  }, [auth]);
 
   const value = useMemo(
     () => ({
@@ -86,6 +97,7 @@ export function AuthProvider({ children }) {
       login: async (credentials) => {
         const res = await authApi.login(credentials);
         const { user } = res.data;
+        if (res.data?.accessToken) adminTokens.set(res.data);
         const profile = buildProfile(user);
         const nextAuth = { token: "cookie-managed", profile };
         setAuth(nextAuth);
@@ -133,6 +145,7 @@ export function AuthProvider({ children }) {
         try {
           await authApi.logout();
         } catch { /* ignore */ }
+        adminTokens.clear();
         setAuth(null);
       },
 

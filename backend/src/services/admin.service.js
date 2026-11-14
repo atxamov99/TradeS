@@ -2,6 +2,8 @@ const prisma = require('../config/prisma');
 const ApiError = require('../utils/ApiError');
 const bcrypt = require('bcryptjs');
 const { clampLimit } = require('../utils/pagination');
+const { canonicalPhone, phoneTaken } = require('./auth.service');
+const { createAuditLog } = require('./audit.service');
 
 const stripPassword = (user) => {
   if (!user) return user;
@@ -153,15 +155,26 @@ const getUserById = async (userId) => {
 // There is exactly one ADMIN account system-wide (owner decision) and no HTTP path
 // grants it — bootstrapping/recovering the admin account is CLI-only (seedAdmin.js).
 // So user-management endpoints can never assign anything but USER.
-const resolveAssignableRole = (requestedRole) => {
-  const role = (requestedRole || 'USER').toUpperCase();
-  if (role !== 'USER') {
-    throw new ApiError(403, 'Admin roles cannot be assigned through this endpoint');
-  }
-  return role;
+// The MAIN admin is the oldest ADMIN account. Only the main admin may add admins, change an admin account,
+// block / unblock / revoke other admins; nobody (not even another admin) may touch the main admin.
+const getPrimaryAdminId = async () => {
+  const first = await prisma.user.findFirst({ where: { role: 'ADMIN', deletedAt: null }, orderBy: { createdAt: 'asc' }, select: { id: true } });
+  return first ? first.id : null;
 };
 
-const createUserByAdmin = async ({ name, email, password, phone, role }, actorRole) => {
+const resolveAssignableRole = async (requestedRole, actorId) => {
+  const role = (requestedRole || 'USER').toUpperCase();
+  if (role === 'USER') return role;
+  if (role === 'ADMIN') {
+    if (!actorId || actorId !== (await getPrimaryAdminId())) {
+      throw new ApiError(403, 'Only the main admin can add admins');
+    }
+    return role;
+  }
+  throw new ApiError(403, 'This role cannot be assigned');
+};
+
+const createUserByAdmin = async ({ name, email, password, phone, role }, actorRole, actorId) => {
   // Email mavjud bo'lsa, takrorlanishni tekshir
   if (email) {
     const existing = await prisma.user.findUnique({ where: { email } });
@@ -170,8 +183,10 @@ const createUserByAdmin = async ({ name, email, password, phone, role }, actorRo
 
   // Telefon mavjud bo'lsa, takrorlanishni tekshir
   if (phone) {
-    const existingPhone = await prisma.user.findFirst({ where: { phone } });
-    if (existingPhone) throw new ApiError(409, 'Bu telefon raqam allaqachon ro\'yxatdan o\'tgan');
+    const canon = canonicalPhone(phone);
+    if (!canon) throw new ApiError(400, "Telefon raqam noto'g'ri");
+    if (await phoneTaken(canon, '')) throw new ApiError(409, "Bu telefon raqam allaqachon ro'yxatdan o'tgan");
+    phone = canon;
   }
 
   if (!email && !phone) {
@@ -182,7 +197,7 @@ const createUserByAdmin = async ({ name, email, password, phone, role }, actorRo
     throw new ApiError(400, 'Parol talab qilinadi');
   }
 
-  const assignedRole = resolveAssignableRole(role);
+  const assignedRole = await resolveAssignableRole(role, actorId);
 
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password, salt);
@@ -196,21 +211,24 @@ const createUserByAdmin = async ({ name, email, password, phone, role }, actorRo
       role: assignedRole,
     },
   });
+  if (assignedRole === 'ADMIN') {
+    createAuditLog({ action: 'ADMIN_CREATED', category: 'admin', actor: actorId, actorId, target: 'user:' + user.id, targetId: user.id }).catch(() => {});
+  }
 
   return stripPassword(user);
 };
 
-const updateUserByAdmin = async (userId, data, actorRole) => {
+const updateUserByAdmin = async (userId, data, actorRole, actorId) => {
   const { name, email, phone, role, password } = data;
 
   // An ADMIN may not edit another ADMIN account, nor assign elevated roles (privilege escalation guard)
-  await assertCanActOn(userId, actorRole);
+  await assertCanActOn(userId, actorRole, actorId);
 
   const updateData = {};
   if (name !== undefined) updateData.name = name;
   if (email !== undefined) updateData.email = email;
   if (phone !== undefined) updateData.phone = phone;
-  if (role !== undefined) updateData.role = resolveAssignableRole(role);
+  if (role !== undefined) updateData.role = await resolveAssignableRole(role, actorId);
   if (password) {
     const salt = await bcrypt.genSalt(10);
     updateData.password = await bcrypt.hash(password, salt);
@@ -230,11 +248,14 @@ const updateUserByAdmin = async (userId, data, actorRole) => {
 // An ADMIN may never act on another ADMIN account. With exactly one ADMIN allowed
 // system-wide this should be unreachable in practice — it's a defense-in-depth
 // guard in case that invariant is ever violated (e.g. a data issue), not a tier check.
-const assertCanActOn = async (targetId, actorRole) => {
+const assertCanActOn = async (targetId, actorRole, actorId) => {
   const target = await prisma.user.findUnique({ where: { id: targetId }, select: { role: true } });
   if (!target) throw new ApiError(404, 'User not found');
   if (target.role === 'ADMIN') {
-    throw new ApiError(403, 'Admins cannot perform this action on another admin account');
+    const primary = await getPrimaryAdminId();
+    if (!actorId || actorId !== primary || targetId === primary) {
+      throw new ApiError(403, 'Only the main admin can manage other admins (and the main admin cannot be changed)');
+    }
   }
 };
 
@@ -242,7 +263,7 @@ const blockUser = async (userId, adminId, actorRole) => {
   if (userId === adminId) {
     throw new ApiError(400, 'You cannot block yourself');
   }
-  await assertCanActOn(userId, actorRole);
+  await assertCanActOn(userId, actorRole, adminId);
   try {
     const user = await prisma.user.update({
       where: { id: userId },
@@ -255,9 +276,9 @@ const blockUser = async (userId, adminId, actorRole) => {
   }
 };
 
-const unblockUser = async (userId, actorRole) => {
+const unblockUser = async (userId, actorRole, actorId) => {
   // An ADMIN may not act on another ADMIN account (privilege escalation guard)
-  await assertCanActOn(userId, actorRole);
+  await assertCanActOn(userId, actorRole, actorId);
   try {
     const user = await prisma.user.update({
       where: { id: userId },
@@ -317,7 +338,7 @@ const deleteUser = async (userId, adminId, actorRole) => {
   if (userId === adminId) {
     throw new ApiError(400, 'You cannot delete yourself');
   }
-  await assertCanActOn(userId, actorRole);
+  await assertCanActOn(userId, actorRole, adminId);
 
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) throw new ApiError(404, 'User not found');
@@ -360,13 +381,14 @@ const getAllAdmins = async ({ page = 1, limit = 50 } = {}) => {
     prisma.user.count({ where }),
   ]);
 
-  return { users: stripPasswordMany(users), total, page: Number(page), pages: Math.ceil(total / take) };
+  const primary = await getPrimaryAdminId();
+  return { users: stripPasswordMany(users).map((u) => ({ ...u, isMainAdmin: u.id === primary })), mainAdminId: primary, total, page: Number(page), pages: Math.ceil(total / take) };
 };
 
 const toggleAdminStatus = async (userId, adminId, actorRole) => {
   if (userId === adminId) throw new ApiError(400, 'You cannot change your own status');
   // An ADMIN may not suspend/reinstate another ADMIN (privilege escalation guard)
-  await assertCanActOn(userId, actorRole);
+  await assertCanActOn(userId, actorRole, adminId);
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user || user.role !== 'ADMIN') {
     throw new ApiError(404, 'Admin not found');

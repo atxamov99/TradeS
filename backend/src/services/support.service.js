@@ -57,10 +57,16 @@ const replySupportMessage = async (id, replyText, adminId) => {
   // Only a "bot" ticket has somewhere to deliver the reply to — a "web" one
   // was submitted anonymously/via app and has no return channel here.
   if (ticket.source === 'bot' && ticket.telegramChatId) {
-    await telegramService.sendMessage(
-      ticket.telegramChatId,
-      `💬 <b>Jamoadan javob:</b>\n\n${escapeHtml(replyText.trim())}`
-    );
+    try {
+      await telegramService.sendMessage(
+        ticket.telegramChatId,
+        '💬 <b>Jamoadan javob:</b>' + String.fromCharCode(10, 10) + escapeHtml(replyText.trim())
+      );
+    } catch (err) {
+      // Keep the ticket open and tell the admin plainly (no raw internals): the reply was NOT delivered.
+      require('../utils/logger').warn('Support reply not delivered: ' + err.message);
+      throw new ApiError(502, "Javob Telegramga yuborilmadi. Birozdan so'ng qayta urinib ko'ring.", [], '', 'TELEGRAM_SEND_FAILED');
+    }
   }
 
   return prisma.supportMessage.update({

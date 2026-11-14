@@ -6,6 +6,7 @@ import useAuthStore from '../store/authStore';
 import useThemeStore from '../store/themeStore';
 import { getSessions, revokeSession } from '../api/auth.api';
 import LoginCodeCard from '../components/settings/LoginCodeCard';
+import BecomeDirectorCard from '../components/settings/BecomeDirectorCard';
 
 // Rough device label from the stored User-Agent — good enough to tell two
 // sessions apart in a list, not meant to be a precise UA parser.
@@ -243,6 +244,7 @@ export default function Settings() {
           </div>
         </div>
 
+        <BecomeDirectorCard />
         <LoginCodeCard />
 
         {/* ── Faol qurilmalar ───────────────────────── */}

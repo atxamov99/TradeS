@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { Home, Package, ShoppingCart, BarChart2, Settings, User, ShieldCheck, LogOut, Users } from 'lucide-react';
+import { Home, Package, ShoppingCart, BarChart2, Settings, User, ShieldCheck, LogOut, Users, Wallet } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import useAuthStore from '../../store/authStore';
 import TestUserBanner from '../common/TestUserBanner';
@@ -60,14 +60,26 @@ export default function AppLayout() {
   const canSeeFinancials = useAuthStore((s) => s.canSeeShopFinancials());
   useStockAlerts();
 
+  // Each role gets its OWN sidebar (shared items exist, extras are hidden):
+  //  SOLO      — works for themselves: no employees / expenses.
+  //  DIRECTOR  — business owner: + employees + expenses.
+  //  CASHIER   — scans and sells: no reports, no employees, no products admin.
+  //  ADMIN     — everything plus the admin panel link below.
+  const kind = useAuthStore((s) => s.accountKind());
+  const isCashier = kind === 'CASHIER';
+  const isDirector = kind === 'DIRECTOR' || kind === 'ADMIN';
   const navItems = [
     { to: '/dashboard', label: t('dashboard'), icon: Home },
-    { to: '/dashboard/products', label: t('products'),  icon: Package },
+    ...(isCashier
+      ? [{ to: '/pos/sales/new', label: t('ctx_new_sale'), icon: ShoppingCart }]
+      : [{ to: '/dashboard/products', label: t('products'), icon: Package }]),
     { to: '/dashboard/sales',    label: t('sales'),     icon: ShoppingCart },
-    // Reports = financial reporting (revenue/profit) — owner/admin only, a
-    // cashier just scans products and records sales.
+    // Reports = financial reporting (revenue/profit) — owner/admin only.
     ...(canSeeFinancials ? [{ to: '/dashboard/reports', label: t('reports'), icon: BarChart2 }] : []),
-    { to: '/dashboard/employees', label: t('employees', 'Xodimlar'), icon: Users },
+    ...(isDirector ? [
+      { to: '/dashboard/employees', label: t('employees'), icon: Users },
+      { to: '/dashboard/expenses', label: t('nav_expenses'), icon: Wallet },
+    ] : []),
     { to: '/dashboard/settings', label: t('settings'),  icon: Settings },
     { to: '/dashboard/profile',  label: t('profile'),   icon: User },
   ];

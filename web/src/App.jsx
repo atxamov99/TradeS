@@ -30,6 +30,7 @@ import Sales from './pages/Sales';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import Employees from './pages/Employees';
+import Expenses from './pages/Expenses';
 import Profile from './pages/Profile';
 import Landing from './pages/Landing';
 
@@ -44,6 +45,13 @@ function AdminRoute({ children }) {
   const user = useAuthStore((s) => s.user);
   if (!user) return <Navigate to="/login" replace />;
   if (user?.role !== 'ADMIN') return <Navigate to="/dashboard" replace />;
+  return children;
+}
+
+// Employees / Expenses = business tools — only a business director (or admin).
+function DirectorRoute({ children }) {
+  const kind = useAuthStore((s) => s.accountKind());
+  if (kind !== 'DIRECTOR' && kind !== 'ADMIN') return <Navigate to="/dashboard" replace />;
   return children;
 }
 
@@ -120,7 +128,8 @@ export default function App() {
           <Route path="sales" element={<Sales />} />
           <Route path="reports" element={<FinancialsRoute><Reports /></FinancialsRoute>} />
           <Route path="settings" element={<Settings />} />
-          <Route path="employees" element={<Employees />} />
+          <Route path="employees" element={<DirectorRoute><Employees /></DirectorRoute>} />
+          <Route path="expenses" element={<DirectorRoute><Expenses /></DirectorRoute>} />
           <Route path="profile" element={<Profile />} />
 
           {/* Admin-only routes */}

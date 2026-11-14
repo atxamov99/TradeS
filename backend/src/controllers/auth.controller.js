@@ -1,5 +1,6 @@
 const authService = require('../services/auth.service');
 const shopService = require('../services/shop.service');
+const { ensurePersonalShop } = require('../utils/shopAccess');
 const asyncHandler = require('../utils/asyncHandler');
 const ApiResponse = require('../utils/ApiResponse');
 const ApiError = require('../utils/ApiError');
@@ -131,7 +132,14 @@ const getMe = asyncHandler(async (req, res) => {
   if (user?.isTestUser) user.testActionCap = TEST_USER_ACTION_CAP;
   // Shop-scoped role (OWNER/CASHIER) lives separately from the platform-wide
   // User.role — clients need both to know what a user can actually do.
-  const shopMemberships = await shopService.getMyShops(user.id);
+  let shopMemberships = await shopService.getMyShops(user.id);
+  // A solo user must see their personal shop right away (the "become a director"
+  // card needs its id) — not only after their first product/sale. Idempotent;
+  // platform admins don't get one.
+  if (!shopMemberships.length && user.role !== 'ADMIN' && !user.isTestUser) {
+    await ensurePersonalShop(user.id);
+    shopMemberships = await shopService.getMyShops(user.id);
+  }
   res.status(200).json(new ApiResponse(200, { user, shopMemberships }, 'User retrieved'));
 });
 

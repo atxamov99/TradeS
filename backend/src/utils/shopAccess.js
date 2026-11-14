@@ -16,6 +16,9 @@ const getUserShopIds = async (userId) => {
 // re-check inside the transaction prevents two concurrent requests creating two.
 const ensurePersonalShop = async (userId) => {
   return prisma.$transaction(async (tx) => {
+    // Per-user advisory lock: without it, N concurrent calls all see "no shop"
+    // and each create one (verified: 8 parallel /auth/me -> 8 shops).
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${'personal-shop:' + userId}))`;
     const existing = await tx.shopMember.findMany({ where: { userId }, select: { shopId: true } });
     if (existing.length) return existing.map((m) => m.shopId);
     const user = await tx.user.findUnique({ where: { id: userId }, select: { name: true } });

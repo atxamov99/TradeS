@@ -197,6 +197,19 @@ const useAuthStore = create(
       // Financial reporting (revenue/profit) is owner/admin-only — a CASHIER
       // scans products and records sales, nothing about money. Platform ADMIN
       // or being OWNER of at least one shop both qualify.
+      // Account kind drives the sidebar: ADMIN; DIRECTOR = owns a business shop;
+      // SOLO = owns only a personal shop (or none yet); CASHIER = just a member.
+      // The server enforces the same rules — this only decides what to show.
+      accountKind: () => {
+        const { user, shopMemberships } = get();
+        if (user?.role === 'ADMIN') return 'ADMIN';
+        if (shopMemberships.some((m) => m.myRole === 'OWNER' && m.isBusiness)) return 'DIRECTOR';
+        if (shopMemberships.some((m) => m.myRole === 'OWNER')) return 'SOLO';
+        if (shopMemberships.some((m) => m.myRole === 'CASHIER')) return 'CASHIER';
+        return 'SOLO';
+      },
+      personalShop: () => get().shopMemberships.find((m) => m.myRole === 'OWNER' && !m.isBusiness) || null,
+      businessShop: () => get().shopMemberships.find((m) => m.myRole === 'OWNER' && m.isBusiness) || null,
       canSeeShopFinancials: () =>
         get().user?.role === 'ADMIN' || get().shopMemberships.some((m) => m.myRole === 'OWNER'),
     }),

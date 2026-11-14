@@ -147,6 +147,13 @@ async function main() {
     await prisma.product.deleteMany({ where: { name: { contains: MARK } } });
     await prisma.shopMember.deleteMany({ where: { shopId: shop.id } });
     await prisma.shop.delete({ where: { id: shop.id } });
+    // /auth/me auto-creates a personal shop for shopless users — remove those too
+    const testUsers = await prisma.user.findMany({ where: { email: { contains: MARK } }, select: { id: true } });
+    const tuIds = testUsers.map((u) => u.id);
+    const extraShops = await prisma.shop.findMany({ where: { ownerId: { in: tuIds } }, select: { id: true } });
+    const esIds = extraShops.map((s) => s.id);
+    await prisma.shopMember.deleteMany({ where: { OR: [{ shopId: { in: esIds } }, { userId: { in: tuIds } }] } });
+    await prisma.shop.deleteMany({ where: { id: { in: esIds } } });
     await prisma.user.deleteMany({ where: { email: { contains: MARK } } });
     if (createdAdmin) await prisma.user.delete({ where: { id: admin.id } }).catch(() => {});
     await prisma.$disconnect();

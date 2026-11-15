@@ -38,7 +38,7 @@ export default function RootLayout() {
   useEffect(() => {
     if (!ready) return;
     if (token) {
-      router.replace("/(app)");
+      router.replace((useRoleStore.getState().kind === "ADMIN" ? "/(admin)/dashboard" : "/(app)") as any);
     } else {
       router.replace("/(auth)/login");
     }
@@ -69,6 +69,7 @@ export default function RootLayout() {
       <StatusBar style={isDark ? "light" : "dark"} />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(app)" />
+        <Stack.Screen name="(admin)" />
         <Stack.Screen name="(auth)" />
       </Stack>
       <AppAlertHost />

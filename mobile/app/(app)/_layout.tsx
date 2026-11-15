@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import { Tabs } from "expo-router";
+import { Redirect, Tabs } from "expo-router";
+import { useRoleStore } from "@/store/roleStore";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useT } from "@/hooks/useT";
@@ -16,6 +17,10 @@ export default function AppLayout() {
   useEffect(() => {
     registerForPushNotifications().catch(() => {});
   }, []);
+
+  const kind = useRoleStore((s) => s.kind);
+  // a platform ADMIN works in the admin part of the app (same pages as the website admin panel)
+  if (kind === "ADMIN") return <Redirect href={"/(admin)/dashboard" as any} />;
 
   return (
     <Tabs

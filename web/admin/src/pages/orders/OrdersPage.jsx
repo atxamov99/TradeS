@@ -1,3 +1,4 @@
+import { tx } from "../../i18n";
 import { Select } from "../../components/shared/Select";
 import { useMemo, useState } from "react";
 import { usePageTitle } from "../../hooks/usePageTitle";
@@ -76,7 +77,7 @@ export function OrdersPage() {
     try {
       await updateOrderStatus(id, { orderStatus: newStatus, paymentStatus: order ? order.paymentStatus : undefined });
     } catch (err) {
-      setError("Statusni yangilashda xatolik: " + err.message);
+      setError(tx("msg.statusni_yangilashda_xatolik_colon") + err.message);
     } finally {
       setStatusUpdating(null);
     }
@@ -88,7 +89,7 @@ export function OrdersPage() {
     try {
       await updateOrderStatus(id, { orderStatus: order ? order.orderStatus : "pending", paymentStatus: newPaymentStatus });
     } catch (err) {
-      setError("To'lov holatini yangilashda xatolik: " + err.message);
+      setError(tx("msg.to_lov_holatini_yangilashda_xatolik_colon") + err.message);
     } finally {
       setStatusUpdating(null);
     }
@@ -159,7 +160,7 @@ export function OrdersPage() {
                   </tr>
                 ) : (
                   filtered.map((o) => {
-                    const name = o.user?.name || "Noma'lum";
+                    const name = o.user?.name || tx("msg.noma_lum");
                     return (
                       <tr key={o.id} className="hover:bg-surface-container-low transition-colors">
                         <td className="py-4 px-6 font-body-sm font-semibold text-on-surface whitespace-nowrap">{o.orderNumber}</td>
@@ -216,7 +217,7 @@ export function OrdersPage() {
           </div>
         )}
         <div className="bg-surface-bright px-6 py-4 border-t border-outline-variant">
-          <span className="font-body-sm text-on-surface-variant">{filtered.length} ta buyurtma ko'rsatilmoqda</span>
+          <span className="font-body-sm text-on-surface-variant">{tx("msg.ordersShown", { n: filtered.length })}</span>
         </div>
       </div>
     </div>

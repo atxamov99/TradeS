@@ -1,3 +1,4 @@
+import { tx } from "../../i18n";
 import { useEffect, useState } from "react";
 import { useI18n } from "../../i18n";
 import { useAuth } from "../../store";
@@ -36,9 +37,9 @@ export function SettingsPage() {
     setSaving(true);
     try {
       await updateProfile({ name: form.name, email: form.email });
-      pushToast("O'zgarishlar saqlandi");
+      pushToast(tx("msg.o_zgarishlar_saqlandi"));
     } catch (err) {
-      pushToast(err?.message || "Xatolik yuz berdi", "danger");
+      pushToast(err?.message || tx("msg.xatolik_yuz_berdi"), "danger");
     } finally {
       setSaving(false);
     }
@@ -48,15 +49,15 @@ export function SettingsPage() {
     setPwMessage("");
     setPwError("");
     if (pw.next !== pw.confirm) {
-      setPwError("Yangi parollar mos kelmayapti");
+      setPwError(tx("msg.yangi_parollar_mos_kelmayapti"));
       return;
     }
     try {
       await changePassword({ currentPassword: pw.current, newPassword: pw.next });
-      setPwMessage("Parol muvaffaqiyatli yangilandi");
+      setPwMessage(tx("msg.parol_muvaffaqiyatli_yangilandi"));
       setPw({ current: "", next: "", confirm: "" });
     } catch (err) {
-      setPwError(err?.message || "Xatolik yuz berdi");
+      setPwError(err?.message || tx("msg.xatolik_yuz_berdi"));
     }
   }
 
@@ -118,13 +119,13 @@ export function SettingsPage() {
                   <div>
                     <label className={labelCls}>{t("settings.permissionCount")}</label>
                     <div className="w-full px-4 py-2.5 border border-outline-variant rounded-lg bg-surface-container-low text-on-surface-variant font-body-md">
-                      {profile?.permissions?.length || 0} ta ruxsat
+                      {tx("msg.permCount", { n: profile?.permissions?.length || 0 })}
                     </div>
                   </div>
                 </div>
                 <div className="pt-4 flex justify-end">
                   <button type="button" onClick={handleSaveProfile} disabled={saving} className={`${saveBtnCls} disabled:opacity-60`}>
-                    {saving ? "Saqlanmoqda..." : "Saqlash"}
+                    {saving ? tx("msg.saqlanmoqda_dots") : tx("msg.saqlash")}
                   </button>
                 </div>
               </div>
@@ -189,7 +190,7 @@ export function SettingsPage() {
                 <div className="flex items-center justify-between py-4 border-t border-outline-variant">
                   <div>
                     <p className="font-title-sm text-title-sm text-on-surface">{t("settings.appearance")}</p>
-                    <p className="font-body-sm text-body-sm text-on-surface-variant">Hozircha faqat yorug' (light) tema qo'llab-quvvatlanadi.</p>
+                    <p className="font-body-sm text-body-sm text-on-surface-variant">{tx("msg.hozircha_faqat_yorug_light_tema_qo_lla")}</p>
                   </div>
                   <span className="px-3 py-1.5 rounded-full bg-primary-container/20 text-on-primary-container text-body-sm font-medium">{t("settings.light")}</span>
                 </div>

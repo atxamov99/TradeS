@@ -3,7 +3,7 @@ import { usePageTitle } from "../../hooks/usePageTitle";
 import { useAuth } from "../../store";
 import { useAdminData } from "../../store/adminData";
 import { Icon } from "../../components/shared/Icon";
-import { useI18n } from "../../i18n";
+import { useI18n, tx } from "../../i18n";
 
 const TABS = [
   { key: "all", label: "common.everything" },
@@ -11,10 +11,7 @@ const TABS = [
   { key: "answered", label: "support.status.answered" },
 ];
 
-const SOURCE_LABEL = {
-  bot: "Telegram bot",
-  web: "Ilova (Contact Support)",
-};
+const sourceLabel = (source) => (source === "bot" ? tx("msg.src_bot") : source === "web" ? tx("msg.src_app") : source);
 
 function ReplyRow({ ticket, onReply }) {
   const { t } = useI18n();
@@ -72,7 +69,7 @@ function ReplyRow({ ticket, onReply }) {
 
 export function SupportPage() {
   const { t } = useI18n();
-  usePageTitle("Murojaatlar");
+  usePageTitle(tx("msg.murojaatlar"));
   const { profile } = useAuth();
   const { supportMessages, replySupportTicket, deleteSupportTicket } = useAdminData();
 
@@ -95,7 +92,7 @@ export function SupportPage() {
       <div>
         <h2 className="font-headline-md text-headline-md font-bold text-on-surface">{t("navigation.menu.support.label")}</h2>
         <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">
-          Telegram bot (/support) va ilova orqali kelgan yordam so'rovlari
+          {tx("msg.supportSubtitle")}
         </p>
       </div>
 
@@ -131,14 +128,14 @@ export function SupportPage() {
                   <span className="text-xs text-on-surface-variant">{s.contact}</span>
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-surface-container-lowest text-on-surface-variant">
                     <Icon name={s.source === "bot" ? "smart_toy" : "forum"} className="text-[14px]" />
-                    {SOURCE_LABEL[s.source] || s.source}
+                    {sourceLabel(s.source)}
                   </span>
                   <span
                     className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                       s.status === "answered" ? "bg-[#D1FAE5] text-[#065F46]" : "bg-[#FEF3C7] text-[#92400E]"
                     }`}
                   >
-                    {s.status === "answered" ? "Javob berilgan" : "Ochiq"}
+                    {s.status === "answered" ? tx("msg.javob_berilgan") : tx("msg.ochiq")}
                   </span>
                 </div>
                 <div className="flex items-center gap-3">
@@ -154,10 +151,10 @@ export function SupportPage() {
                           onClick={() => { deleteSupportTicket(s.id); setConfirmingId(null); }}
                           className="text-error font-semibold"
                         >
-                          Ha
+                          {tx("msg.yes")}
                         </button>
                         <button type="button" onClick={() => setConfirmingId(null)} className="text-on-surface-variant">
-                          Yo'q
+                          {tx("msg.no")}
                         </button>
                       </span>
                     ) : (

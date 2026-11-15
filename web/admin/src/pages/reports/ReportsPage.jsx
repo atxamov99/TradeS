@@ -1,3 +1,4 @@
+import { tx } from "../../i18n";
 import { Select } from "../../components/shared/Select";
 import { useState, useEffect } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -55,9 +56,9 @@ export function ReportsPage() {
           { title: t("reports.failedLogins"), value: formatNum(data.failedAttempts ?? 0), note: t("reports.notes.wrongPassword") }
         ]);
         setChartData([
-          { name: "Bloklangan", qiymat: data.blockedUsers ?? 0 },
-          { name: "Xato login", qiymat: data.failedAttempts ?? 0 },
-          { name: "Faol", qiymat: (data.totalAccounts ?? 0) - (data.blockedAccounts ?? 0) }
+          { name: tx("msg.bloklangan"), qiymat: data.blockedUsers ?? 0 },
+          { name: tx("msg.xato_login"), qiymat: data.failedAttempts ?? 0 },
+          { name: tx("msg.faol"), qiymat: (data.totalAccounts ?? 0) - (data.blockedAccounts ?? 0) }
         ]);
       } else {
         data = await reportsApi.getOverview({ from, to });
@@ -67,13 +68,13 @@ export function ReportsPage() {
           { title: t("dashboard.stats.totalOrders"), value: formatNum(data.totalOrders ?? 0), note: t("reports.notes.allPurchases") }
         ]);
         setChartData([
-          { name: "Foydalanuvchilar", qiymat: data.totalUsers ?? 0 },
-          { name: "Buyurtmalar", qiymat: data.totalOrders ?? 0 },
-          { name: "Mahsulotlar", qiymat: data.totalProducts ?? 0 }
+          { name: tx("msg.foydalanuvchilar"), qiymat: data.totalUsers ?? 0 },
+          { name: tx("msg.buyurtmalar"), qiymat: data.totalOrders ?? 0 },
+          { name: tx("msg.mahsulotlar"), qiymat: data.totalProducts ?? 0 }
         ]);
       }
     } catch (err) {
-      setError(err?.message || "Serverdan ma'lumot olishda xato");
+      setError(err?.message || tx("msg.serverdan_ma_lumot_olishda_xato"));
       setCards([]);
       setChartData([]);
     } finally {
@@ -98,7 +99,7 @@ export function ReportsPage() {
       a.remove();
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      setError(err?.message || "Eksport qilishda xato");
+      setError(err?.message || tx("msg.eksport_qilishda_xato"));
     }
   }
 
@@ -127,7 +128,7 @@ export function ReportsPage() {
             disabled={loading}
             className="flex items-center gap-2 px-5 py-2 bg-primary-container text-on-primary-container rounded-lg text-body-sm font-title-sm hover:bg-primary hover:text-on-primary transition-colors shadow-sm disabled:opacity-60"
           >
-            {loading ? "Yuklanmoqda..." : "Yangilash"}
+            {loading ? tx("msg.yuklanmoqda_dots") : tx("msg.yangilash")}
           </button>
         </div>
       </div>

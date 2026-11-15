@@ -1,3 +1,4 @@
+import { tx } from "../../i18n";
 import { useEffect, useRef } from "react";
 import axios from "axios";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -65,7 +66,7 @@ export function SsoPage() {
         .then(({ data }) => {
           const user = data?.data?.user;
           if (!user || user.role?.toUpperCase() !== "ADMIN") {
-            throw new Error("Ruxsat yo'q");
+            throw new Error(tx("msg.ruxsat_yo_q"));
           }
           ssoLogin({ id: user.id, name: user.name, email: user.email, role: user.role });
           navigate("/dashboard", { replace: true });
@@ -87,7 +88,7 @@ export function SsoPage() {
       .then(({ data }) => {
         const user = data?.user;
         if (!user || user.role?.toUpperCase() !== "ADMIN") {
-          throw new Error("Ruxsat yo'q");
+          throw new Error(tx("msg.ruxsat_yo_q"));
         }
         ssoLogin({ id: user.id, name: user.name, email: user.email, role: user.role });
         navigate("/dashboard", { replace: true });
@@ -106,7 +107,7 @@ export function SsoPage() {
         borderTopColor: "transparent", borderRadius: "50%",
         animation: "spin 0.8s linear infinite"
       }} />
-      <p style={{ color: "#94a3b8", fontSize: 14 }}>Admin panelga o'tilmoqda...</p>
+      <p style={{ color: "#94a3b8", fontSize: 14 }}>{tx("msg.ssoLoading")}</p>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );

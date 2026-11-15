@@ -1,3 +1,4 @@
+import { tx } from "../../i18n";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../store";
@@ -28,17 +29,17 @@ export function LoginPage() {
       const auth = await login(credentials);
       const role = auth?.profile?.role?.toUpperCase();
       if (role !== "ADMIN") {
-        throw new Error("Ruxsat yo'q: Siz admin emassiz");
+        throw new Error(tx("msg.ruxsat_yo_q_siz_admin_emassiz"));
       }
       navigate("/dashboard", { replace: true });
     } catch (err) {
       const msg = err?.message || "";
       if (msg.includes("401") || msg.toLowerCase().includes("invalid")) {
-        setError("Email/telefon yoki parol noto'g'ri");
+        setError(tx("msg.email_telefon_yoki_parol_noto_g_ri"));
       } else if (msg.includes("blocked") || msg.includes("403")) {
-        setError("Akkauntingiz bloklangan. Admin bilan bog'laning.");
+        setError(tx("msg.akkauntingiz_bloklangan_admin_bilan_bo"));
       } else {
-        setError(msg || "Tizimga kirishda xatolik yuz berdi");
+        setError(msg || tx("msg.tizimga_kirishda_xatolik_yuz_berdi"));
       }
     } finally {
       setLoading(false);
@@ -119,7 +120,7 @@ export function LoginPage() {
             disabled={loading}
             className="w-full h-12 mt-2 bg-primary-container text-on-primary font-title-sm text-title-sm rounded-lg hover:bg-primary transition-colors flex items-center justify-center gap-2 shadow-sm disabled:opacity-60"
           >
-            {loading ? "Kirish..." : "Kirish"}
+            {loading ? tx("msg.kirish_dots") : tx("msg.kirish")}
             {!loading && <Icon name="arrow_forward" className="text-[20px]" />}
           </button>
         </form>

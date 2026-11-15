@@ -1,3 +1,4 @@
+import { tx } from "../../i18n";
 import { Select } from "../../components/shared/Select";
 import { useMemo, useState } from "react";
 import { Modal } from "../../components/shared/Modal";
@@ -178,7 +179,7 @@ export function ContentPage() {
             </table>
           </div>
           <div className="mt-auto border-t border-outline-variant p-4 bg-surface-container-lowest">
-            <span className="font-body-sm text-body-sm text-on-surface-variant">Jami {contentRows.length} ta natijadan {filtered.length} ko'rsatilmoqda</span>
+            <span className="font-body-sm text-body-sm text-on-surface-variant">{tx("msg.contentCount", { total: contentRows.length, shown: filtered.length })}</span>
           </div>
         </div>
 
@@ -217,7 +218,7 @@ export function ContentPage() {
           <>
             <button type="button" onClick={closeModal} className="px-5 py-2.5 text-body-sm border border-outline-variant rounded-lg hover:bg-surface-container-low text-on-surface">{t("common.cancel")}</button>
             <button type="submit" form="content-form" disabled={submitting} className="px-5 py-2.5 bg-primary text-on-primary text-body-sm font-medium rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-60">
-              {submitting ? "Saqlanmoqda..." : "Saqlash"}
+              {submitting ? tx("msg.saqlanmoqda_dots") : tx("msg.saqlash")}
             </button>
           </>
         }

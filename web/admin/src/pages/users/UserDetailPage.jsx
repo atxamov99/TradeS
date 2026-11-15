@@ -1,3 +1,4 @@
+import { tx } from "../../i18n";
 import { useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
 import { usePageTitle } from "../../hooks/usePageTitle";
@@ -22,7 +23,7 @@ export function UserDetailPage() {
     [auditLogs, id]
   );
 
-  usePageTitle(user ? `${user.name} - ${t("navigation.pageMeta.userDetail.title", {}, "Foydalanuvchi")}` : "Foydalanuvchi");
+  usePageTitle(user ? `${user.name} - ${t("navigation.pageMeta.userDetail.title", {}, "Foydalanuvchi")}` : tx("msg.foydalanuvchi"));
 
   if (!user) {
     return (
@@ -87,7 +88,7 @@ export function UserDetailPage() {
                 <div key={i} className="flex items-start gap-3">
                   <span className="mt-1.5 w-2 h-2 rounded-full bg-primary-container shrink-0" />
                   <div className="min-w-0">
-                    <p className="text-body-sm font-medium text-on-surface">{item.action || "Amal"}</p>
+                    <p className="text-body-sm font-medium text-on-surface">{item.action || tx("msg.amal")}</p>
                     <p className="text-xs text-on-surface-variant">
                       {item.actor || "—"} · {item.timestamp || (item.createdAt ? new Date(item.createdAt).toLocaleString("uz-UZ") : "—")}
                     </p>

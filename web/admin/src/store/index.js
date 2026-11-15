@@ -1,3 +1,4 @@
+import { tx } from "../i18n";
 import {
   createContext,
   createElement,
@@ -135,7 +136,7 @@ export function AuthProvider({ children }) {
 
       changePassword: async ({ currentPassword, newPassword }) => {
         if (!currentPassword || !newPassword) {
-          throw new Error("Parol talab qilinadi");
+          throw new Error(tx("msg.parol_talab_qilinadi"));
         }
         await authApi.changePassword({ currentPassword, newPassword });
         return { success: true };

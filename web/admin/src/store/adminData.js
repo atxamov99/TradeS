@@ -1,3 +1,4 @@
+import { tx } from "../i18n";
 import {
   createContext,
   createElement,
@@ -128,9 +129,9 @@ export function AdminDataProvider({ children }) {
           const logsArray = Array.isArray(rawLogs) ? rawLogs : [];
           setAuditLogs(logsArray);
           setRecentActivity(logsArray.slice(0, 8).map(log => ({
-            title: log.action || "Amal",
+            title: log.action || tx("msg.amal"),
             detail: `${log.actor} → ${log.target}`,
-            time: log.timestamp || (log.createdAt ? new Date(log.createdAt).toLocaleString() : "Hozir"),
+            time: log.timestamp || (log.createdAt ? new Date(log.createdAt).toLocaleString() : tx("msg.hozir")),
             tone: log.tone || "info"
           })));
         }
@@ -173,7 +174,7 @@ export function AdminDataProvider({ children }) {
               id: "n1",
               titleKey: "dashboard.notificationFeed.newUsers",
               detailKey: "dashboard.notificationFeed.newUsersDetail",
-              detail: `Bu hafta ${newUsersCount} ta yangi registratsiya`,
+              detail: tx("msg.weekRegs", { n: newUsersCount }),
               priority: "medium"
             });
           }
@@ -183,7 +184,7 @@ export function AdminDataProvider({ children }) {
               id: "n2",
               titleKey: "dashboard.notificationFeed.blockedAccounts",
               detailKey: "dashboard.notificationFeed.blockedAccountsDetail",
-              detail: `${blockedUsersCount} ta akkaunt faol emas`,
+              detail: tx("msg.inactiveAccounts", { n: blockedUsersCount }),
               priority: "high"
             });
           }
@@ -215,12 +216,12 @@ export function AdminDataProvider({ children }) {
   // ── Activity + Audit ─────────────────────────────────────
   function appendActivity(title, detail, tone = "info") {
     setRecentActivity((curr) =>
-      [{ title, detail, time: "Hozir", tone }, ...curr].slice(0, 8)
+      [{ title, detail, time: tx("msg.hozir"), tone }, ...curr].slice(0, 8)
     );
   }
 
   function logAudit(action, target, category = "user", tone = "info") {
-    const actor = profile?.name || "Tizim";
+    const actor = profile?.name || tx("msg.tizim");
     setAuditLogs((curr) => [
       { id: `${Date.now()}`, action, category, actor, target, ip: "—", timestamp: formatNow() },
       ...curr
@@ -234,10 +235,10 @@ export function AdminDataProvider({ children }) {
       const res = await usersApi.create(payload);
       const user = normalizeUser(res.data?.user || res.data || {});
       setUsers((curr) => [user, ...curr]);
-      logAudit("Foydalanuvchi yaratildi", user.id, "user", "success");
-      pushToast(`${user.name} yaratildi`);
+      logAudit(tx("msg.foydalanuvchi_yaratildi"), user.id, "user", "success");
+      pushToast(tx("msg.nameCreated", { name: user.name }));
     } catch (err) {
-      pushToast(err?.message || "Yaratishda xatolik", "danger");
+      pushToast(err?.message || tx("msg.yaratishda_xatolik"), "danger");
     }
   }
 
@@ -246,10 +247,10 @@ export function AdminDataProvider({ children }) {
       const res = await usersApi.update(id, payload);
       const updated = normalizeUser(res.data?.user || res.data || payload);
       setUsers((curr) => curr.map((u) => (u.id === id ? { ...u, ...updated } : u)));
-      logAudit("Foydalanuvchi yangilandi", id, "user", "info");
-      pushToast("O'zgarishlar saqlandi");
+      logAudit(tx("msg.foydalanuvchi_yangilandi"), id, "user", "info");
+      pushToast(tx("msg.o_zgarishlar_saqlandi"));
     } catch (err) {
-      pushToast(err?.message || "Yangilashda xatolik", "danger");
+      pushToast(err?.message || tx("msg.yangilashda_xatolik"), "danger");
     }
   }
 
@@ -266,11 +267,11 @@ export function AdminDataProvider({ children }) {
       setUsers((curr) =>
         curr.map((u) => u.id === id ? { ...u, status: isBlocked ? "blocked" : "active" } : u)
       );
-      const label = isBlocked ? "Foydalanuvchi bloklandi" : "Foydalanuvchi aktivlashtirildi";
+      const label = isBlocked ? tx("msg.foydalanuvchi_bloklandi") : tx("msg.foydalanuvchi_aktivlashtirildi");
       logAudit(label, id, "user", isBlocked ? "danger" : "success");
       pushToast(label, isBlocked ? "danger" : "success");
     } catch (err) {
-      pushToast(err?.message || "Xatolik yuz berdi", "danger");
+      pushToast(err?.message || tx("msg.xatolik_yuz_berdi"), "danger");
     }
   }
 
@@ -279,10 +280,10 @@ export function AdminDataProvider({ children }) {
     try {
       await usersApi.remove(id);
       setUsers((curr) => curr.filter((u) => u.id !== id));
-      logAudit("Foydalanuvchi o'chirildi", id, "user", "danger");
-      pushToast(`${target?.name || id} o'chirildi`, "danger");
+      logAudit(tx("msg.foydalanuvchi_o_chirildi"), id, "user", "danger");
+      pushToast(tx("msg.nameDeleted", { name: target?.name || id }), "danger");
     } catch (err) {
-      pushToast(err?.message || "O'chirishda xatolik", "danger");
+      pushToast(err?.message || tx("msg.o_chirishda_xatolik"), "danger");
     }
   }
 
@@ -305,10 +306,10 @@ export function AdminDataProvider({ children }) {
         }
         return [{ ...updated, isAdmin: false }, ...curr];
       });
-      logAudit("Admin huquqi olindi", adminUser.name, "admin", "warning");
-      pushToast(`${adminUser.name} dan admin huquqi olindi`, "warning");
+      logAudit(tx("msg.admin_huquqi_olindi"), adminUser.name, "admin", "warning");
+      pushToast(tx("msg.adminRevokedFrom", { name: adminUser.name }), "warning");
     } catch (err) {
-      pushToast(err?.message || "Xatolik yuz berdi", "danger");
+      pushToast(err?.message || tx("msg.xatolik_yuz_berdi"), "danger");
     }
   }
 
@@ -323,11 +324,11 @@ export function AdminDataProvider({ children }) {
       const rawAdmins = adminsRes?.data?.users || adminsRes?.data || [];
       setAdmins((Array.isArray(rawAdmins) ? rawAdmins : []).map(normalizeUser));
       setMainAdminId(adminsRes?.data?.mainAdminId || null);
-      logAudit("Rol o'zgartirildi", userId, "admin", "info");
-      pushToast("Rol o'zgartirildi");
+      logAudit(tx("msg.rol_o_zgartirildi"), userId, "admin", "info");
+      pushToast(tx("msg.rol_o_zgartirildi"));
       return true;
     } catch (err) {
-      pushToast(err?.message || "Rolni o'zgartirishda xatolik", "danger");
+      pushToast(err?.message || tx("msg.rolni_o_zgartirishda_xatolik"), "danger");
       return false;
     }
   }
@@ -347,11 +348,11 @@ export function AdminDataProvider({ children }) {
       const res = await usersApi.create({ ...payload, role: "ADMIN" });
       const created = normalizeUser(res.data?.user || res.data || {});
       setAdmins((curr) => [{ ...created, isAdmin: true }, ...curr]);
-      logAudit("Admin yaratildi", created.name || created.id, "admin", "success");
-      pushToast(`${created.name} admin sifatida qo'shildi`);
+      logAudit(tx("msg.admin_yaratildi"), created.name || created.id, "admin", "success");
+      pushToast(tx("msg.addedAsAdmin", { name: created.name }));
       return true;
     } catch (err) {
-      pushToast(err?.message || "Admin qo'shishda xatolik", "danger");
+      pushToast(err?.message || tx("msg.admin_qo_shishda_xatolik"), "danger");
       return false;
     }
   }
@@ -365,25 +366,25 @@ export function AdminDataProvider({ children }) {
       const updated = normalizeUser(res?.data?.user || res?.data || { ...target, role: "ADMIN" });
       setUsers((curr) => curr.filter((u) => u.id !== userId));
       setAdmins((curr) => [{ ...updated, isAdmin: true }, ...curr.filter((a) => a.id !== userId)]);
-      logAudit("Admin huquqi berildi", target.name, "admin", "success");
-      pushToast(`${target.name} endi admin`);
+      logAudit(tx("msg.admin_huquqi_berildi"), target.name, "admin", "success");
+      pushToast(tx("msg.nowAdmin", { name: target.name }));
     } catch (err) {
-      pushToast(err?.message || "Xatolik yuz berdi", "danger");
+      pushToast(err?.message || tx("msg.xatolik_yuz_berdi"), "danger");
     }
   }
 
   async function updateAdmin(id, payload) {
     const admin = admins.find((a) => a.id === id);
-    if (admin?.isMain) { pushToast("Asosiy adminni tahrirlab bo'lmaydi", "danger"); return; }
+    if (admin?.isMain) { pushToast(tx("msg.asosiy_adminni_tahrirlab_bo_lmaydi"), "danger"); return; }
     try {
       // Admins are users with role ADMIN — reuse the users update endpoint.
       const res = await usersApi.update(id, payload);
       const updated = normalizeUser(res.data?.user || res.data || payload);
       setAdmins((curr) => curr.map((a) => (a.id === id ? { ...a, ...updated, isAdmin: true } : a)));
-      logAudit("Admin yangilandi", updated.name || id, "admin", "info");
-      pushToast("O'zgarishlar saqlandi");
+      logAudit(tx("msg.admin_yangilandi"), updated.name || id, "admin", "info");
+      pushToast(tx("msg.o_zgarishlar_saqlandi"));
     } catch (err) {
-      pushToast(err?.message || "Yangilashda xatolik", "danger");
+      pushToast(err?.message || tx("msg.yangilashda_xatolik"), "danger");
     }
   }
 
@@ -398,12 +399,12 @@ export function AdminDataProvider({ children }) {
         curr.map((a) => (a.id === id ? { ...a, status: next } : a))
       );
       logAudit(
-        next === "blocked" ? "Admin bloklandi" : "Admin aktivlashtirildi",
+        next === "blocked" ? tx("msg.admin_bloklandi") : tx("msg.admin_aktivlashtirildi"),
         id, "admin", next === "blocked" ? "danger" : "success"
       );
-      pushToast(next === "blocked" ? "Admin bloklandi" : "Admin aktivlashtirildi", next === "blocked" ? "danger" : "success");
+      pushToast(next === "blocked" ? tx("msg.admin_bloklandi") : tx("msg.admin_aktivlashtirildi"), next === "blocked" ? "danger" : "success");
     } catch (err) {
-      pushToast(err?.message || "Xatolik yuz berdi", "danger");
+      pushToast(err?.message || tx("msg.xatolik_yuz_berdi"), "danger");
     }
   }
 
@@ -421,10 +422,10 @@ export function AdminDataProvider({ children }) {
         updatedAt: formatNow().slice(0, 10) 
       };
       setContentRows((curr) => [row, ...curr]);
-      logAudit("Kontent yaratildi", row.name || row.id, "content", "success");
-      pushToast(`"${row.name}" yaratildi`);
+      logAudit(tx("msg.kontent_yaratildi"), row.name || row.id, "content", "success");
+      pushToast(tx("msg.quotedCreated", { name: row.name }));
     } catch (err) {
-      pushToast(err?.message || "Xatolik yuz berdi", "danger");
+      pushToast(err?.message || tx("msg.xatolik_yuz_berdi"), "danger");
     }
   }
 
@@ -435,10 +436,10 @@ export function AdminDataProvider({ children }) {
       setContentRows((curr) =>
         curr.map((c) => { if (c.id !== id) return c; name = c.name || id; return { ...c, status, updatedAt: formatNow().slice(0, 10) }; })
       );
-      logAudit(`Kontent statusi: ${status}`, name, "content", "info");
-      pushToast(`Kontent statusi yangilandi: ${status}`);
+      logAudit(tx("msg.contentStatus", { status }), name, "content", "info");
+      pushToast(tx("msg.contentStatusUpdated", { status }));
     } catch (err) {
-      pushToast(err?.message || "Xatolik yuz berdi", "danger");
+      pushToast(err?.message || tx("msg.xatolik_yuz_berdi"), "danger");
     }
   }
 
@@ -447,10 +448,10 @@ export function AdminDataProvider({ children }) {
     try {
       await contentApi.remove(id);
       setContentRows((curr) => curr.filter((c) => c.id !== id));
-      logAudit("Kontent o'chirildi", target?.name || id, "content", "danger");
-      pushToast(`"${target?.name || id}" o'chirildi`, "danger");
+      logAudit(tx("msg.kontent_o_chirildi"), target?.name || id, "content", "danger");
+      pushToast(tx("msg.quotedDeleted", { name: target?.name || id }), "danger");
     } catch (err) {
-      pushToast(err?.message || "Xatolik yuz berdi", "danger");
+      pushToast(err?.message || tx("msg.xatolik_yuz_berdi"), "danger");
     }
   }
 
@@ -460,7 +461,7 @@ export function AdminDataProvider({ children }) {
       await settingsApi.put(key, value);
       return true;
     } catch (err) {
-      pushToast(err?.message || "Saqlashda xatolik", "danger");
+      pushToast(err?.message || tx("msg.saqlashda_xatolik"), "danger");
       return false;
     }
   }
@@ -471,18 +472,18 @@ export function AdminDataProvider({ children }) {
     const nextRoles = [...roles, role];
     if (!(await persistSetting("roles", nextRoles))) return;
     setRoles(nextRoles);
-    logAudit("Rol yaratildi", role.name, "settings", "success");
-    pushToast(`"${role.name}" roli yaratildi`);
+    logAudit(tx("msg.rol_yaratildi"), role.name, "settings", "success");
+    pushToast(tx("msg.roleCreated", { name: role.name }));
   }
 
   async function deleteRole(id) {
     const target = roles.find((r) => r.id === id);
-    if (target?.isSystem) { pushToast("Tizim rolini o'chirib bo'lmaydi", "danger"); return; }
+    if (target?.isSystem) { pushToast(tx("msg.tizim_rolini_o_chirib_bo_lmaydi"), "danger"); return; }
     const nextRoles = roles.filter((r) => r.id !== id);
     if (!(await persistSetting("roles", nextRoles))) return;
     setRoles(nextRoles);
-    logAudit("Rol o'chirildi", target?.name || id, "settings", "danger");
-    pushToast(`"${target?.name}" roli o'chirildi`, "danger");
+    logAudit(tx("msg.rol_o_chirildi"), target?.name || id, "settings", "danger");
+    pushToast(tx("msg.roleDeleted", { name: target?.name }), "danger");
   }
 
   // ── Permissions ───────────────────────────────────────────
@@ -499,8 +500,8 @@ export function AdminDataProvider({ children }) {
 
   async function savePermissions() {
     if (!(await persistSetting("permissionMatrix", permissionMatrix))) return;
-    logAudit("Ruxsatlar saqlandi", "Permission Matrix", "settings", "success");
-    pushToast("Ruxsatlar saqlandi");
+    logAudit(tx("msg.ruxsatlar_saqlandi"), "Permission Matrix", "settings", "success");
+    pushToast(tx("msg.ruxsatlar_saqlandi"));
   }
 
   async function updateOrderStatus(id, payload) {
@@ -508,10 +509,10 @@ export function AdminDataProvider({ children }) {
       const res = await ordersApi.updateStatus(id, payload);
       const updated = res.data?.order || res.data || payload;
       setOrders((curr) => curr.map((o) => (o.id === id ? { ...o, ...updated } : o)));
-      logAudit("Buyurtma statusi yangilandi", id, "order", "info");
-      pushToast("Buyurtma statusi yangilandi");
+      logAudit(tx("msg.buyurtma_statusi_yangilandi"), id, "order", "info");
+      pushToast(tx("msg.buyurtma_statusi_yangilandi"));
     } catch (err) {
-      pushToast(err?.message || "Yangilashda xatolik", "danger");
+      pushToast(err?.message || tx("msg.yangilashda_xatolik"), "danger");
     }
   }
 
@@ -521,10 +522,10 @@ export function AdminDataProvider({ children }) {
       const res = await supportApi.reply(id, replyText);
       const updated = res.data?.ticket || res.data;
       setSupportMessages((curr) => curr.map((s) => (s.id === id ? { ...s, ...updated } : s)));
-      logAudit("Murojaatga javob berildi", id, "support", "success");
-      pushToast("Javob yuborildi");
+      logAudit(tx("msg.murojaatga_javob_berildi"), id, "support", "success");
+      pushToast(tx("msg.javob_yuborildi"));
     } catch (err) {
-      pushToast(err?.message || "Javob yuborishda xatolik", "danger");
+      pushToast(err?.message || tx("msg.javob_yuborishda_xatolik"), "danger");
     }
   }
 
@@ -532,10 +533,10 @@ export function AdminDataProvider({ children }) {
     try {
       await supportApi.remove(id);
       setSupportMessages((curr) => curr.filter((s) => s.id !== id));
-      logAudit("Murojaat o'chirildi", id, "support", "danger");
-      pushToast("Murojaat o'chirildi", "danger");
+      logAudit(tx("msg.murojaat_o_chirildi"), id, "support", "danger");
+      pushToast(tx("msg.murojaat_o_chirildi"), "danger");
     } catch (err) {
-      pushToast(err?.message || "O'chirishda xatolik", "danger");
+      pushToast(err?.message || tx("msg.o_chirishda_xatolik"), "danger");
     }
   }
 
@@ -545,10 +546,10 @@ export function AdminDataProvider({ children }) {
       const res = await productsApi.create(payload);
       const product = normalizeProduct(res.data?.product || res.data || {});
       setProducts((curr) => [product, ...curr]);
-      logAudit("Mahsulot yaratildi", product.name, "content", "success");
-      pushToast(`"${product.name}" qo'shildi`);
+      logAudit(tx("msg.mahsulot_yaratildi"), product.name, "content", "success");
+      pushToast(tx("msg.quotedAdded", { name: product.name }));
     } catch (err) {
-      pushToast(err?.message || "Mahsulot qo'shishda xatolik", "danger");
+      pushToast(err?.message || tx("msg.mahsulot_qo_shishda_xatolik"), "danger");
     }
   }
 
@@ -557,10 +558,10 @@ export function AdminDataProvider({ children }) {
       const res = await productsApi.update(id, payload);
       const updated = normalizeProduct(res.data?.product || res.data || payload);
       setProducts((curr) => curr.map((p) => p.id === id ? { ...p, ...updated } : p));
-      logAudit("Mahsulot yangilandi", id, "content", "info");
-      pushToast("Mahsulot saqlandi");
+      logAudit(tx("msg.mahsulot_yangilandi"), id, "content", "info");
+      pushToast(tx("msg.mahsulot_saqlandi"));
     } catch (err) {
-      pushToast(err?.message || "Yangilashda xatolik", "danger");
+      pushToast(err?.message || tx("msg.yangilashda_xatolik"), "danger");
     }
   }
 
@@ -569,10 +570,10 @@ export function AdminDataProvider({ children }) {
     try {
       await productsApi.remove(id);
       setProducts((curr) => curr.filter((p) => p.id !== id));
-      logAudit("Mahsulot o'chirildi", target?.name || id, "content", "danger");
-      pushToast(`"${target?.name || id}" o'chirildi`, "danger");
+      logAudit(tx("msg.mahsulot_o_chirildi"), target?.name || id, "content", "danger");
+      pushToast(tx("msg.quotedDeleted", { name: target?.name || id }), "danger");
     } catch (err) {
-      pushToast(err?.message || "O'chirishda xatolik", "danger");
+      pushToast(err?.message || tx("msg.o_chirishda_xatolik"), "danger");
     }
   }
 
@@ -584,12 +585,12 @@ export function AdminDataProvider({ children }) {
       await productsApi.update(id, { isActive: next === "active" });
       setProducts((curr) => curr.map((p) => p.id === id ? { ...p, status: next } : p));
       logAudit(
-        next === "active" ? "Mahsulot aktivlashtirildi" : "Mahsulot nofaol qilindi",
+        next === "active" ? tx("msg.mahsulot_aktivlashtirildi") : tx("msg.mahsulot_nofaol_qilindi"),
         id, "content", next === "active" ? "success" : "warning"
       );
-      pushToast(next === "active" ? "Mahsulot aktivlashtirildi" : "Mahsulot nofaol qilindi");
+      pushToast(next === "active" ? tx("msg.mahsulot_aktivlashtirildi") : tx("msg.mahsulot_nofaol_qilindi"));
     } catch (err) {
-      pushToast(err?.message || "Xatolik", "danger");
+      pushToast(err?.message || tx("msg.xatolik"), "danger");
     }
   }
 

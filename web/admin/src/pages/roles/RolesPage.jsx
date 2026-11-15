@@ -1,3 +1,4 @@
+import { tx } from "../../i18n";
 import { useState } from "react";
 import { Modal } from "../../components/shared/Modal";
 import { usePageTitle } from "../../hooks/usePageTitle";
@@ -100,7 +101,7 @@ export function RolesPage() {
               name="scope"
               value={formState.scope}
               onChange={handleChange}
-              placeholder="Users view, reports export"
+              placeholder={tx("msg.ph_perms")}
               required
             />
           </label>
@@ -111,7 +112,7 @@ export function RolesPage() {
               name="note"
               value={formState.note}
               onChange={handleChange}
-              placeholder="Access limitations or business rules"
+              placeholder={tx("msg.ph_rules")}
               required
             />
           </label>

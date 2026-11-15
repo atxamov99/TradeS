@@ -244,8 +244,8 @@ export const ru = {
     heroDescription:
       "Дашборд теперь работает на local state: users, admins, audit и notifications обновляются после CRUD-действий.",
     pillCrud: "CRUD готов",
-    pillAudit: "Audit logging",
-    pillToast: "Toast feedback",
+    pillAudit: "Журнал аудита",
+    pillToast: "Всплывающие подсказки",
     pillRoleAware: "Маршруты с учетом роли",
     stats: {
       totalUsers: "Всего пользователей",
@@ -354,7 +354,7 @@ export const ru = {
   },
   permissions: {
     pageTitle: "Права",
-    title: "Permission matrix",
+    title: "Матрица прав",
     description:
       "Checkbox matrix работает на local state. `Save changes` записывается в audit log."
   },
@@ -396,8 +396,8 @@ export const ru = {
     noAudit: "Аудит-лог не найден",
     noAuditDescription: "Попробуйте изменить поиск или фильтр действий.",
     action: "Действие",
-    actor: "Actor",
-    target: "Target",
+    actor: "Исполнитель",
+    target: "Объект",
     ipAddress: "IP адрес",
     timestamp: "Время"
   },
@@ -418,10 +418,10 @@ export const ru = {
     systemReadiness: "Готовность системы",
     superAdminScope: "Область админа",
     adminScope: "Область админа",
-    authFlow: "Auth flow",
+    authFlow: "Процесс входа",
     authFlowDescription:
       "Refresh token, unauthorized redirect и logout fallback готовы для следующего этапа.",
-    featureFlags: "Feature flags",
+    featureFlags: "Флаги функций",
     featureFlagsDescription:
       "Оставлено место для reports beta, 2FA required и advanced permissions.",
     auditReadiness: "Готовность аудита",

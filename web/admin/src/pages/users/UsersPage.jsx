@@ -1,3 +1,4 @@
+import { tx } from "../../i18n";
 import { Select } from "../../components/shared/Select";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
@@ -6,7 +7,7 @@ import { Icon } from "../../components/shared/Icon";
 import { useAuth } from "../../store";
 import { useAdminData } from "../../store/adminData";
 import { useI18n } from "../../i18n";
-import { RolePicker, KIND_LABEL, kindBadgeStyle } from "../../components/users/RolePicker";
+import { RolePicker, kindLabel, kindBadgeStyle } from "../../components/users/RolePicker";
 
 const statusStyle = {
   active:  "bg-primary-container/20 text-on-primary-container",
@@ -154,10 +155,10 @@ export function UsersPage() {
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
         <div>
           <h2 className="font-headline-md text-headline-md text-on-surface">
-            {isAdminsTab ? "Adminlar" : "Foydalanuvchilar"}
+            {isAdminsTab ? tx("msg.adminlar") : tx("msg.foydalanuvchilar")}
           </h2>
           <p className="text-on-surface-variant mt-1 text-body-sm">
-            {isAdminsTab ? "Tizim adminlari ro'yxati va boshqaruvi" : "Tizimdagi barcha foydalanuvchilar ro'yxati va ularning huquqlari."}
+            {isAdminsTab ? tx("msg.tizim_adminlari_ro_yxati_va_boshqaruvi") : tx("msg.tizimdagi_barcha_foydalanuvchilar_ro_y")}
           </p>
         </div>
         {isAdminsTab && iAmMain && (
@@ -167,7 +168,7 @@ export function UsersPage() {
             className="flex items-center gap-2 bg-primary-container hover:bg-primary text-on-primary-container hover:text-on-primary transition-colors rounded-lg py-2.5 px-5 font-semibold shadow-sm shrink-0"
           >
             <Icon name="person_add" className="text-[20px]" />
-            Yangi admin
+            {tx("msg.yangi_admin")}
           </button>
         )}
         {!isAdminsTab && (
@@ -188,7 +189,7 @@ export function UsersPage() {
           <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]" />
           <input
             type="search"
-            placeholder={isAdminsTab ? "Admin qidirish..." : "Foydalanuvchini qidirish..."}
+            placeholder={isAdminsTab ? tx("msg.admin_qidirish_dots") : tx("msg.foydalanuvchini_qidirish_dots")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-10 pr-3 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-on-surface text-body-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
@@ -217,8 +218,8 @@ export function UsersPage() {
             <thead className="bg-surface-bright">
               <tr>
                 {(isAdminsTab
-                  ? ["Admin", "Telefon", "Holat", "Yaratilgan", "Amallar"]
-                  : ["Foydalanuvchi", "Telefon", "Rol", "Holat", "Ro'yxatdan o'tgan", "Amallar"]
+                  ? [tx("msg.col_admin"), tx("msg.telefon"), tx("msg.holat"), tx("msg.yaratilgan"), tx("msg.amallar")]
+                  : [tx("msg.foydalanuvchi"), tx("msg.telefon"), tx("msg.rol"), tx("msg.holat"), tx("msg.ro_yxatdan_o_tgan"), tx("msg.amallar")]
                 ).map((h, i, arr) => (
                   <th
                     key={h}
@@ -233,7 +234,7 @@ export function UsersPage() {
               {rows.length === 0 ? (
                 <tr>
                   <td colSpan={isAdminsTab ? 5 : 6} className="py-16 text-center">
-                    <p className="text-on-surface-variant text-body-sm">{isAdminsTab ? "Hozircha boshqa adminlar yo'q" : "Foydalanuvchi topilmadi"}</p>
+                    <p className="text-on-surface-variant text-body-sm">{isAdminsTab ? tx("msg.hozircha_boshqa_adminlar_yo_q") : tx("msg.foydalanuvchi_topilmadi")}</p>
                   </td>
                 </tr>
               ) : isAdminsTab ? (
@@ -245,20 +246,20 @@ export function UsersPage() {
                           {admin.name.slice(0, 2).toUpperCase()}
                         </div>
                         <span className="text-body-sm font-semibold text-on-surface">{admin.name}</span>
-                        {admin.isMain && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary-container/30 text-on-primary-container">Asosiy</span>}
-                        {admin.id === profile?.id && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-surface-variant text-on-surface-variant">Siz</span>}
+                        {admin.isMain && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary-container/30 text-on-primary-container">{tx("msg.badge_main")}</span>}
+                        {admin.id === profile?.id && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-surface-variant text-on-surface-variant">{tx("msg.badge_you")}</span>}
                       </div>
                     </td>
                     <td className="px-6 py-4 text-body-sm text-on-surface">{admin.phone || "—"}</td>
                     <td className="px-6 py-4">
                       <span className={`px-2.5 inline-flex text-xs leading-5 font-semibold rounded-full ${statusStyle[admin.status] || "bg-surface-variant text-on-surface"}`}>
-                        {admin.status === "blocked" ? "Bloklangan" : "Faol"}
+                        {admin.status === "blocked" ? tx("msg.status_blocked_one") : tx("msg.status_active_one")}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-body-sm text-on-surface-variant whitespace-nowrap">{admin.createdAt || "—"}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       {(!iAmMain || admin.isMain) ? (
-                        <span className="text-xs text-on-surface-variant">{admin.isMain ? "Himoyalangan" : "—"}</span>
+                        <span className="text-xs text-on-surface-variant">{admin.isMain ? tx("msg.himoyalangan") : "—"}</span>
                       ) : (
                       <div className="flex items-center justify-end gap-3">
                         <button
@@ -273,7 +274,7 @@ export function UsersPage() {
                           type="button"
                           onClick={() => toggleAdminStatus(admin.id)}
                           className={`p-1 transition-colors ${admin.status === "blocked" ? "text-primary hover:text-primary/70" : "text-on-surface-variant hover:text-error"}`}
-                          title={admin.status === "blocked" ? "Faollashtirish" : "Bloklash"}
+                          title={admin.status === "blocked" ? tx("msg.faollashtirish") : tx("msg.bloklash")}
                         >
                           <Icon name={admin.status === "blocked" ? "lock_open" : "block"} className="text-xl" />
                         </button>
@@ -309,17 +310,17 @@ export function UsersPage() {
                       <button
                         type="button"
                         onClick={() => openRole(u)}
-                        title="Rolni o'zgartirish"
-                        className={`px-2.5 inline-flex items-center gap-1 text-xs leading-5 font-semibold rounded-full cursor-pointer hover:ring-2 hover:ring-primary/40 transition ${kindBadgeStyle[u.kind] || kindBadgeStyle.USER}`}
+                        title={tx("msg.rolni_o_zgartirish")}
+                        className={`px-2.5 inline-flex items-center gap-1 whitespace-nowrap text-xs leading-5 font-semibold rounded-full cursor-pointer hover:ring-2 hover:ring-primary/40 transition ${kindBadgeStyle[u.kind] || kindBadgeStyle.USER}`}
                       >
-                        {KIND_LABEL[u.kind] || KIND_LABEL.USER}
+                        {kindLabel(u.kind)}
                         <Icon name="expand_more" className="text-[14px]" />
                       </button>
                       {u.shopName && <div className="text-[11px] text-on-surface-variant mt-0.5 max-w-[160px] truncate">{u.shopName}</div>}
                     </td>
                     <td className="px-6 py-4">
                       <span className={`px-2.5 inline-flex text-xs leading-5 font-semibold rounded-full ${statusStyle[u.status] || "bg-surface-variant text-on-surface"}`}>
-                        {t(`labels.statuses.${u.status}`, {}, u.status === "blocked" ? "Bloklangan" : "Faol")}
+                        {t(`labels.statuses.${u.status}`, {}, u.status === "blocked" ? tx("msg.status_blocked_one") : tx("msg.status_active_one"))}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-body-sm text-on-surface-variant whitespace-nowrap">{u.createdAt || "—"}</td>
@@ -332,7 +333,7 @@ export function UsersPage() {
                           <Icon name="edit" className="text-xl" />
                         </button>
                         {iAmMain && (
-                          <button type="button" onClick={() => setGrantTarget({ user: u, action: "grant" })} className="p-1 text-on-surface-variant hover:text-primary transition-colors" title="Admin qilish">
+                          <button type="button" onClick={() => setGrantTarget({ user: u, action: "grant" })} className="p-1 text-on-surface-variant hover:text-primary transition-colors" title={tx("msg.admin_qilish")}>
                             <Icon name="admin_panel_settings" className="text-xl" />
                           </button>
                         )}
@@ -340,7 +341,7 @@ export function UsersPage() {
                           type="button"
                           onClick={() => toggleUserStatus(u.id)}
                           className={`p-1 transition-colors ${u.status === "blocked" ? "text-primary hover:text-primary/70" : "text-on-surface-variant hover:text-error"}`}
-                          title={u.status === "blocked" ? "Blokdan chiqarish" : "Bloklash"}
+                          title={u.status === "blocked" ? tx("msg.blokdan_chiqarish") : tx("msg.bloklash")}
                         >
                           <Icon name={u.status === "blocked" ? "lock_open" : "block"} className="text-xl" />
                         </button>
@@ -356,20 +357,20 @@ export function UsersPage() {
           </table>
         </div>
         <div className="bg-surface-container-lowest px-6 py-3 border-t border-outline-variant text-body-sm text-on-surface-variant">
-          {t("common.total")} <span className="font-medium text-on-surface">{rows.length}</span> ta
+          {t("common.total")} <span className="font-medium text-on-surface">{rows.length}</span> {tx("msg.pieces")}
         </div>
       </div>
 
       {/* Create / Edit modal */}
       <Modal
         open={modalOpen}
-        title={creatingAdmin ? "Yangi admin" : editingAdmin ? "Adminni tahrirlash" : editId ? "Foydalanuvchini tahrirlash" : "Yangi foydalanuvchi"}
+        title={creatingAdmin ? tx("msg.yangi_admin") : editingAdmin ? tx("msg.adminni_tahrirlash") : editId ? tx("msg.foydalanuvchini_tahrirlash") : tx("msg.yangi_foydalanuvchi")}
         onClose={closeModal}
         footer={
           <>
             <button type="button" onClick={closeModal} className="px-5 py-2.5 text-body-sm border border-outline-variant rounded-lg hover:bg-surface-container-low text-on-surface">{t("common.cancel")}</button>
             <button type="submit" form="user-form" className="px-5 py-2.5 bg-primary-container text-on-primary-container text-body-sm font-medium rounded-lg hover:bg-primary hover:text-on-primary transition-colors">
-              {editId ? "Saqlash" : "Yaratish"}
+              {editId ? tx("msg.saqlash") : tx("msg.yaratish")}
             </button>
           </>
         }
@@ -379,7 +380,7 @@ export function UsersPage() {
             { label: t("users.fullName"), name: "name", type: "text", required: true },
             { label: t("users.emailOptional"), name: "email", type: "email", required: false },
             { label: t("users.phoneOptional"), name: "phone", type: "text", required: false },
-            { label: editId ? "Parol (bo'sh — o'zgarmaydi)" : "Parol *", name: "password", type: "password", required: !editId }
+            { label: editId ? tx("msg.parol_bo_sh_o_zgarmaydi") : tx("msg.parol_req"), name: "password", type: "password", required: !editId }
           ].map((f) => (
             <div key={f.name} className="flex flex-col gap-1.5">
               <label className="text-body-sm font-medium text-on-surface">{f.label}</label>
@@ -423,7 +424,7 @@ export function UsersPage() {
       {/* Change role (opened from the role badge) */}
       <Modal
         open={Boolean(roleTarget)}
-        title="Rolni o'zgartirish"
+        title={tx("msg.rolni_o_zgartirish")}
         description={roleTarget ? `"${roleTarget.name}"` : ""}
         onClose={() => setRoleTarget(null)}
         footer={
@@ -435,7 +436,7 @@ export function UsersPage() {
               disabled={roleDraft.kind === "CASHIER" && !roleDraft.shopId}
               className="px-5 py-2.5 bg-primary-container text-on-primary-container text-body-sm font-medium rounded-lg hover:bg-primary hover:text-on-primary transition-colors disabled:opacity-50"
             >
-              Saqlash
+              {tx("msg.saqlash")}
             </button>
           </>
         }
@@ -477,7 +478,7 @@ export function UsersPage() {
           ever offers to revoke, never to grant. */}
       <Modal
         open={Boolean(grantTarget)}
-        title={grantTarget?.action === "grant" ? "Admin huquqini berish" : t("users.revokeAdminTitle")}
+        title={grantTarget?.action === "grant" ? tx("msg.admin_huquqini_berish") : t("users.revokeAdminTitle")}
         description={grantTarget ? `"${grantTarget.user.name}"` : ""}
         onClose={() => setGrantTarget(null)}
         footer={
@@ -492,14 +493,14 @@ export function UsersPage() {
               }}
               className={`px-5 py-2.5 text-body-sm font-medium rounded-lg transition-colors ${grantTarget?.action === "grant" ? "bg-primary-container text-on-primary-container hover:bg-primary hover:text-on-primary" : "bg-error text-on-error hover:bg-error/90"}`}
             >
-              {grantTarget?.action === "grant" ? "Admin qilish" : t("users.revokeAdmin")}
+              {grantTarget?.action === "grant" ? tx("msg.admin_qilish") : t("users.revokeAdmin")}
             </button>
           </>
         }
       >
         <p className="text-body-sm text-on-surface-variant">
           {grantTarget?.action === "grant"
-            ? "Bu foydalanuvchi to'liq admin huquqiga ega bo'ladi: barcha foydalanuvchilar, buyurtmalar va sozlamalarni boshqara oladi. Faqat ishonchli odamga bering."
+            ? tx("msg.bu_foydalanuvchi_to_liq_admin_huquqiga")
             : t("users.revokeAdminHint")}
         </p>
       </Modal>

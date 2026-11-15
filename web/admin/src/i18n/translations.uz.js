@@ -246,8 +246,8 @@ export const uz = {
     heroDescription:
       "Dashboard endi lokal state bilan jonlandi: users, admins, audit va notifications ko'rsatkichlari CRUD actionlardan keyin yangilanadi.",
     pillCrud: "CRUD tayyor",
-    pillAudit: "Audit logging",
-    pillToast: "Toast feedback",
+    pillAudit: "Audit jurnali",
+    pillToast: "Qalqib chiquvchi xabarlar",
     pillRoleAware: "Role-aware route'lar",
     stats: {
       totalUsers: "Jami foydalanuvchilar",
@@ -359,7 +359,7 @@ export const uz = {
   },
   permissions: {
     pageTitle: "Ruxsatlar",
-    title: "Permission matrix",
+    title: "Ruxsatlar matritsasi",
     description:
       "Checkbox matrix lokal state bilan ishlaydi. `Save changes` audit logga yoziladi."
   },
@@ -402,8 +402,8 @@ export const uz = {
     noAudit: "Audit log topilmadi",
     noAuditDescription: "Search yoki action filterini o'zgartiring.",
     action: "Action",
-    actor: "Actor",
-    target: "Target",
+    actor: "Bajaruvchi",
+    target: "Obyekt",
     ipAddress: "IP manzil",
     timestamp: "Vaqt"
   },
@@ -424,7 +424,7 @@ export const uz = {
     systemReadiness: "Tizim tayyorgarligi",
     superAdminScope: "Admin qamrovi",
     adminScope: "Admin qamrovi",
-    authFlow: "Auth flow",
+    authFlow: "Kirish jarayoni",
     authFlowDescription:
       "Refresh token, unauthorized redirect va logout fallback keyingi bosqichga tayyor.",
     featureFlags: "Feature flaglar",

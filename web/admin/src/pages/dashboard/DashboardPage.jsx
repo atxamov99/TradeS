@@ -1,3 +1,4 @@
+import { tx } from "../../i18n";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../store";
@@ -207,7 +208,7 @@ export function DashboardPage() {
               ) : (
                 recentOrders.map((o) => {
                   const badge = ORDER_STATUS_BADGE[o.orderStatus] || { label: o.orderStatus, cls: "bg-surface-variant text-on-surface-variant" };
-                  const name = o.user?.name || "Noma'lum";
+                  const name = o.user?.name || tx("msg.noma_lum");
                   return (
                     <tr key={o.id} className="hover:bg-surface-container-low/50 transition-colors">
                       <td className="p-4 text-primary-container font-medium">{o.orderNumber}</td>
@@ -222,7 +223,7 @@ export function DashboardPage() {
                       <td className="p-4 text-on-surface-variant whitespace-nowrap">
                         {o.createdAt ? new Date(o.createdAt).toLocaleDateString("uz-UZ") : "—"}
                       </td>
-                      <td className="p-4 text-right font-medium text-on-surface whitespace-nowrap">{formatMoney(o.totalPrice)} so'm</td>
+                      <td className="p-4 text-right font-medium text-on-surface whitespace-nowrap">{formatMoney(o.totalPrice)} {tx("common.currency")}</td>
                       <td className="p-4 text-center">
                         <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-full font-label-caps text-[11px] font-bold ${badge.cls}`}>
                           {t(badge.label)}

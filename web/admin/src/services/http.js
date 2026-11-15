@@ -1,3 +1,4 @@
+import { tx } from "../i18n";
 import axios from "axios";
 import { appConfig } from "../config/appConfig";
 
@@ -72,7 +73,7 @@ http.interceptors.response.use(
       error.response?.data?.message ||
       error.response?.data?.error ||
       error.message ||
-      "Xatolik yuz berdi";
+      tx("msg.xatolik_yuz_berdi");
 
     return Promise.reject({ status: error.response?.status, message });
   }

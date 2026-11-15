@@ -1,3 +1,4 @@
+import { tx } from "../../../i18n";
 import {
   Bar,
   BarChart,
@@ -49,8 +50,8 @@ export function UserActivityChart({ data }) {
           <XAxis dataKey="day" tick={axisTick} axisLine={false} tickLine={false} />
           <YAxis tick={axisTick} axisLine={false} tickLine={false} />
           <Tooltip contentStyle={tooltipStyle} cursor={{ stroke: "rgb(var(--c-outline) / 0.5)" }} />
-          <Line type="monotone" dataKey="users" stroke={COLOR_SECONDARY} strokeWidth={2} dot={false} name="Jami" />
-          <Line type="monotone" dataKey="active" stroke={COLOR_PRIMARY} strokeWidth={2} dot={false} name="Faol" />
+          <Line type="monotone" dataKey="users" stroke={COLOR_SECONDARY} strokeWidth={2} dot={false} name={tx("msg.jami")} />
+          <Line type="monotone" dataKey="active" stroke={COLOR_PRIMARY} strokeWidth={2} dot={false} name={tx("msg.faol")} />
         </LineChart>
       </ResponsiveContainer>
     </div>

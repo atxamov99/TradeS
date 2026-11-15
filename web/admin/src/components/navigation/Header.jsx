@@ -1,3 +1,4 @@
+import { tx } from "../../i18n";
 import { useI18n } from "../../i18n";
 import { useTheme } from "../../theme";
 import { useAuth } from "../../store";
@@ -57,8 +58,8 @@ export function Header({ onMenuToggle }) {
           type="button"
           onClick={toggleTheme}
           className="p-2 rounded-full text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors"
-          aria-label={resolvedTheme === "dark" ? "Light mode" : "Dark mode"}
-          title={resolvedTheme === "dark" ? "Light mode" : "Dark mode"}
+          aria-label={resolvedTheme === "dark" ? tx("msg.light_mode") : tx("msg.dark_mode")}
+          title={resolvedTheme === "dark" ? tx("msg.light_mode") : tx("msg.dark_mode")}
         >
           <Icon name={resolvedTheme === "dark" ? "light_mode" : "dark_mode"} />
         </button>

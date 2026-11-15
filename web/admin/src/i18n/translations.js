@@ -2,6 +2,7 @@ import { en as enBase } from "./translations.en";
 import { ru as ruBase } from "./translations.ru";
 import { uz as uzBase } from "./translations.uz";
 import { enPages, ruPages, uzPages } from "./translations.pages";
+import { enExtra, ruExtra, uzExtra } from "./translations.extra";
 
 function isObject(v) {
   return v && typeof v === "object" && !Array.isArray(v);
@@ -18,8 +19,8 @@ function mergeMissing(base, extra) {
   return out;
 }
 
-export const uz = mergeMissing(uzBase, uzPages);
-export const ru = mergeMissing(ruBase, ruPages);
-export const en = mergeMissing(enBase, enPages);
+export const uz = mergeMissing(mergeMissing(uzBase, uzPages), uzExtra);
+export const ru = mergeMissing(mergeMissing(ruBase, ruPages), ruExtra);
+export const en = mergeMissing(mergeMissing(enBase, enPages), enExtra);
 
 export const translations = { uz, en, ru };

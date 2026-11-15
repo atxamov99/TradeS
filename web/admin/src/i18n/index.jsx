@@ -25,18 +25,6 @@ export function tx(key, values = {}, fallback = key) {
   return typeof message === "string" ? interpolate(message, values) : message;
 }
 
-// The language that is active RIGHT NOW. It is set synchronously when the language changes (not in an effect),
-// so tx() below always answers in the language that is on screen, also for code outside React components
-// (toasts, error messages, module-level labels).
-let activeLocale = fallbackLocale;
-
-export function tx(key, values = {}, fallback = key) {
-  const dictionary = translations[activeLocale] || translations[fallbackLocale];
-  const message = getNestedValue(dictionary, key) ?? getNestedValue(translations[fallbackLocale], key);
-  if (message === undefined) return fallback;
-  return typeof message === "string" ? interpolate(message, values) : message;
-}
-
 function getNestedValue(source, key) {
   return key.split(".").reduce((current, segment) => current?.[segment], source);
 }

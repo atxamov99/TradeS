@@ -1,3 +1,4 @@
+import { tx } from "../../i18n";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAdminData } from "../../store/adminData";
 import { useI18n } from "../../i18n";
@@ -28,7 +29,7 @@ export function NotificationBell() {
     const alerts = (notificationFeed || []).map((n) => ({
       key: `alert-${n.id}`,
       kind: "alert",
-      title: n.titleKey ? t(n.titleKey, {}, n.title || "Bildirishnoma") : (n.title || "Bildirishnoma"),
+      title: n.titleKey ? t(n.titleKey, {}, n.title || tx("msg.bildirishnoma")) : (n.title || tx("msg.bildirishnoma")),
       detail: n.detail || (n.detailKey ? t(n.detailKey, {}, "") : ""),
       priority: n.priority || "low"
     }));
@@ -37,7 +38,7 @@ export function NotificationBell() {
     const activity = (recentActivity || []).slice(0, 8).map((a) => ({
       key: `act-${a.title || ""}-${a.detail || ""}-${a.time || ""}`,
       kind: "activity",
-      title: a.title || "Amal",
+      title: a.title || tx("msg.amal"),
       detail: a.detail || "",
       time: a.time || "",
       tone: a.tone || "info"

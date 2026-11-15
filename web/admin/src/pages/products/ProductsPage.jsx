@@ -1,3 +1,4 @@
+import { tx } from "../../i18n";
 import { Select } from "../../components/shared/Select";
 import { useMemo, useState } from "react";
 import { Modal } from "../../components/shared/Modal";
@@ -208,7 +209,7 @@ export function ProductsPage() {
                             type="button"
                             onClick={() => toggleProductStatus(p.id)}
                             className="text-on-surface-variant hover:text-secondary"
-                            title={p.status === "active" ? "Nofaol qilish" : "Yoqish"}
+                            title={p.status === "active" ? tx("msg.nofaol_qilish") : tx("msg.yoqish")}
                           >
                             <Icon name={p.status === "active" ? "visibility_off" : "visibility"} className="text-[20px]" />
                           </button>
@@ -226,15 +227,15 @@ export function ProductsPage() {
         </div>
 
         <div className="p-4 border-t border-outline-variant bg-surface-bright flex items-center justify-between">
-          <p className="font-body-sm text-on-surface-variant">{filtered.length} ta mahsulot ko'rsatilmoqda</p>
+          <p className="font-body-sm text-on-surface-variant">{tx("msg.productsShown", { n: filtered.length })}</p>
         </div>
       </div>
 
       {/* Create / Edit modal */}
       <Modal
         open={modalOpen}
-        title={editTarget ? "Mahsulotni tahrirlash" : "Yangi mahsulot"}
-        description="Mahsulot ma'lumotlarini kiriting"
+        title={editTarget ? tx("msg.mahsulotni_tahrirlash") : tx("msg.yangi_mahsulot")}
+        description={tx("msg.mahsulot_ma_lumotlarini_kiriting")}
         onClose={closeModal}
         footer={
           <>
@@ -242,18 +243,18 @@ export function ProductsPage() {
               {t("common.cancel")}
             </button>
             <button type="submit" form="product-form" disabled={submitting} className="px-5 py-2.5 bg-primary-container text-on-primary-container text-body-sm font-medium rounded-lg hover:bg-primary hover:text-on-primary transition-colors disabled:opacity-60">
-              {submitting ? "Saqlanmoqda..." : (editTarget ? "Saqlash" : "Qo'shish")}
+              {submitting ? tx("msg.saqlanmoqda_dots") : (editTarget ? tx("msg.saqlash") : tx("msg.qo_shish"))}
             </button>
           </>
         }
       >
         <form id="product-form" className="space-y-4" onSubmit={handleSubmit}>
           {[
-            { l: "Mahsulot nomi", n: "name", tp: "text", r: true },
-            { l: "Kategoriya", n: "category", tp: "text", r: true },
+            { l: tx("msg.mahsulot_nomi"), n: "name", tp: "text", r: true },
+            { l: tx("msg.kategoriya"), n: "category", tp: "text", r: true },
             { l: "SKU", n: "sku", tp: "text", r: false },
-            { l: "Narx (UZS)", n: "price", tp: "number", r: true },
-            { l: "Ombor qoldig'i", n: "stock", tp: "number", r: true }
+            { l: tx("msg.narx_uzs"), n: "price", tp: "number", r: true },
+            { l: tx("msg.ombor_qoldig_i"), n: "stock", tp: "number", r: true }
           ].map((f) => (
             <div key={f.n} className="flex flex-col gap-1.5">
               <label className="font-body-sm text-body-sm font-medium text-on-surface">{f.l}</label>
@@ -275,7 +276,7 @@ export function ProductsPage() {
       <Modal
         open={!!deleteTarget}
         title={t("products.deleteTitle")}
-        description={deleteTarget ? `"${deleteTarget.name}" mahsulotini o'chirasizmi?` : ""}
+        description={deleteTarget ? tx("msg.confirmDeleteProduct", { name: deleteTarget.name }) : ""}
         onClose={() => setDeleteTarget(null)}
         footer={
           <>

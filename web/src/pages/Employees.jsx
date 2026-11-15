@@ -169,7 +169,7 @@ export default function Employees() {
         </div>
       )}
 
-      <div className="rounded-xl border border-slate-700 overflow-hidden">
+      <div className="rounded-xl border border-slate-700 overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-slate-800/60 text-slate-400 text-xs uppercase">
             <tr>

@@ -1,5 +1,6 @@
 import { View, Text, ScrollView, TouchableOpacity } from "react-native";
 import { useMemo } from "react";
+import { useRoleStore } from "@/store/roleStore";
 import { useT } from "@/hooks/useT";
 import { useTodayStats, useSales } from "@/hooks/useSales";
 import { useLowStockProducts } from "@/hooks/useProducts";
@@ -55,6 +56,8 @@ function ToolCard({ icon, title, desc, color, onPress }: { icon: any; title: str
 
 export default function HomeScreen() {
   const t = useT();
+  // a cashier must not see profit, margin or reports (the website hides them too)
+  const isOwner = useRoleStore((s) => s.role) !== "cashier";
   const { revenue, profit, count, sales } = useTodayStats();
   const weekSales = useSales("week");
   const lowStockProducts = useLowStockProducts();
@@ -171,9 +174,9 @@ export default function HomeScreen() {
 
           {/* KPI CARDS */}
           <View style={{ flexDirection: "row", marginTop: 12, gap: 6 }}>
-            <StatCard icon="trending-up" label={t.home.todayProfit.toUpperCase()} value={(profit || 0).toLocaleString()} color={c.primary} onPress={() => router.push("/reports")} />
+            {isOwner && <StatCard icon="trending-up" label={t.home.todayProfit.toUpperCase()} value={(profit || 0).toLocaleString()} color={c.primary} onPress={() => router.push("/reports")} />}
             <StatCard icon="cart" label={t.nav.sales.toUpperCase()} value={String(count)} color={c.primary} onPress={() => router.push("/sales")} />
-            <StatCard icon="analytics" label={t.home.margin.toUpperCase()} value={`${margin}%`} color={c.primary} onPress={() => router.push("/reports")} />
+            {isOwner && <StatCard icon="analytics" label={t.home.margin.toUpperCase()} value={`${margin}%`} color={c.primary} onPress={() => router.push("/reports")} />}
           </View>
         </View>
 
@@ -199,6 +202,7 @@ export default function HomeScreen() {
               </View>
               <Text style={{ color: c.text, fontWeight: "700", fontSize: 12 }}>{t.home.addSale}</Text>
             </TouchableOpacity>
+            {isOwner && (
             <TouchableOpacity
               onPress={() => router.push("/products/add")}
               activeOpacity={0.85}
@@ -217,6 +221,7 @@ export default function HomeScreen() {
               </View>
               <Text style={{ color: c.text, fontWeight: "700", fontSize: 12 }}>{t.home.addProduct}</Text>
             </TouchableOpacity>
+            )}
           </View>
         </View>
 
@@ -229,7 +234,7 @@ export default function HomeScreen() {
               <ToolCard icon="people" title={t.customers.title} desc="Mijozlar qarzi" color={c.danger} onPress={() => router.push("/customers")} />
             </View>
             <View style={{ flexDirection: "row", gap: 8 }}>
-              <ToolCard icon="document-text" title={t.reports.title} desc="Hisobot va tahlil" color={c.primary} onPress={() => router.push("/reports")} />
+              {isOwner ? <ToolCard icon="document-text" title={t.reports.title} desc="Hisobot va tahlil" color={c.primary} onPress={() => router.push("/reports")} /> : <View style={{ flex: 1 }} />}
               <ToolCard icon="pricetags" title={t.categories.title} desc="Tovarlar turkumi" color={c.accent || c.primary} onPress={() => router.push("/products")} />
             </View>
           </View>

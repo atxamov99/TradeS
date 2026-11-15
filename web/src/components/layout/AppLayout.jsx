@@ -161,7 +161,7 @@ export default function AppLayout() {
       {/* ── Main content ─────────────────────────── */}
       <NotificationBell variant="floating" />
 
-      <main className="flex-1 md:ml-[220px] pb-20 md:pb-0">
+      <main className="flex-1 min-w-0 md:ml-[220px] pb-20 md:pb-0">
         <TestUserBanner key={location.pathname} user={user} />
         <InviteBanner key={'inv-' + location.pathname} />
         <Outlet />

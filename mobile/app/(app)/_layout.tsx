@@ -58,12 +58,14 @@ export default function AppLayout() {
       <Tabs.Screen
         name="products"
         options={{
+          href: kind === "CASHIER" ? null : undefined, // a cashier only sells: the website has no Products page for them
           title: t.nav.products,
           tabBarIcon: ({ color, size }) => <Ionicons name="cube" size={size} color={color} />,
           tabBarBadge: lowStockCount > 0 ? lowStockCount : undefined,
         }}
       />
       <Tabs.Screen name="reports"    options={{ href: null }} />
+      <Tabs.Screen name="expenses"   options={{ href: null }} />
       <Tabs.Screen name="customers"  options={{ href: null }} />
       <Tabs.Screen name="suppliers"  options={{ href: null }} />
       <Tabs.Screen

@@ -263,7 +263,9 @@ export default function ProfileScreen() {
         ))}
       </Section>
 
-      {/* Business */}
+      {/* Reports = revenue and profit: owner and admin only (same as the website) */}
+      {isAdmin() && (
+      <>
       <Section title="Biznes">
         <Row
           iconName="bar-chart"
@@ -274,6 +276,8 @@ export default function ProfileScreen() {
           onPress={() => router.push("/reports")}
         />
       </Section>
+      </>
+      )}
 
       {/* Admin panel — a platform ADMIN signs in there with the same login and password (same host, /admin/) */}
       {kind === "ADMIN" && WEB_URL && (
@@ -299,6 +303,14 @@ export default function ProfileScreen() {
             sub={t.team.sub}
             right={<Ionicons name="chevron-forward" size={18} color={c.textMuted} />}
             onPress={() => router.push("/settings/employees")}
+          />
+          <Divider />
+          <Row
+            iconName="wallet"
+            iconBg="#FEF3C7"
+            label={({ uz: "Xarajatlar", ru: "Расходы", en: "Expenses" } as any)[lang] || "Xarajatlar"}
+            right={<Ionicons name="chevron-forward" size={18} color={c.textMuted} />}
+            onPress={() => router.push("/expenses" as any)}
           />
         </Section>
       )}

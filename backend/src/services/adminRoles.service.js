@@ -47,10 +47,10 @@ const setAccountKind = async (userId, { kind, shopId }, actorId) => {
 
   if (kind === 'ADMIN') {
     await adminService.resolveAssignableRole('ADMIN', actorId); // main admin only
-    await prisma.user.update({ where: { id: userId }, data: { role: 'ADMIN' } });
+    await prisma.user.update({ where: { id: userId }, data: { role: 'ADMIN', adminSince: new Date() } });
   } else {
     await prisma.$transaction(async (tx) => {
-      if (user.role === 'ADMIN') await tx.user.update({ where: { id: userId }, data: { role: 'USER' } });
+      if (user.role === 'ADMIN') await tx.user.update({ where: { id: userId }, data: { role: 'USER', adminSince: null } });
 
       const owned = user.shopMemberships.filter((m) => m.role === 'OWNER').map((m) => m.shop);
       const countOthers = (id) => tx.shopMember.count({ where: { shopId: id, userId: { not: userId } } });

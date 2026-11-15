@@ -6,6 +6,18 @@ import { useBanStore } from "@/store/banStore";
 export const API_URL =
   process.env.EXPO_PUBLIC_API_URL ?? "https://trades-backend-m2a6.onrender.com/api/v1";
 
+// Where the website (and its admin panel, under /admin/) lives. In production set EXPO_PUBLIC_WEB_URL; in development
+// it is the same machine as the API, on the website port.
+export const WEB_URL: string | null =
+  process.env.EXPO_PUBLIC_WEB_URL ??
+  (() => {
+    try {
+      const u = new URL(API_URL);
+      if (u.hostname === "localhost" || /^[0-9.]+$/.test(u.hostname)) return u.protocol + "//" + u.hostname + ":5173";
+    } catch {}
+    return null;
+  })();
+
 export const api = axios.create({
   baseURL: API_URL,
   // Render bepul tarifi "sovuq boshlanish"da (uzoq harakatsizlikdan keyin birinchi so'rov)

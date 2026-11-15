@@ -118,7 +118,11 @@ export default function Login() {
   const location = useLocation();
   const from = location.state?.from?.pathname || '/dashboard';
 
-  const goAfterLogin = () => navigate(from === '/login' ? '/dashboard' : from, { replace: true });
+  // An admin signs in here with the same login and password and lands in the admin panel (same host, /admin/).
+  const goAfterLogin = () => {
+    if (useAuthStore.getState().user?.role === 'ADMIN') { window.location.href = '/admin/'; return; }
+    navigate(from === '/login' ? '/dashboard' : from, { replace: true });
+  };
 
   const phoneDigits = form.phone.replace(/\D/g, '');
 

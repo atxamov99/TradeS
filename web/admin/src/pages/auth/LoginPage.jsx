@@ -14,10 +14,12 @@ export function LoginPage() {
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [needSite, setNeedSite] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setNeedSite(false);
     setLoading(true);
     try {
       // Detect if identifier is phone or email
@@ -33,6 +35,7 @@ export function LoginPage() {
       }
       navigate("/dashboard", { replace: true });
     } catch (err) {
+      if (err?.codeRequired) { setNeedSite(true); setError(tx("msg.login_code_needed")); return; }
       const msg = err?.message || "";
       if (msg.includes("401") || msg.toLowerCase().includes("invalid")) {
         setError(tx("msg.email_telefon_yoki_parol_noto_g_ri"));
@@ -64,6 +67,9 @@ export function LoginPage() {
           {error && (
             <div className="px-4 py-3 rounded-lg bg-error-container text-on-error-container text-body-sm border border-error/20">
               {error}
+              {needSite && (
+                <a href="/login" className="mt-2 block font-semibold underline">{tx("msg.login_open_site")}</a>
+              )}
             </div>
           )}
 

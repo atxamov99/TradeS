@@ -50,6 +50,12 @@ function AdminRoute({ children }) {
 }
 
 // Employees / Expenses = business tools — only a business director (or admin).
+// The admin panel is its own app, served on the SAME host under /admin/. The site menu link (/dashboard/admin) opens it.
+function GoToAdminPanel() {
+  useEffect(() => { window.location.replace('/admin/'); }, []);
+  return null;
+}
+
 function DirectorRoute({ children }) {
   const kind = useAuthStore((s) => s.accountKind());
   if (kind !== 'DIRECTOR' && kind !== 'ADMIN') return <Navigate to="/dashboard" replace />;
@@ -135,7 +141,7 @@ export default function App() {
           <Route path="profile" element={<Profile />} />
 
           {/* Admin-only routes */}
-          <Route path="admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+          <Route path="admin" element={<AdminRoute><GoToAdminPanel /></AdminRoute>} />
           <Route path="admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
           <Route path="admin/orders" element={<AdminRoute><AdminOrders /></AdminRoute>} />
           <Route path="admin/products" element={<AdminRoute><AdminProducts /></AdminRoute>} />

@@ -13,6 +13,13 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     proxy: {
+      // The admin panel is a separate app, but it is served under the SAME host at /admin/ (one address, one login).
+      // Start it with `npm run dev` in web/admin (port 5174); this forwards /admin there (incl. hot reload).
+      '/admin': {
+        target: `http://localhost:${process.env.ADMIN_PORT || 5174}`,
+        changeOrigin: true,
+        ws: true,
+      },
       '/api': {
         // Backend's own default is 5000 (backend/.env PORT, server.js). On a Mac where
         // AirPlay Receiver already holds 5000, set BACKEND_PORT=5050 (or whatever) and

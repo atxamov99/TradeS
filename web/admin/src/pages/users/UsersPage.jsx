@@ -248,6 +248,17 @@ export function UsersPage() {
                         <span className="text-body-sm font-semibold text-on-surface">{admin.name}</span>
                         {admin.isMain && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary-container/30 text-on-primary-container">{tx("msg.badge_main")}</span>}
                         {admin.id === profile?.id && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-surface-variant text-on-surface-variant">{tx("msg.badge_you")}</span>}
+                        {iAmMain && !admin.isMain && (
+                          <button
+                            type="button"
+                            onClick={() => openRole({ ...admin, kind: "ADMIN" })}
+                            title={tx("msg.rolni_o_zgartirish")}
+                            className={`px-2.5 inline-flex items-center gap-1 whitespace-nowrap text-xs leading-5 font-semibold rounded-full cursor-pointer hover:ring-2 hover:ring-primary/40 transition ${kindBadgeStyle.ADMIN}`}
+                          >
+                            {kindLabel("ADMIN")}
+                            <Icon name="expand_more" className="text-[14px]" />
+                          </button>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4 text-body-sm text-on-surface">{admin.phone || "—"}</td>

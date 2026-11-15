@@ -167,8 +167,14 @@ const getUserById = async (userId) => {
 // The MAIN admin is the oldest ADMIN account. Only the main admin may add admins, change an admin account,
 // block / unblock / revoke other admins; nobody (not even another admin) may touch the main admin.
 const getPrimaryAdminId = async () => {
-  const first = await prisma.user.findFirst({ where: { role: 'ADMIN', deletedAt: null }, orderBy: { createdAt: 'asc' }, select: { id: true } });
-  return first ? first.id : null;
+  const admins = await prisma.user.findMany({
+    where: { role: 'ADMIN', deletedAt: null },
+    select: { id: true, createdAt: true, adminSince: true },
+  });
+  // ordered by the moment the account BECAME an admin (older admins without the field count by createdAt),
+  // so promoting an old account can never take the main-admin place from the current main admin
+  admins.sort((a, b) => (a.adminSince || a.createdAt) - (b.adminSince || b.createdAt));
+  return admins.length ? admins[0].id : null;
 };
 
 const resolveAssignableRole = async (requestedRole, actorId) => {
@@ -218,6 +224,7 @@ const createUserByAdmin = async ({ name, email, password, phone, role }, actorRo
       password: hashedPassword,
       phone: phone || null,
       role: assignedRole,
+      adminSince: assignedRole === 'ADMIN' ? new Date() : null,
     },
   });
   if (assignedRole === 'ADMIN') {
@@ -238,6 +245,7 @@ const updateUserByAdmin = async (userId, data, actorRole, actorId) => {
   if (email !== undefined) updateData.email = email;
   if (phone !== undefined) updateData.phone = phone;
   if (role !== undefined) updateData.role = await resolveAssignableRole(role, actorId);
+  if (updateData.role) updateData.adminSince = updateData.role === 'ADMIN' ? new Date() : null;
   if (password) {
     const salt = await bcrypt.genSalt(10);
     updateData.password = await bcrypt.hash(password, salt);

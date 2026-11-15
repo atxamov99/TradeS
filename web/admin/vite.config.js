@@ -10,7 +10,9 @@ export default defineConfig(({ command, mode }) => {
   const proxyTarget = env.VITE_PROXY_TARGET || "http://localhost:5050";
   return {
   plugins: [react()],
-  base: command === "build" ? "/admin/" : "/",
+  // Always under /admin/: the website and the admin panel live on ONE host (site at /, panel at /admin/),
+  // in dev (the site's dev server proxies /admin here) and in production (nginx), so one login serves both.
+  base: "/admin/",
   server: {
     port: 5174,
     strictPort: false,

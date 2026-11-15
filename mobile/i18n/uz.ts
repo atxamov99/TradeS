@@ -320,6 +320,9 @@ const uz = {
     title: "Hisobingiz bloklangan", text: "Hisobingiz administrator tomonidan bloklangan. Blokdan chiqarilmaguncha TradeS dan foydalana olmaysiz. Agar bu xato deb hisoblasangiz, qo'llab-quvvatlashga yozing.",
     support: "Qo'llab-quvvatlashga yozish", logout: "Hisobdan chiqish", auto: "Blok olib tashlanganda bu oyna o'zi yo'qoladi.",
   },
+  adminPanel: {
+    title: "Admin panel", sub: "Foydalanuvchilar, rollar va murojaatlar. Brauzerda ochiladi, kirish uchun shu login va parol.",
+  },
   common: {
     back: "Orqaga",
     loading: "Yuklanmoqda...",

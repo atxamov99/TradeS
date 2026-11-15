@@ -79,6 +79,34 @@ export function AuthProvider({ children }) {
     return () => window.removeEventListener("auth:logout", handle);
   }, []);
 
+  // The stored profile says "admin", but the server is the judge: if this account lost its admin rights (or was
+  // blocked) the panel must not stay open on a stale profile — it asks /auth/me and signs out when it is no admin.
+  useEffect(() => {
+    if (!auth) return;
+    authApi.getMe()
+      .then((res) => {
+        const role = String(res?.data?.user?.role || "").toUpperCase();
+        if (role && role !== "ADMIN") window.dispatchEvent(new Event("auth:logout"));
+      })
+      .catch(() => { /* 401/403 are handled by the http layer; network errors are ignored */ });
+  }, [auth?.profile?.id]);
+
+  // One login for the site and the panel (same host): if somebody is already signed in on the website as an ADMIN,
+  // the panel takes that session over silently instead of asking for the password again.
+  useEffect(() => {
+    if (auth) return undefined;
+    let stop = false;
+    authApi.ssoAdopt()
+      .then((res) => {
+        const user = res?.data?.user;
+        if (stop || !user || String(user.role).toUpperCase() !== 'ADMIN') return;
+        if (res.data.accessToken) adminTokens.set(res.data);
+        setAuth({ token: 'cookie-managed', profile: buildProfile(user) });
+      })
+      .catch(() => { /* not signed in on the website: show the login form */ });
+    return () => { stop = true; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // A session that has a profile but no tokens of its own (older login / website SSO) relied on a cookie that
   // any other login on this host can overwrite. Take the panel's own tokens once; if the cookie belongs to
   // somebody who is not an admin the server refuses and the panel asks for a fresh admin login.
@@ -97,6 +125,8 @@ export function AuthProvider({ children }) {
 
       login: async (credentials) => {
         const res = await authApi.login(credentials);
+        // The account has a Telegram sign-in code: the panel cannot ask for it, the website can (same host).
+        if (res.data?.requiresDeviceConfirmation) { const e = new Error('CODE_REQUIRED'); e.codeRequired = true; throw e; }
         const { user } = res.data;
         if (res.data?.accessToken) adminTokens.set(res.data);
         const profile = buildProfile(user);

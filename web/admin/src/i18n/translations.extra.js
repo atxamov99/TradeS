@@ -1,6 +1,8 @@
 // Texts that used to be hard-coded in the admin panel (added 2026-11-15). Deep-merged in translations.js.
 export const uzExtra = {
   "msg": {
+    "login_code_needed": "Telegram kodi kerak: avval sayt orqali kiring, so'ng admin panelga avtomatik o'tasiz.",
+    "login_open_site": "Sayt orqali kirish",
     "contentCount": "Jami {total} ta natijadan {shown} ko'rsatilmoqda",
     "ordersShown": "{n} ta buyurtma ko'rsatilmoqda",
     "productsShown": "{n} ta mahsulot ko'rsatilmoqda",
@@ -166,6 +168,8 @@ export const uzExtra = {
 };
 export const ruExtra = {
   "msg": {
+    "login_code_needed": "Нужен код из Telegram: сначала войдите через сайт, и вы автоматически попадёте в админку.",
+    "login_open_site": "Войти через сайт",
     "contentCount": "Показано {shown} из {total}",
     "ordersShown": "Показано заказов: {n}",
     "productsShown": "Показано товаров: {n}",
@@ -331,6 +335,8 @@ export const ruExtra = {
 };
 export const enExtra = {
   "msg": {
+    "login_code_needed": "A Telegram code is required: sign in on the website first and you will land in the admin panel automatically.",
+    "login_open_site": "Sign in on the website",
     "contentCount": "Showing {shown} of {total}",
     "ordersShown": "{n} orders shown",
     "productsShown": "{n} products shown",

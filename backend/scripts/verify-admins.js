@@ -62,6 +62,28 @@ const hash = bcrypt.hashSync('Test12345Aa', 4);
     ck('admin-created phone is stored in the canonical +digits form', phRow && phRow.phone === '+998901234567', phRow && phRow.phone);
     r = await call(tM, 'POST', '/admin/users', { name: MARK + 'ph2', phone: '+998 90 123 45 67', password: 'Passw0rdAa', role: 'USER' });
     ck('same phone written differently is refused (409)', r.s === 409, r);
+    // the bug that hit a real test: promoting an account that is OLDER than the main admin must NOT make it the main admin
+    const oldAcc = await prisma.user.create({ data: { name: MARK + 'old', email: MARK + '-old@example.com', password: hash, role: 'USER', createdAt: new Date('1999-01-01') } });
+    ids.push(oldAcc.id);
+    r = await call(tM, 'PATCH', '/admin/users/' + oldAcc.id, { role: 'ADMIN' });
+    ck('promote an old account to admin', r.s === 200 && (await prisma.user.findUnique({ where: { id: oldAcc.id } })).role === 'ADMIN', r);
+    r = await call(tM, 'GET', '/admin/admins');
+    ck('the main admin is STILL the same one (promotion by account age is not allowed to steal it)', r.j?.data?.mainAdminId === main.id, r.j?.data?.mainAdminId);
+    ck('the promoted old account is a normal admin, not the main one', r.j?.data?.users?.some((u) => u.id === oldAcc.id && !u.isMainAdmin), r.j?.data?.users);
+    const tOld = generateAccessToken({ id: oldAcc.id, role: 'ADMIN' });
+    r = await call(tOld, 'PATCH', '/admin/admins/' + second.id + '/status');
+    ck('the promoted admin cannot block other admins', r.s === 403, r);
+    r = await call(tM, 'PATCH', '/admin/admins/' + oldAcc.id + '/status');
+    ck('main admin can block the promoted admin', r.s === 200 && (await prisma.user.findUnique({ where: { id: oldAcc.id } })).isBlocked === true, r);
+    r = await call(tM, 'PATCH', '/admin/admins/' + oldAcc.id + '/status');
+    r = await call(tM, 'PATCH', '/admin/users/' + oldAcc.id + '/account-kind', { kind: 'USER' });
+    const back = await prisma.user.findUnique({ where: { id: oldAcc.id } });
+    ck('main admin can take the admin rights away again (round trip) and adminSince is cleared', r.s === 200 && back.role === 'USER' && back.adminSince === null, { s: r.s, role: back.role, since: back.adminSince });
+    r = await call(tM, 'GET', '/admin/admins');
+    ck('after the round trip the list has no trace of him and main is unchanged', r.j?.data?.mainAdminId === main.id && !r.j.data.users.some((u) => u.id === oldAcc.id), r.j?.data?.mainAdminId);
+    r = await call(tOld, 'GET', '/admin/users');
+    ck('a revoked admin is locked out of the admin API immediately (his old token still exists)', r.s === 403, r.s);
+
     // support reply that cannot be delivered
     tick = await prisma.supportMessage.create({ data: { name: MARK, contact: 'x', message: 'help', source: 'bot', telegramChatId: '1', status: 'open' } });
     r = await call(tM, 'POST', '/admin/support-messages/' + tick.id + '/reply', { reply: 'test' });

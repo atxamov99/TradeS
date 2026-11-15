@@ -322,6 +322,9 @@ const en: Translations = {
     title: "Your account is blocked", text: "Your account was blocked by an administrator. You cannot use TradeS until it is unblocked. If you think this is a mistake, contact support.",
     support: "Contact support", logout: "Log out", auto: "This window disappears by itself once the block is lifted.",
   },
+  adminPanel: {
+    title: "Admin panel", sub: "Users, roles and requests. Opens in the browser, sign in with the same login and password.",
+  },
   common: {
     back: "Back",
     loading: "Loading...",

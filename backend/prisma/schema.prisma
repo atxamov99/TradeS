@@ -33,6 +33,10 @@ model User {
   // (needs the password + an explicit warning in the UI); it is on by default.
   loginCodeEnabled Boolean       @default(true)
   isEmailVerified Boolean        @default(false)
+  // When this account became an ADMIN (null for admins that existed before this field: they count by createdAt).
+  // The MAIN admin = the ADMIN with the earliest adminSince/createdAt. Promoting an old account must not take
+  // the main-admin place from the current one, so the order is by this moment, not by account age.
+  adminSince      DateTime?
   deletedAt       DateTime?      // soft delete: set when a user with linked history is "deleted"
   lastLogin       DateTime?
   passwordResetToken   String?

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import LinkIdentifierModal from "@/components/LinkIdentifierModal";
-import { View, Text, TouchableOpacity, ScrollView, Switch, Modal, TextInput } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView, Switch, Modal, TextInput, Linking } from "react-native";
 import { Alert } from "@/utils/alert";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -11,7 +11,7 @@ import { useThemeStore } from "@/store/themeStore";
 import { useTheme } from "@/hooks/useTheme";
 import { useT } from "@/hooks/useT";
 import { useRoleStore } from "@/store/roleStore";
-import { api } from "@/services/api";
+import { api, WEB_URL } from "@/services/api";
 import { Lang } from "@/i18n";
 import { clearLocalData, getLocalDataAtRisk, runSync } from "@/services/syncEngine";
 
@@ -75,7 +75,7 @@ export default function ProfileScreen() {
   const { isDark, toggleTheme } = useThemeStore();
   const { c } = useTheme();
   const t = useT();
-  const { isAdmin, isDirector } = useRoleStore();
+  const { isAdmin, isDirector, kind } = useRoleStore();
 
   const [linkKind, setLinkKind] = useState<"email" | "phone" | null>(null);
 
@@ -274,6 +274,20 @@ export default function ProfileScreen() {
           onPress={() => router.push("/reports")}
         />
       </Section>
+
+      {/* Admin panel — a platform ADMIN signs in there with the same login and password (same host, /admin/) */}
+      {kind === "ADMIN" && WEB_URL && (
+        <Section title={t.adminPanel.title}>
+          <Row
+            iconName="shield-checkmark"
+            iconBg="#EDE9FE"
+            label={t.adminPanel.title}
+            sub={t.adminPanel.sub}
+            right={<Ionicons name="open-outline" size={18} color={c.textMuted} />}
+            onPress={() => Linking.openURL(WEB_URL + "/admin/")}
+          />
+        </Section>
+      )}
 
       {/* Team — only a business director (the server refuses employees for solo accounts and cashiers) */}
       {isDirector() && (

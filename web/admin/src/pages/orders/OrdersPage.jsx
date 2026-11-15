@@ -1,3 +1,4 @@
+import { Select } from "../../components/shared/Select";
 import { useMemo, useState } from "react";
 import { usePageTitle } from "../../hooks/usePageTitle";
 import { useI18n } from "../../i18n";
@@ -182,7 +183,7 @@ export function OrdersPage() {
                         <td className="py-4 px-6">
                           <div className="flex items-center gap-2">
                             <span className={`w-2 h-2 rounded-full ${PAYMENT_DOT[o.paymentStatus] || "bg-outline-variant"}`} />
-                            <select
+                            <Select
                               disabled={statusUpdating === o.id}
                               value={o.paymentStatus}
                               onChange={(e) => handlePaymentStatusChange(o.id, e.target.value)}
@@ -191,11 +192,11 @@ export function OrdersPage() {
                               {Object.entries(PAYMENT_LABELS).map(([val, label]) => (
                                 <option key={val} value={val}>{t(label)}</option>
                               ))}
-                            </select>
+                            </Select>
                           </div>
                         </td>
                         <td className="py-4 px-6">
-                          <select
+                          <Select
                             disabled={statusUpdating === o.id}
                             value={o.orderStatus}
                             onChange={(e) => handleStatusChange(o.id, e.target.value)}
@@ -204,7 +205,7 @@ export function OrdersPage() {
                             {Object.entries(STATUS_LABELS).map(([val, label]) => (
                               <option key={val} value={val}>{t(label)}</option>
                             ))}
-                          </select>
+                          </Select>
                         </td>
                       </tr>
                     );

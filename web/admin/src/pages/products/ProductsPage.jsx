@@ -1,3 +1,4 @@
+import { Select } from "../../components/shared/Select";
 import { useMemo, useState } from "react";
 import { Modal } from "../../components/shared/Modal";
 import { Icon } from "../../components/shared/Icon";
@@ -141,15 +142,15 @@ export function ProductsPage() {
               className="w-full bg-surface border border-outline-variant text-on-surface font-body-sm rounded-lg pl-9 pr-4 py-2 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
             />
           </div>
-          <select
+          <Select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
             className="bg-surface border border-outline-variant text-on-surface font-body-sm rounded-lg px-4 py-2 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary cursor-pointer"
           >
             <option value="all">{t("products.allCategories")}</option>
             {categories.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
-          <select
+          </Select>
+          <Select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             className="bg-surface border border-outline-variant text-on-surface font-body-sm rounded-lg px-4 py-2 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary cursor-pointer"
@@ -157,7 +158,7 @@ export function ProductsPage() {
             <option value="all">{t("users.allStatuses")}</option>
             <option value="active">{t("products.status.onSale")}</option>
             <option value="inactive">{t("products.status.inactive")}</option>
-          </select>
+          </Select>
         </div>
 
         <div className="overflow-x-auto">

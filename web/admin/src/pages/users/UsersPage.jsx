@@ -1,3 +1,4 @@
+import { Select } from "../../components/shared/Select";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { Modal } from "../../components/shared/Modal";
@@ -5,6 +6,7 @@ import { Icon } from "../../components/shared/Icon";
 import { useAuth } from "../../store";
 import { useAdminData } from "../../store/adminData";
 import { useI18n } from "../../i18n";
+import { RolePicker, KIND_LABEL, kindBadgeStyle } from "../../components/users/RolePicker";
 
 const statusStyle = {
   active:  "bg-primary-container/20 text-on-primary-container",
@@ -17,11 +19,11 @@ const roleStyle = {
   user: "bg-[#E5E7EB] text-[#4B5563]"
 };
 
-const empty = { name: "", email: "", phone: "", role: "USER", status: "active", password: "" };
+const empty = { name: "", email: "", phone: "", role: "USER", status: "active", password: "", kind: "USER", shopId: "" };
 
 export function UsersPage() {
   const { profile } = useAuth();
-  const { users, admins, mainAdminId, createUser, createAdmin, promoteToAdmin, updateUser, toggleUserStatus, deleteUser, revokeAdminFromUser, toggleAdminStatus, updateAdmin } = useAdminData();
+  const { users, admins, mainAdminId, changeAccountKind, loadShops, createUser, createAdmin, promoteToAdmin, updateUser, toggleUserStatus, deleteUser, revokeAdminFromUser, toggleAdminStatus, updateAdmin } = useAdminData();
   const { t } = useI18n();
   const isPrimary = profile?.isPrimary;
   const location = useLocation();
@@ -44,6 +46,28 @@ export function UsersPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [grantTarget, setGrantTarget] = useState(null);
+  // role editing: from the role badge (own window) and from the pencil (inside the edit window)
+  const [roleTarget, setRoleTarget] = useState(null);
+  const [roleDraft, setRoleDraft] = useState({ kind: "USER", shopId: "" });
+  const [initialKind, setInitialKind] = useState("USER");
+  const [shops, setShops] = useState([]);
+  const [shopsLoading, setShopsLoading] = useState(false);
+
+  async function ensureShops() {
+    setShopsLoading(true);
+    setShops(await loadShops());
+    setShopsLoading(false);
+  }
+  function openRole(u) {
+    setRoleTarget(u);
+    setRoleDraft({ kind: u.kind || "USER", shopId: "" });
+    ensureShops();
+  }
+  async function saveRole() {
+    if (roleDraft.kind === "CASHIER" && !roleDraft.shopId) return;
+    const ok = await changeAccountKind(roleTarget.id, roleDraft);
+    if (ok) setRoleTarget(null);
+  }
 
   const regularUsers = useMemo(
     () => users.filter((u) => u.role === "user" || u.role !== "admin"),
@@ -76,7 +100,9 @@ export function UsersPage() {
   function openEdit(u) {
     setEditId(u.id);
     setEditingAdmin(false);
-    setForm({ name: u.name, email: u.email, phone: u.phone, role: u.role, status: u.status, password: "" });
+    setForm({ name: u.name, email: u.email, phone: u.phone, role: u.role, status: u.status, password: "", kind: u.kind || "USER", shopId: "" });
+    setInitialKind(u.kind || "USER");
+    ensureShops();
     setModalOpen(true);
   }
   function openEditAdmin(a) {
@@ -90,6 +116,10 @@ export function UsersPage() {
   function handleSubmit(e) {
     e.preventDefault();
     const payload = { ...form };
+    const wantedKind = payload.kind;
+    const wantedShop = payload.shopId;
+    delete payload.kind;
+    delete payload.shopId;
     if (!payload.email) delete payload.email;
     if (!payload.phone) delete payload.phone;
     if (!payload.password) delete payload.password;
@@ -103,8 +133,14 @@ export function UsersPage() {
     } else {
       // Regular-user form: role is always USER (admin rights granted separately).
       payload.role = "USER";
-      if (editId) updateUser(editId, payload);
-      else createUser(payload);
+      if (editId) {
+        // the profile is saved first, then the role (the server checks both separately)
+        updateUser(editId, payload);
+        if (wantedKind && wantedKind !== initialKind || (wantedKind === "CASHIER" && wantedShop)) {
+          if (wantedKind === "CASHIER" && !wantedShop) return;
+          changeAccountKind(editId, { kind: wantedKind, shopId: wantedShop });
+        }
+      } else createUser(payload);
     }
     closeModal();
   }
@@ -160,7 +196,7 @@ export function UsersPage() {
         </div>
         {!isAdminsTab && (
           <div className="w-full md:w-auto flex items-center gap-3">
-            <select
+            <Select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="w-full md:w-48 px-4 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-on-surface text-body-sm focus:outline-none focus:border-primary cursor-pointer"
@@ -169,7 +205,7 @@ export function UsersPage() {
               <option value="active">{t("labels.statuses.active")}</option>
               <option value="pending">{t("labels.statuses.pending")}</option>
               <option value="blocked">{t("labels.statuses.blocked")}</option>
-            </select>
+            </Select>
           </div>
         )}
       </div>
@@ -270,9 +306,16 @@ export function UsersPage() {
                     </td>
                     <td className="px-6 py-4 text-body-sm text-on-surface whitespace-nowrap">{u.phone || "—"}</td>
                     <td className="px-6 py-4">
-                      <span className={`px-2.5 inline-flex text-xs leading-5 font-semibold rounded-full ${roleStyle[u.role] || "bg-surface-variant text-on-surface"}`}>
-                        {(u.role || "user").toUpperCase()}
-                      </span>
+                      <button
+                        type="button"
+                        onClick={() => openRole(u)}
+                        title="Rolni o'zgartirish"
+                        className={`px-2.5 inline-flex items-center gap-1 text-xs leading-5 font-semibold rounded-full cursor-pointer hover:ring-2 hover:ring-primary/40 transition ${kindBadgeStyle[u.kind] || kindBadgeStyle.USER}`}
+                      >
+                        {KIND_LABEL[u.kind] || KIND_LABEL.USER}
+                        <Icon name="expand_more" className="text-[14px]" />
+                      </button>
+                      {u.shopName && <div className="text-[11px] text-on-surface-variant mt-0.5 max-w-[160px] truncate">{u.shopName}</div>}
                     </td>
                     <td className="px-6 py-4">
                       <span className={`px-2.5 inline-flex text-xs leading-5 font-semibold rounded-full ${statusStyle[u.status] || "bg-surface-variant text-on-surface"}`}>
@@ -353,7 +396,7 @@ export function UsersPage() {
           <p className="text-xs text-on-surface-variant">{t("users.contactRequired")}</p>
           <div className="flex flex-col gap-1.5">
             <label className="text-body-sm font-medium text-on-surface">{t("common.status")}</label>
-            <select
+            <Select
               name="status"
               value={form.status}
               onChange={(e) => setForm((c) => ({ ...c, status: e.target.value }))}
@@ -362,9 +405,49 @@ export function UsersPage() {
               <option value="active">{t("labels.statuses.active")}</option>
               <option value="pending">{t("labels.statuses.pending")}</option>
               <option value="blocked">{t("labels.statuses.blocked")}</option>
-            </select>
+            </Select>
           </div>
+          {editId && !editingAdmin && !creatingAdmin && (
+            <RolePicker
+              kind={form.kind}
+              shopId={form.shopId}
+              canAdmin={iAmMain}
+              shops={shops}
+              loadingShops={shopsLoading}
+              onChange={({ kind, shopId }) => setForm((c) => ({ ...c, kind, shopId }))}
+            />
+          )}
         </form>
+      </Modal>
+
+      {/* Change role (opened from the role badge) */}
+      <Modal
+        open={Boolean(roleTarget)}
+        title="Rolni o'zgartirish"
+        description={roleTarget ? `"${roleTarget.name}"` : ""}
+        onClose={() => setRoleTarget(null)}
+        footer={
+          <>
+            <button type="button" onClick={() => setRoleTarget(null)} className="px-5 py-2.5 text-body-sm border border-outline-variant rounded-lg hover:bg-surface-container-low text-on-surface">{t("common.cancel")}</button>
+            <button
+              type="button"
+              onClick={saveRole}
+              disabled={roleDraft.kind === "CASHIER" && !roleDraft.shopId}
+              className="px-5 py-2.5 bg-primary-container text-on-primary-container text-body-sm font-medium rounded-lg hover:bg-primary hover:text-on-primary transition-colors disabled:opacity-50"
+            >
+              Saqlash
+            </button>
+          </>
+        }
+      >
+        <RolePicker
+          kind={roleDraft.kind}
+          shopId={roleDraft.shopId}
+          canAdmin={iAmMain}
+          shops={shops}
+          loadingShops={shopsLoading}
+          onChange={setRoleDraft}
+        />
       </Modal>
 
       {/* Delete confirm */}

@@ -37,7 +37,10 @@ function normalizeUser(u) {
     isAdmin: (u.role || "").toLowerCase() === "admin",
     isPrimary: u.role === "ADMIN",
     // MAIN admin = the oldest admin account (decided by the server). Only the main admin manages other admins.
-    isMain: Boolean(u.isMainAdmin)
+    isMain: Boolean(u.isMainAdmin),
+    // what the account IS: USER (works for himself) / DIRECTOR / CASHIER / ADMIN, and the shop that explains it
+    // (only set when the server sent it, so an update response never overwrites it with a default)
+    ...(u.accountKind ? { kind: u.accountKind, shopName: u.shopName || "" } : {})
   };
 }
 
@@ -309,6 +312,35 @@ export function AdminDataProvider({ children }) {
     }
   }
 
+  // Change what an account is (user / director / cashier / admin). The server does the work and the rules
+  // (main admin for admin changes, no silent loss of staff or data); afterwards both lists are re-read.
+  async function changeAccountKind(userId, { kind, shopId }) {
+    try {
+      await usersApi.setKind(userId, shopId ? { kind, shopId } : { kind });
+      const [usersRes, adminsRes] = await Promise.all([usersApi.getAll({ limit: 100 }), adminsApi.getAll()]);
+      const rawUsers = usersRes?.data?.users || usersRes?.data || [];
+      setUsers((Array.isArray(rawUsers) ? rawUsers : []).map(normalizeUser));
+      const rawAdmins = adminsRes?.data?.users || adminsRes?.data || [];
+      setAdmins((Array.isArray(rawAdmins) ? rawAdmins : []).map(normalizeUser));
+      setMainAdminId(adminsRes?.data?.mainAdminId || null);
+      logAudit("Rol o'zgartirildi", userId, "admin", "info");
+      pushToast("Rol o'zgartirildi");
+      return true;
+    } catch (err) {
+      pushToast(err?.message || "Rolni o'zgartirishda xatolik", "danger");
+      return false;
+    }
+  }
+
+  async function loadShops() {
+    try {
+      const res = await usersApi.getShops();
+      return res?.data?.shops || [];
+    } catch {
+      return [];
+    }
+  }
+
   // Add a brand-new ADMIN account (main admin only — the server enforces it).
   async function createAdmin(payload) {
     try {
@@ -572,7 +604,7 @@ export function AdminDataProvider({ children }) {
       supportMessages, replySupportTicket, deleteSupportTicket,
       pushToast, dismissToast,
       createUser, updateUser, toggleUserStatus, deleteUser,
-      revokeAdminFromUser, createAdmin, promoteToAdmin, mainAdminId,
+      revokeAdminFromUser, createAdmin, promoteToAdmin, mainAdminId, changeAccountKind, loadShops,
       toggleAdminStatus, updateAdmin,
       createContent, updateContentStatus, deleteContent,
       createRole, deleteRole,

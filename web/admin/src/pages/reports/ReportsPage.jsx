@@ -1,3 +1,4 @@
+import { Select } from "../../components/shared/Select";
 import { useState, useEffect } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useAuth } from "../../store";
@@ -143,12 +144,12 @@ export function ReportsPage() {
           <input type="date" value={to} onChange={(e) => setTo(e.target.value)}
             className="px-3 py-2 text-body-sm border border-outline-variant rounded-lg bg-surface text-on-surface focus:outline-none focus:border-primary" />
         </div>
-        <select value={type} onChange={(e) => setType(e.target.value)}
+        <Select value={type} onChange={(e) => setType(e.target.value)}
           className="px-4 py-2 text-body-sm border border-outline-variant rounded-lg bg-surface text-on-surface focus:outline-none focus:border-primary cursor-pointer">
           <option value="overview">{t("reports.tab.overview")}</option>
           <option value="admin-activity">{t("reports.tab.adminActivity")}</option>
           <option value="security">{t("reports.security")}</option>
-        </select>
+        </Select>
       </div>
 
       {/* Stat cards */}

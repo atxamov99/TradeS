@@ -1,4 +1,5 @@
 const express = require('express');
+const Joi = require('joi');
 const router = express.Router();
 
 const adminController = require('../controllers/admin.controller');
@@ -20,6 +21,14 @@ router.get('/stats', adminController.getDashboardStats);
 // Admin management
 router.get('/admins', adminController.getAllAdmins);
 router.patch('/admins/:id/status', adminController.toggleAdminStatus);
+
+// Account role (user / director / cashier / admin) and the shops a cashier can be attached to
+router.get('/shops', adminController.listBusinessShops);
+router.patch(
+  '/users/:id/account-kind',
+  validate(Joi.object({ kind: Joi.string().valid('USER', 'DIRECTOR', 'CASHIER', 'ADMIN').required(), shopId: Joi.string().trim() })),
+  adminController.setAccountKind
+);
 
 // User management
 router.get('/users', adminController.getAllUsers);

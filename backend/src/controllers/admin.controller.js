@@ -1,4 +1,5 @@
 const adminService = require('../services/admin.service');
+const adminRolesService = require('../services/adminRoles.service');
 const orderService = require('../services/order.service');
 const asyncHandler = require('../utils/asyncHandler');
 const ApiResponse = require('../utils/ApiResponse');
@@ -28,6 +29,16 @@ const createUserByAdmin = asyncHandler(async (req, res) => {
 const updateUserByAdmin = asyncHandler(async (req, res) => {
   const user = await adminService.updateUserByAdmin(req.params.id, req.body, req.user.role, req.user.id);
   res.status(200).json(new ApiResponse(200, user, 'User updated'));
+});
+
+const setAccountKind = asyncHandler(async (req, res) => {
+  const result = await adminRolesService.setAccountKind(req.params.id, req.body, req.user.id);
+  res.status(200).json(new ApiResponse(200, result, 'Role updated'));
+});
+
+const listBusinessShops = asyncHandler(async (req, res) => {
+  const shops = await adminRolesService.listBusinessShops();
+  res.status(200).json(new ApiResponse(200, { shops }, 'Shops retrieved'));
 });
 
 const blockUser = asyncHandler(async (req, res) => {
@@ -75,6 +86,8 @@ module.exports = {
   getUserById,
   createUserByAdmin,
   updateUserByAdmin,
+  setAccountKind,
+  listBusinessShops,
   blockUser,
   unblockUser,
   deleteUser,

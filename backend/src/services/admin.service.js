@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const { clampLimit } = require('../utils/pagination');
 const { canonicalPhone, phoneTaken } = require('./auth.service');
 const { createAuditLog } = require('./audit.service');
+const { deriveKind, kindShopName } = require('../utils/accountKind');
 
 const stripPassword = (user) => {
   if (!user) return user;
@@ -139,11 +140,19 @@ const getAllUsers = async ({ page = 1, limit = 20, search, role } = {}) => {
       orderBy: { createdAt: 'desc' },
       skip,
       take,
+      include: { shopMemberships: { include: { shop: { select: { id: true, name: true, isBusiness: true } } } } },
     }),
     prisma.user.count({ where }),
   ]);
 
-  return { users: stripPasswordMany(users), total, page: Number(page), pages: Math.ceil(total / take) };
+  // what each account IS (user / director / cashier / admin) and which shop explains it
+  const withKind = users.map((u) => {
+    const { shopMemberships, ...rest } = u;
+    const accountKind = deriveKind(u, shopMemberships);
+    return { ...rest, accountKind, shopName: kindShopName(accountKind, shopMemberships) };
+  });
+
+  return { users: stripPasswordMany(withKind), total, page: Number(page), pages: Math.ceil(total / take) };
 };
 
 const getUserById = async (userId) => {
@@ -424,6 +433,8 @@ module.exports = {
   getDashboardStats,
   getAllUsers,
   getUserById,
+  assertCanActOn,
+  resolveAssignableRole,
   createUserByAdmin,
   updateUserByAdmin,
   blockUser,

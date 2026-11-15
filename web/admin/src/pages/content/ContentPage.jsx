@@ -1,3 +1,4 @@
+import { Select } from "../../components/shared/Select";
 import { useMemo, useState } from "react";
 import { Modal } from "../../components/shared/Modal";
 import { Icon } from "../../components/shared/Icon";
@@ -93,7 +94,7 @@ export function ContentPage() {
           />
         </div>
         <div className="flex items-center gap-3 w-full md:w-auto">
-          <select
+          <Select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
             className="w-full md:w-auto bg-surface border border-outline-variant rounded-lg px-4 py-2 font-body-sm text-on-surface focus:outline-none focus:border-primary cursor-pointer"
@@ -102,8 +103,8 @@ export function ContentPage() {
             <option value="landing_page">{t("content.types.landing")}</option>
             <option value="knowledge_base">{t("labels.contentTypes.knowledge_base")}</option>
             <option value="media_asset">{t("content.types.media")}</option>
-          </select>
-          <select
+          </Select>
+          <Select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             className="w-full md:w-auto bg-surface border border-outline-variant rounded-lg px-4 py-2 font-body-sm text-on-surface focus:outline-none focus:border-primary cursor-pointer"
@@ -112,7 +113,7 @@ export function ContentPage() {
             <option value="draft">{t("labels.statuses.draft")}</option>
             <option value="published">{t("content.status.published")}</option>
             <option value="archived">{t("content.status.archived")}</option>
-          </select>
+          </Select>
         </div>
       </div>
 
@@ -237,7 +238,7 @@ export function ContentPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div className="flex flex-col gap-1.5">
               <label className="font-body-sm text-body-sm font-medium text-on-surface">{t("content.col.type")}</label>
-              <select
+              <Select
                 value={form.type}
                 onChange={(e) => setForm((c) => ({ ...c, type: e.target.value }))}
                 className="w-full bg-surface border border-outline-variant rounded-lg px-4 py-2.5 text-on-surface font-body-md focus:outline-none focus:border-primary cursor-pointer"
@@ -245,11 +246,11 @@ export function ContentPage() {
                 <option value="landing_page">{t("content.types.landing")}</option>
                 <option value="knowledge_base">{t("labels.contentTypes.knowledge_base")}</option>
                 <option value="media_asset">{t("content.types.media")}</option>
-              </select>
+              </Select>
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="font-body-sm text-body-sm font-medium text-on-surface">{t("common.status")}</label>
-              <select
+              <Select
                 value={form.status}
                 onChange={(e) => setForm((c) => ({ ...c, status: e.target.value }))}
                 className="w-full bg-surface border border-outline-variant rounded-lg px-4 py-2.5 text-on-surface font-body-md focus:outline-none focus:border-primary cursor-pointer"
@@ -257,7 +258,7 @@ export function ContentPage() {
                 <option value="draft">{t("labels.statuses.draft")}</option>
                 <option value="published">{t("content.status.published")}</option>
                 <option value="archived">{t("content.status.archived")}</option>
-              </select>
+              </Select>
             </div>
           </div>
           <div className="flex flex-col gap-1.5">

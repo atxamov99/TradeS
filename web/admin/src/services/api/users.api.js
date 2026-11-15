@@ -25,6 +25,14 @@ export const usersApi = {
   update: (id, data) =>
     http.patch(`/admin/users/${id}`, data),
 
+  /** PATCH /api/admin/users/:id/account-kind  { kind: USER|DIRECTOR|CASHIER|ADMIN, shopId? } */
+  setKind: (id, data) =>
+    http.patch(`/admin/users/${id}/account-kind`, data),
+
+  /** GET /api/admin/shops — business shops (for attaching a cashier) */
+  getShops: () =>
+    http.get("/admin/shops"),
+
   /** DELETE /api/admin/users/:id */
   remove: (id) =>
     http.delete(`/admin/users/${id}`),
